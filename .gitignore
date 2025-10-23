@@ -1,0 +1,26 @@
+
+# -- G I T  I G N O R E -------------------------------------------------------
+
+# ignore clangd cache
+/.cache
+
+# ignore neovim logs
+/.nvimlog
+
+# ignore object files
+/sources/**/*.o
+
+# ignore dependency files
+/sources/**/*.d
+
+# ignore log files
+/sources/**/*.log
+
+# ignore compile database
+/compile_commands.json
+
+# ignore main executable
+/midilang
+
+# ignore desktop service store
+/**/.DS_Store

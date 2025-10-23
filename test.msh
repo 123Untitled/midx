@@ -1,0 +1,144 @@
+
+sequence > track > pattern > play
+
+
+[] ''
+
+`~!@$%^&*()-=_+\][';/.,|}{":?><
+#
+
+[track 'theme'
+
+	[note'hello'
+		:seq @16/3 10 (A#3 B3) C4
+	] >< 'theme'
+
+	[trig 'rtm1'
+		:seq 10001010
+		:reset true
+	]
+]
+
+[pattern 'loop1'
+	:: section [track 'theme'
+
+		:note ['hello'
+			:seq @16/3 10 (A#3 B3) C4
+			] >< 'theme'
+
+		:trig ['rtm1'
+			:seq 10001010
+			:reset true
+		]
+	]
+	:: cond
+		if ("theme".velocity < 80) {
+			"theme".octave = +1
+		}
+		elif ("theme".trigger == 0) {
+			"theme".prob = 30
+		}
+]
+
+# -- Basic Example --
+
+[tr 'theme'
+	.seq @16/3 10 (A#3 B3) C4
+	.repeat true
+]
+
+[tr] 'fast beat'
+.seq 10001010
+.reset true
+
+[oc] 'variation'
+::seq +1 -1,0,2
+::linked true
+
+[prob] 'rand'
+:-:seq 100% 50% 75% 25%
+:debug
+
+# ADD debug label to see values during playback
+
+
+
+[track] 'synth'
+:note 'theme' >< 'theme'
+:trigger 'fast rythm'
+
+[track] "bass"
+::note 'main theme'
+::trigger 'fast beat'
+::octave  'variation'
+::prob  'rand'
+
+[pattern] 'loop1'
+:o: section 'synth', 'bass'
+:o: length 16 # at end of pattern, it reset polyrythm counters
+:-: cond
+	if ("lead".velocity < 80) {
+        "bass".octave = +1
+	}
+    elif ("drums".trigger == 0) {
+        "bass".prob = 30
+	}
+
+
+[play]
+::bpm 130
+::repeat 4
+::timeline 'loop1'
+
+
+
+@1/4 # 1/4 is the time signature
+channel:
+	8 2 # channel is now dynamic
+channel: 8 & 2 # channel is now dynamic
+
+# note-on trigger
+#@1/4
+#trigger
+#: |x|-|x|-|-|x|-|-
+#
+## time between note-on and note-off
+##@1/4
+##gate: 100% 50 25 100 50 50 25 100 50 25 0xff
+#
+## note pitch
+#@1/8
+#note: A#2 23 Gb Bb A Gb G Bb A Gb Bb A 0x7f
+#
+## octave
+#octave: 1 3 2 3
+#
+## velocity (volume of the note)
+#velocity: 126 100 127 80
+#
+## control change
+#cc25: 127 0 127 0
+[bass_23]
+
+channel: 8,2
+
+# note-on trigger
+trigger: on, off, on, on off
+			off on 0 0 0 1 0 1
+
+# time between note-on and note-off
+@1/4 gate:
+100% 50 25 100 50 50 25 100 50 25 0xff
+
+# note pitch
+@1/8
+note: A#2 23 Gb Bb A Gb G Bb A Gb Bb A 0x7f
+
+# octave
+octave: 1 3 2 3
+
+# velocity (volume of the note)
+velocity: 126 100 127 80
+
+cc32: 123, 32, 48, 64
+

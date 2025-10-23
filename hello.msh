@@ -1,0 +1,18 @@
+
+# -- Basic Example --
+
+[tr 'theme'
+
+	.note = [
+		.seq @16/3 10 (A#3 B3) C4
+	] >< 'theme'
+
+	.trigger [tr 'rtm1'
+		.seq 10001010
+		.reset true
+	]
+]
+
+[track] 'hello'
+:track
+:note
