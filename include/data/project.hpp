@@ -2,7 +2,7 @@
 #define midilang_data_project_hpp
 
 #include "data/pattern_pool.hpp"
-#include "language/parser.hpp"
+#include "language/analyzer.hpp"
 #include "player.hpp"
 
 #include "system/mapped_file.hpp"
@@ -28,8 +28,8 @@ namespace ml {
 
 			// -- private members ---------------------------------------------
 
-			/* parser */
-			ml::parser _parser;
+			/* analyzer */
+			ml::analyzer _analyzer;
 
 			/* patterns */
 			ml::pattern_pool _patterns;
@@ -47,7 +47,7 @@ namespace ml {
 				self::reset();
 				::write(STDOUT_FILENO, mf.begin(), mf.size());
 
-				_parser.parse(mf, *this);
+				_analyzer.analyze(mf, *this);
 				//_parser.reset();
 
 			}

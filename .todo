@@ -1,0 +1,9 @@
+
+array of trigger
++ array of step before next trigger.
+or only one array contains struct with
+
+struct {
+	bool trig;
+	uint step_to_next;
+};

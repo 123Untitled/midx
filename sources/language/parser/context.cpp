@@ -1,7 +1,6 @@
-#include "language/parser_context.hpp"
+#include "language/parser/context.hpp"
 #include "system/mapped_file.hpp"
 #include "data/project.hpp"
-#include "language/machines/global_machine.hpp"
 
 
 // -- P A R S E R  C O N T E X T ----------------------------------------------

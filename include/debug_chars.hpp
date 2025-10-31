@@ -25,28 +25,26 @@ namespace ml {
 
 		const char c = static_cast<char>(dbchar._c);
 
-		if (c == 32) {
-			os << "' '";
-			return os;
-		}
-		if (c > 32 && c < 127) {
+		if (c >= 32 && c < 127) {
 			os << c;
 			return os;
 		}
+		os << "\x1b[32m";
 		switch (c) {
-			case '\n': { os << "\\n"; return os; }
-			case '\r': { os << "\\r"; return os; }
-			case '\t': { os << "\\t"; return os; }
-			case '\v': { os << "\\v"; return os; }
-			case '\b': { os << "\\b"; return os; }
-			case '\f': { os << "\\f"; return os; }
-			case '\a': { os << "\\a"; return os; }
+			case '\n': { os << "\\n"; break; }
+			case '\r': { os << "\\r"; break; }
+			case '\t': { os << "\\t"; break; }
+			case '\v': { os << "\\v"; break; }
+			case '\b': { os << "\\b"; break; }
+			case '\f': { os << "\\f"; break; }
+			case '\a': { os << "\\a"; break; }
 			default: {
 				os << "\\x" << std::hex
 				<< static_cast<unsigned int>(static_cast<unsigned char>(c));
-				return os;
 			}
 		}
+		os << "\x1b[0m";
+		return os;
 	}
 }
 

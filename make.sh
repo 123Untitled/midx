@@ -105,7 +105,7 @@ else
 fi
 
 # standard
-declare -rg std='-std=c++2a'
+declare -rg std='-std=c++23'
 #'-std=c++2c'
 
 # cxx flags
@@ -126,6 +126,9 @@ declare -rg cxxflags=($std
 					  '-fdiagnostics-show-location=once'
 					  '-fdiagnostics-show-template-tree'
 					  '-Wshadow'
+
+					  '-fconstexpr-steps=200000000'
+					  '-fconstexpr-depth=1000'
 
 					  #'-Wno-gnu-designator'
 					  #'-Wno-c99-designator'
@@ -437,8 +440,7 @@ case $1 in
 	# run
 	run | launch)
 		_build
-		echo
-		cd $cwd_dir'/test' && $executable
+		$executable
 		;;
 
 	# clean

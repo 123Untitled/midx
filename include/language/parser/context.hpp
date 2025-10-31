@@ -1,8 +1,11 @@
 #ifndef ml_language_parser_context_hpp
 #define ml_language_parser_context_hpp
 
+#include "types.hpp"
 #include "language/project_context.hpp"
-#include "language/state_machine.hpp"
+
+#include <string>
+#include <vector>
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------

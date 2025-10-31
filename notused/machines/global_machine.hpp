@@ -1,7 +1,6 @@
 #ifndef ml_language_machines_global_machine_hpp
 #define ml_language_machines_global_machine_hpp
 
-#include "language/state_machine.hpp"
 #include "language/transition.hpp"
 #include "language/keyword_library.hpp"
 
@@ -246,15 +245,15 @@ namespace ml {
 			static constexpr ml::keyword_library _keywords {
 
 				kw::block_entry{"track",   &self::_on_pattern,
-					kw::label_entry{"note", &self::_on_pattern_track}
+					kw::param_entry{"note", &self::_on_pattern_track}
 				},
 
 				kw::block_entry{"track",     &self::_on_track,
-					kw::label_entry{"note",  &self::_on_track_note},
-					kw::label_entry{"gate",  &self::_on_track_gate}
+					kw::param_entry{"note",  &self::_on_track_note},
+					kw::param_entry{"gate",  &self::_on_track_gate}
 				},
 				kw::block_entry{"pattern",   &self::_on_pattern,
-					kw::label_entry{"track", &self::_on_pattern_track}
+					kw::param_entry{"track", &self::_on_pattern_track}
 				}
 			};
 

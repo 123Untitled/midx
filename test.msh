@@ -142,3 +142,45 @@ velocity: 126 100 127 80
 
 cc32: 123, 32, 48, 64
 
+[trig 'synth rythm1'
+	.seq 10101010
+]
+
+
+# -- tracks --
+
+#[track  'theme'
+#
+#	.note [ .seq @16/3 G (A#3 B3) C4 ] >< 'melody'
+#
+#	.trig [ 'rythm1'
+#		.seq 100010101
+#		.reset true
+#	]
+#]
+#
+#
+#[track 'synth'
+#	.note A#3 (B3 (C4 D4) E4) F4 G4 A4
+#	.trig 'synth rythm1' 0101 'other ref'
+#	.cond if .note == A#3 
+#			'drum'.trig 1
+#		
+#]
+#
+#[pattern 'main'
+#	.track [
+#		.note [
+#			.seq @1/4 A C4 D4
+#			.trig 10001000
+#		]
+#	]
+#	.cond {
+#	}
+#	.lenght 16
+#]
+#
+#[song 
+#	.pattern >< 'main' 'intro' 'refrain' 'outro'
+#]
+#

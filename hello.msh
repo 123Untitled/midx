@@ -1,18 +1,17 @@
 
-# -- Basic Example --
 
-[tr 'theme'
+# -- atomic elements --
 
-	.note = [
-		.seq @16/3 10 (A#3 B3) C4
-	] >< 'theme'
+^
+A
+#fij
 
-	.trigger [tr 'rtm1'
-		.seq 10001010
-		.reset true
-	]
+[note 'melody'
+	.seq @1/4 12 C4 D4 E4 F4 G4 A4 B4 C5
+	.repeat 2
 ]
 
-[track] 'hello'
-:track
-:note
+
+
+
+
