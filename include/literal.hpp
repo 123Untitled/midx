@@ -73,6 +73,14 @@ namespace ml {
 			/* move assignment operator */
 			consteval auto operator=(self&&) noexcept -> self& = default;
 
+
+			// -- public accessors --------------------------------------------
+
+			/* size */
+			consteval auto length(void) const noexcept -> unsigned {
+				return size;
+			}
+
 	}; // class literal
 
 

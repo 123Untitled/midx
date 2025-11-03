@@ -1,14 +1,3 @@
-#ifndef ml_language_char_map_hpp
-#define ml_language_char_map_hpp
-
-#include "types.hpp"
-#include "macros.hpp"
-
-
-// -- C C  N A M E S P A C E --------------------------------------------------
-
-namespace cc {
-
 
 	// -- forward declarations ------------------------------------------------
 
@@ -485,7 +474,7 @@ namespace cc {
 		private:
 			struct array final {
 				private:
-					ml::u8 data[256U];
+					ml::u8 data[cc::char_map::size];
 
 				public:
 					constexpr array(void) noexcept
@@ -493,7 +482,7 @@ namespace cc {
 						((data[Is] = 1u), ...);
 					}
 					constexpr auto operator[](const ml::u8 i) const noexcept -> bool {
-						return static_cast<bool>(data[i]);
+						return static_cast<bool>(data[cc::char_map::table[i]]);
 					}
 			};
 		public:
@@ -509,6 +498,3 @@ namespace cc {
 		return cc::table<C>::is[c];
 	}
 
-} // namespace cc
-
-#endif //ml_language_char_map_hpp

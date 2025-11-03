@@ -1,8 +1,9 @@
-#ifndef midilang_types_hpp
-#define midilang_types_hpp
+#ifndef types_hpp
+#define types_hpp
 
 #include <stdint.h>
 #include <sys/types.h>
+
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
@@ -25,4 +26,4 @@ namespace ml {
 
 } // namespace ml
 
-#endif //midilang_types_hpp
+#endif // types_hpp

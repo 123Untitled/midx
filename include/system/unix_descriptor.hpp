@@ -1,5 +1,5 @@
-#ifndef ml_system_unix_descriptor_hpp
-#define ml_system_unix_descriptor_hpp
+#ifndef system_unix_descriptor_hpp
+#define system_unix_descriptor_hpp
 
 #include "diagnostics/system_error.hpp"
 
@@ -17,7 +17,7 @@ namespace ml {
 	class unix_descriptor {
 
 
-		private:
+		protected:
 
 			// -- private types -----------------------------------------------
 
@@ -195,4 +195,4 @@ namespace ml {
 
 } // namespace ml
 
-#endif // ml_system_unix_descriptor_hpp
+#endif // system_unix_descriptor_hpp

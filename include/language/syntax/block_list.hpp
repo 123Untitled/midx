@@ -1,10 +1,10 @@
 #ifndef language_syntax_block_list_hpp
 #define language_syntax_block_list_hpp
 
+#include "literal.hpp"
 #include "language/syntax/block.hpp"
+#include "language/lexer/lexeme.hpp"
 #include "macros.hpp"
-
-#include <iostream>
 
 
 // -- S X  N A M E S P A C E --------------------------------------------------
@@ -12,19 +12,27 @@
 namespace sx {
 
 
-	constexpr auto equal(const char* a, const char* b) noexcept -> bool {
-		while (*a && *b) {
-			if (*a != *b)
+	constexpr auto equal(const lx::lexeme& l, const char* a) noexcept -> bool {
+		ml::usz len = 0U;
+		while (a[len] != '\0')
+			++len;
+
+		if (len != l.size)
+			return false;
+		const char* p =  reinterpret_cast<const char*>(l.data);
+
+		for (ml::usz i = 0U; i < len; ++i) {
+			if (p[i] != a[i])
 				return false;
-			++a; ++b;
 		}
-		return *a == *b;
+		return true;
 	}
 
 	// -- forward declarations ------------------------------------------------
 
 
-	template <size_type, size_type,
+	template <typename T,
+			  size_type, size_type,
 			  size_type, size_type>
 	class block_list;
 
@@ -39,9 +47,9 @@ namespace sx {
 		};
 
 		/* is block_list true case */
-		template <size_type NB, size_type NBA,
+		template <typename T, size_type NB, size_type NBA,
 				size_type NP, size_type NPA>
-		struct is_block_list<block_list<NB, NBA, NP, NPA>> final {
+		struct is_block_list<sx::block_list<T, NB, NBA, NP, NPA>> final {
 			static constexpr bool value = true;
 			non_instantiable_class(is_block_list);
 		};
@@ -67,7 +75,8 @@ namespace sx {
 
 	// -- B L O C K  L I S T --------------------------------------------------
 
-	template <size_type NBLOCKS,
+	template <typename T,
+			  size_type NBLOCKS,
 			  size_type NBLOCK_ALIASES,
 			  size_type NPARAMS,
 			  size_type NPARAM_ALIASES>
@@ -101,12 +110,15 @@ namespace sx {
 			static constexpr size_type PARAM_NOT_FOUND = NPARAMS;
 
 
+			using action_type = T;
+
 		private:
 
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = sx::block_list<NBLOCKS,
+			using self = sx::block_list<T,
+										NBLOCKS,
 										NBLOCK_ALIASES,
 										NPARAMS,
 										NPARAM_ALIASES>;
@@ -119,8 +131,8 @@ namespace sx {
 			const char* param_aliases[NPARAM_ALIASES];
 
 			/* actions */
-			pr::action  block_actions[NBLOCKS];
-			pr::action  param_actions[NPARAMS];
+			T  block_actions[NBLOCKS];
+			T  param_actions[NPARAMS];
 
 			/* offsets */
 			size_type   block_offsets[NBLOCKS + 1U];
@@ -132,14 +144,14 @@ namespace sx {
 
 			/* flatten */
 			template <size_type NBA, size_type NP, size_type NPA>
-			constexpr auto flatten(const sx::block<NBA, NP, NPA>& b,
+			constexpr auto flatten(const sx::block<T, NBA, NP, NPA>& b,
 								   size_type& b_alias_index,
 								   size_type& b_level_index,
 								   size_type& p_alias_index,
 								   size_type& p_param_index) noexcept -> void {
 
-				const sx::entry<NBA>&        spec = b.specifier;
-				const sx::param_list<NP, NPA>& ps = b.params;
+				const sx::entry<T, NBA>&        spec = b.specifier;
+				const sx::param_list<T, NP, NPA>& ps = b.params;
 
 				// -- block level ---------------------------------------------
 
@@ -185,7 +197,7 @@ namespace sx {
 
 			/* blocks constructor */
 			template <size_type... NBA, size_type... NP, size_type... NPA>
-			constexpr block_list(const sx::block<NBA, NP, NPA>&... blocks) noexcept
+			constexpr block_list(const sx::block<T, NBA, NP, NPA>&... blocks) noexcept
 			: block_aliases{}, param_aliases{},
 			  block_actions{}, param_actions{},
 			  block_offsets{}, param_offsets{},
@@ -230,7 +242,24 @@ namespace sx {
 
 
 			/* find block */
-			constexpr auto find_block(const char* name) const noexcept -> sx::block_view<self> {
+			constexpr auto find_block(const lx::lexeme& spec) const noexcept -> sx::block_view<self> {
+
+				for (size_type bi = 0U; bi < NBLOCKS; ++bi) {
+
+					const size_type bs = block_offsets[bi];
+					const size_type be = block_offsets[bi + 1U];
+
+					for (size_type i = bs; i < be; ++i) {
+						if (sx::equal(spec, block_aliases[i]))
+							return sx::block_view<self>{*this, bi};
+					}
+				}
+				return sx::block_view<self>{*this, BLOCK_NOT_FOUND};
+			}
+
+			/* find block */
+			template <ml::literal L>
+			constexpr auto find_block(void) const noexcept -> sx::block_view<self> {
 
 				for (size_type bi = 0U; bi < NBLOCKS; ++bi) {
 
@@ -239,7 +268,9 @@ namespace sx {
 
 					for (size_type i = bs; i < be; ++i) {
 
-						if (sx::equal(block_aliases[i], name))
+						constexpr std::string_view v{L.data};
+
+						if (v == block_aliases[i])
 							return sx::block_view<self>{*this, bi};
 					}
 				}
@@ -252,8 +283,9 @@ namespace sx {
 
 	// -- deduction guides ----------------------------------------------------
 
-	template <size_type... NBA, size_type... NP, size_type... NPA>
-	block_list(const sx::block<NBA, NP, NPA>&...) -> block_list<sizeof...(NBA),
+	template <typename T, size_type... NBA, size_type... NP, size_type... NPA>
+	block_list(const sx::block<T, NBA, NP, NPA>&...) -> block_list<T,
+																sizeof...(NBA),
 																(NBA + ... ),
 																(NP  + ... ),
 																(NPA + ... )>;

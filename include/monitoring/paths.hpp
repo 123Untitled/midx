@@ -179,7 +179,7 @@ namespace ml {
 
 
 				const char* ext = ::strrchr(_path, '.');
-				if (ext == nullptr || ::strcmp(ext, ".ml") != 0) {
+				if (ext == nullptr || ::strcmp(ext, ".midx") != 0) {
 					::free(_path);
 					throw ml::runtime_error{"path must have .ml extension"};
 				}

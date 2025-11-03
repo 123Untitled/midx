@@ -13,9 +13,6 @@ namespace ml {
 
 	// -- forward declarations ------------------------------------------------
 
-	/* application */
-	class application;
-
 	/* monitor */
 	class monitor;
 
@@ -37,13 +34,18 @@ namespace ml {
 
 			// -- public lifecycle --------------------------------------------
 
-			project_watcher(const char*, ml::monitor&);
+			project_watcher(const char*, const ml::monitor&);
 
 
 			// -- public methods ----------------------------------------------
 
-			/* process events */
-			auto process_events(ml::application&) -> void;
+			/* has_changes */
+			auto has_changes(ml::monitor&) -> bool;
+
+			/* target path */
+			auto target_fd(void) const noexcept -> const ml::unix_descriptor& {
+				return _target;
+			}
 
 	}; // class file_watcher
 

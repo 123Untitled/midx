@@ -1,148 +1,67 @@
 #include "language/lexer.hpp"
-#include "language/lexer/table.hpp"
-#include "language/lexer/context.hpp"
-#include "language/lexer/states.hpp"
-
-#include <iostream>
-
-#include "debug_chars.hpp"
+#include "language/tokens/token_list.hpp"
+#include "language/lexer/char_class.hpp"
 
 
-// -- S T A T E  D R I V E R --------------------------------------------------
+// -- L E X E R ---------------------------------------------------------------
 
 // -- public lifecycle --------------------------------------------------------
 
 /* default constructor */
 lx::lexer::lexer(void) noexcept
-: _it{nullptr}, _end{nullptr},
-  _line{1U}, _column{0U},
-  _state{&lx::on_default::table},
-  _tokens{},
+: _head{nullptr}, _limit{nullptr}, _mark{nullptr},
+  _line{0U},      _base{0U},       _cursor{0U},
+  _tokens{nullptr},
   _errors{} {
 }
 
 
-
 // -- public methods ----------------------------------------------------------
 
-auto lx::lexer::lex(lx::context& ctx) -> void {
-	std::cout << "\x1b[32m--- parsing started ---\x1b[0m\n";
+/* lex */
+auto lx::lexer::lex(const ml::byte_range& br, tk::token_list& tokens) -> void {
 
-	_it  = ctx.it();
-	_end = ctx.end();
+	_head   = br.begin;
+	_limit  = br.end;
+	_line   = 0U;
+	_base   = 0U;
+	_tokens = &tokens;
 
-	for (; _it < _end; ++_it) {
-		++_column; // maybe use arithmetic to increment column only on certain chars
-		_state->execute(*this, *_it);
-	}
-	_state->end_of_file(*this);
+	self::_lex();
 
-
-	for (const auto& t : _tokens) {
-		std::cout << "token: " << (unsigned)t.type << " [" << t.line << "] -> ";
-		for (const ml::u8* p = t.begin; p < t.end; ++p) {
-			//std::cout << *p;
-			std::cout << ml::dbc{*p};
-		}
-		std::cout << "\n";
-	}
-
-	for (const auto& e : _errors) {
-		std::cout << e << '\n';
-	}
 
 }
 
 
-/* call actions */
-template <lx::action... As>
-auto lx::lexer::call(void) -> void {
-	((this->*As)(), ...);
-}
-
-
-/* switch state */
-template <typename S>
-auto lx::lexer::switch_state(void) noexcept -> void {
-	//static_assert(lx::is_state<S>, "S must be a state");
-	// assume stack is never empty
-	_state = &S::table;
-	std::cout << "switch to state: " << S::name << "\n";
-}
-
-/* push state */
-//template <typename S>
-//auto lx::lexer::push_state(void) -> void {
-//	_stack.push_back(&S::table);
-//	std::cout << "push state: " << S::name << "\n";
-//}
-
-/* pop state */
-//auto lx::lexer::pop_state(void) -> void {
-//	// assume stack is never empty
-//	_stack.pop_back();
-//	std::cout << "pop state " << "\n";
-//}
-
-
-/* checkpoint */
-auto lx::lexer::checkpoint(void) noexcept -> void {
-	_checkpoint = _it;
-	//std::cout << "checkpoint at: " << ml::dbc{*_it} << "\n";
-}
-
-/* newline */
-auto lx::lexer::newline(void) noexcept -> void {
-	_line += 1U;
-	_column = 0U;
-	//std::cout << "newline\n";
-}
-
+// -- private methods ---------------------------------------------------------
 
 /* push token */
-template <tk::is_token_class T, ml::uint SHIFT>
+//template <bool parse, tk::is_token_class T>
+template <bool parse, tk::id id>
 auto lx::lexer::push_token(void) -> void {
 
-	//std::cout << "push token: " << static_cast<unsigned>(T::id) << '\n';
+	const ml::usz _size = (_head - _mark);
+	_cursor = _base + _size;
 
-	_tokens.emplace_back(
-		tk::token{
-			T::id,
-			_line,
-			_checkpoint,
-			_it + SHIFT
-		}
-	);
+	tk::token to{id, lx::lexeme{_mark, _size},
+				 _line, _base, _cursor
+	};
+
+	if constexpr (parse)
+		_tokens->push_parse_token(to);
+	else
+		_tokens->push_token(to);
+	_base = _cursor;
 }
 
-template <tk::is_token_class T>
-auto lx::lexer::push_token2(void) -> void {
-	_tokens.emplace_back(
-		tk::token{T::id, _line, _checkpoint, _it}
-	);
-}
-
-template <tk::is_token_class T, typename... Tp>
-auto lx::lexer::push_token(const Tp&... args) -> void {
-	_tokens.emplace_back(
-		tk::token{
-			T::id,
-			args...
-		}
-	);
-}
-
-template <tk::is_token_class T>
-auto lx::lexer::push_token_byte(void) -> void {
-	_tokens.emplace_back(
-		T::id, _line, _it, _it + 1U
-	);
-}
-
-template <tk::is_token_class T>
+/* push byte token */
+//template <tk::is_token_class T>
+template <tk::id id>
 auto lx::lexer::push_byte_token(void) -> void {
-	_tokens.emplace_back(
-		T::id, _line, _it, _it + 1U
+	_tokens->push_parse_token(
+		tk::token{id, lx::lexeme{_head, 1U},
+				  _line, _base, _base + 1U
+		}
 	);
 }
 
@@ -154,241 +73,151 @@ auto lx::lexer::push_error(void) -> void {
 	err.append("\x1b[31merror\x1b[0m:");
 	err.append(std::to_string(_line));
 	err.append(":");
-	err.append(std::to_string(_column));
+	err.append(std::to_string(_base));
 	err.append(": ");
 	err.append(E.data);
 
 	_errors.emplace_back(std::move(err));
 }
 
+/* lex */
+auto lx::lexer::_lex(void) -> void {
 
 
+	while (_head < _limit) {
+
+		start:
+		ml::u8 quote{'\''};
+		const ml::u8 c = *_head;
 
 
+		// -- text ------------------------------------------------------------
 
+		if (cc::is_lower(*_head)) {
+			identifier:
 
-
-/* count */
-auto lx::lexer::count(void) noexcept -> void {
-}
-
-/* reset count */
-auto lx::lexer::reset_count(void) noexcept -> void {
-}
-
-/* end of file */
-//auto lx::lexer::end_of_file(void) -> void {
-//	std::cout << "\x1b[32m--- end of file ---\x1b[0m\n";
-//	_stack.back()->end_of_file(*this);
-//	_stack.clear();
-//}
-
-
-
-
-
-
-
-
-
-auto lx::lexer::_atoi(void) noexcept -> ml::i8 {
-
-	bool neg = false;
-
-	if (_it < _end) {
-		if (*_it == '-') {
-			++_it; neg = true;
-		}
-		else if (*_it == '+')
-			++_it;
-	}
-
-	ml::i8 num = 0U;
-	constexpr ml::i8 max       = +127;
-	constexpr ml::i8 min       = -128;
-	constexpr ml::i8 mul_limit = min / 10;
-
-
-	// accumulate as negative to handle -128
-
-	while (_it < _end && (*_it >= '0' && *_it <= '9')) {
-
-		// check -10 multiplication overflow
-		if (num < mul_limit) {
-			this->push_error<"note octave overflow">();
-			num = neg ? min : max;
-			break;
-		}
-		num *= 10;
-		const ml::i8 digit = *_it - '0';
-
-		// check subtraction overflow
-		if (num < (min + digit)) {
-			this->push_error<"note octave overflow">();
-			num = neg ? min : max;
-			break;
-		}
-
-		num -= digit;
-		++_it;
-	}
-
-	// finalize octave value
-	if (neg == false) {
-		if (num == min) {
-			this->push_error<"note octave overflow">();
-			num = max;
-		}
-		else {
-			num = -num;
-		}
-	}
-	return 0;
-}
-
-auto lx::lexer::lex2(lx::context& ctx) -> void {
-	_it  = ctx.it();
-	_end = ctx.end();
-
-	_line   = 1U;
-	_column = 0U;
-
-
-	while (_it < _end) {
-
-		const ml::u8 c = *_it;
-		++_column;
-
-
-		// -- identifier ------------------------------------------------------
-
-		if (cc::match<cc::lower>(c)) {
-		//if (c >= 'a' && c <= 'z') {
-
-			_checkpoint = _it;
+			_mark = _head;
 
 			do {
-				++_it;
-			} while (_it < _end && (*_it >= 'a' && *_it <= 'z'));
+				++_head;
+			} while (_head < _limit && cc::is_lower(*_head));
 
-			self::push_token2<tk::identifier>();
-			_column += static_cast<ml::uint>(_it - _checkpoint - 1U);
+			self::push_token<true, tk::text>();
 			continue;
 		}
-
 
 
 		// -- notes -----------------------------------------------------------
 
-		if (c >= 'A' && c <= 'G') {
+		if (cc::is_note(*_head)) {
 
-			std::cout << "note detected: " << ml::dbc{c} << "\n";
-			struct alteration final {
-				const bool sharp;
-				const bool flat;
-			};
-
-			constexpr ml::u8 notes[] {
-				9U, 11U, 0U, 2U, 4U, 5U, 7U
-			};
-
-			constexpr alteration alts[] {
-				{true,  true}, {false, true}, {true, false},
-				{true,  true}, {false, true}, {true, false},
+			constexpr ml::u8 SHARP = 0U;
+			constexpr ml::u8 FLAT  = 1U;
+			constexpr bool alts[][2U] {
+				{true,  true}, {false, true},
+				{true, false}, {true,  true},
+				{false, true}, {true, false},
 				{true,  true}
 			};
 
-			const ml::u8* begin = _it;
-			auto value = notes[(c - 'A')];
-			++_it;
+			_mark = _head;
+			++_head;
 
-
-			// -- alteration --------------------------------------------------
-
-			if (_it < _end) {
-
-				if (*_it == '#' && alts[(c - 'A')].sharp == true) {
-					++_it;
-					value = (value + 1U) % 12U;
+			if (_head < _limit) {
+				if (*_head == '#') {
+					if (alts[c - 'A'][SHARP] == false) {
+						_cursor = _base + 1U;
+						// it's a comment, not an alteration
+						self::push_token<true, tk::note>();
+						goto comment;
+					}
+					++_head;
 				}
-				else if (*_it == 'b' && alts[(c - 'A')].flat == true) {
-					++_it;
-					value = (value + 11U) % 12U;
+				else if (*_head == 'b') {
+					if (alts[c - 'A'][FLAT] == false) {
+						_cursor = _base + 1U;
+						// it's an identifier, not an alteration
+						self::push_token<true, tk::note>();
+						goto identifier;
+					}
+
+					++_head;
 				}
 			}
 
-			// -- negative octave ---------------------------------------------
+			while (_head < _limit && cc::is_digit(*_head))
+				++_head;
 
-
-
-
-			//constexpr ml::u8 note_limit = max / 12U;
-			//
-			//if (num > note_limit) {
-			//	this->push_error<"note value overflow">();
-			//}
-
-			//num *= 12U;
-
-			//if (num > (max - value)) {
-			//	this->push_error<"note value overflow">();
-			//}
-
-			//value += num;
-
+			self::push_token<true, tk::note>();
 			continue;
 		}
 
 
-		if (c >= '0' && c <= '9') {
-			std::cout << "digit detected: " << ml::dbc{c} << "\n";
-			ml::uint base  = 10U;
-			ml::uint value = static_cast<ml::uint>(c - '0');
-			++_it;
 
-			if (c == '0' && _it < _end) {
-				switch (*_it) {
+		if (cc::is_digit(c)) {
+
+			_mark = _head;
+			++_head;
+
+			if (c == '0' && (_head < _limit)) {
+
+				switch (*_head) {
 					case 'b':
-						base = 2U;
-						++_it;
-						break;
+						do {
+							++_head;
+						} while (_head < _limit && cc::is_binary(*_head));
+
+						self::push_token<true, tk::binary>();
+						continue;
 
 					case 'x':
-						base = 16U;
-						++_it;
-						break;
+						do {
+							++_head;
+						} while (_head < _limit && cc::is_hex(*_head));
+
+						self::push_token<true, tk::hexadecimal>();
+						continue;
 
 					case 'o':
-						base = 8U;
-						++_it;
-						break;
+						do {
+							++_head;
+						} while (_head < _limit && cc::is_octal(*_head));
+
+						self::push_token<true, tk::octal>();
+						continue;
+
 					default:
+						// it's just a zero
 				}
 			}
 
+			while (_head < _limit && cc::is_digit(*_head))
+				++_head;
 
+			self::push_token<true, tk::decimal>();
 			continue;
 		}
 
-		ml::u8 quote{'\''};
+
 
 		switch (c) {
 
 			case ' ':
 			case '\t':
-				++_it;
+				++_head;
+				++_base;
 				continue;
 
 			case '\n':
+				++_head;
 				++_line;
-				++_it;
-				_column = 0U;
+				_base = 0U;
 				continue;
 
 			case '\r':
-				_it += (++_it < _end && *_it == '\n') ? 1U : 0U;
+				_head += (++_head < _limit && *_head == '\n') ? 1U : 0U;
 				++_line;
-				_column = 0U;
+				_base = 0U;
 				continue;
 
 
@@ -398,42 +227,38 @@ auto lx::lexer::lex2(lx::context& ctx) -> void {
 				quote = '"';
 
 			case '\'': {
-				const ml::u8* begin = _it;
-				++_it;
+				_mark = _head;
+				++_head;
 
-				while (_it < _end
-					&& *_it != quote
-					&& *_it != '\n'
-					&& *_it != '\r')
-					++_it;
+				while (_head < _limit
+				   && *_head != quote
+				   && *_head != '\n'
+				   && *_head != '\r')
+					++_head;
 
-				if (_it < _end && *_it == quote) {
-					++_it;
-				}
-				else {
+				if (_head < _limit && *_head == quote)
+					++_head;
+				else
 					self::push_error<"unterminated string">();
-				}
-				self::push_token<tk::string>(_line, begin, _it);
-				_column += static_cast<ml::uint>(_it - begin);
+
+				self::push_token<true, tk::string>();
 				continue;
 			}
 
 			// -- comments ----------------------------------------------------
 
 			case '#': {
+				comment:
 
-				const ml::u8* begin = _it;
+				_mark = _head;
 
 				do {
-					++_it;
-				} while (_it < _end
-					 && *_it != '\n'
-					 && *_it != '\r');
+					++_head;
+				} while (_head < _limit
+					 && *_head != '\n'
+					 && *_head != '\r');
 
-				self::push_token<tk::comment>(_line, begin, _it);
-
-				// no need to update column here
-				// because newline will reset it
+				self::push_token<false, tk::comment>();
 				continue;
 			}
 
@@ -456,20 +281,18 @@ auto lx::lexer::lex2(lx::context& ctx) -> void {
 			default:
 				self::push_error<"unknown character">();
 		}
-		++_it;
-
+		++_head;
+		++_base;
 	}
 
-	for (const auto& t : _tokens) {
-		std::cout << "token: " << (unsigned)t.type << " [" << t.line << "] -> ";
-		for (const ml::u8* p = t.begin; p < t.end; ++p) {
-			//std::cout << *p;
-			std::cout << ml::dbc{*p};
+	// push end of tokens
+	_tokens->push_parse_token(
+		tk::token{
+			tk::end_of_tokens,
+			lx::lexeme{_head, 0U},
+			_line,
+			_base,
+			_base
 		}
-		std::cout << "\n";
-	}
-
-	for (const auto& e : _errors) {
-		std::cout << e << '\n';
-	}
+	);
 }

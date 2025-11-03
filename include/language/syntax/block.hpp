@@ -11,7 +11,8 @@ namespace sx {
 
 	// -- B L O C K -----------------------------------------------------------
 
-	template <size_type NBLOCK_ALIASES,
+	template <typename T,
+			  size_type NBLOCK_ALIASES,
 			  size_type NPARAMS,
 			  size_type NPARAM_ALIASES>
 	struct block final {
@@ -22,10 +23,10 @@ namespace sx {
 			// -- public members ----------------------------------------------
 
 			/* block specifier */
-			sx::entry<NBLOCK_ALIASES> specifier;
+			sx::entry<T, NBLOCK_ALIASES> specifier;
 
 			/* block params */
-			sx::param_list<NPARAMS, NPARAM_ALIASES> params;
+			sx::param_list<T, NPARAMS, NPARAM_ALIASES> params;
 
 
 			// -- public lifecycle --------------------------------------------
@@ -34,8 +35,8 @@ namespace sx {
 			block(void) = delete;
 
 			/* entry / param_list constructor */
-			constexpr block(const sx::entry<NBLOCK_ALIASES>& spec,
-							const sx::param_list<NPARAMS, NPARAM_ALIASES>& ps) noexcept
+			constexpr block(const sx::entry<T, NBLOCK_ALIASES>& spec,
+							const sx::param_list<T, NPARAMS, NPARAM_ALIASES>& ps) noexcept
 			: specifier{spec}, params{ps} {
 			}
 
@@ -44,9 +45,9 @@ namespace sx {
 
 	// -- deduction guides ----------------------------------------------------
 
-	template <size_type NBA, size_type NP, size_type NPA>
-	block(const sx::entry<NBA>&,
-		  const sx::param_list<NP, NPA>&) -> block<NBA, NP, NPA>;
+	template <typename T, size_type NBA, size_type NP, size_type NPA>
+	block(const sx::entry<T, NBA>&,
+		  const sx::param_list<T, NP, NPA>&) -> block<T, NBA, NP, NPA>;
 
 } // namespace sx
 

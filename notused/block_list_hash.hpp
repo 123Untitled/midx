@@ -99,6 +99,7 @@ namespace sx {
 				::uint32_t h = len;
 				::uint32_t p = 0U;
 
+
 				for (::size_t i = 0U; i < len; ++i) {
 					const auto c = static_cast<::uint8_t>(s[i]);
 					const auto ci = ((c - 'a')) % 26U;

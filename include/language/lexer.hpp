@@ -1,25 +1,22 @@
 #ifndef language_lexer_hpp
 #define language_lexer_hpp
 
+#include "byte_range.hpp"
 #include "literal.hpp"
 #include "language/tokens.hpp"
-//#include "language/char_map.hpp"
 #include <vector>
+
+
+// -- forward declarations ----------------------------------------------------
+
+namespace tk {
+	class token_list;
+} // namespace tk
 
 
 // -- L X  N A M E S P A C E --------------------------------------------------
 
 namespace lx {
-
-
-	// -- forward declarations ------------------------------------------------
-
-	class table;
-	class lexer;
-	class context;
-	using action = auto (lexer::*)(void) -> void;
-
-
 
 
 	// -- L E X E R -----------------------------------------------------------
@@ -39,26 +36,50 @@ namespace lx {
 
 			// -- private members ---------------------------------------------
 
+			/* current iterator */
+			const ml::u8* _head;
 
-			const ml::u8* _it;
+			/* limit iterator */
+			const ml::u8* _limit;
 
-			const ml::u8* _end;
+			/* mark iterator */
+			const ml::u8* _mark;
 
-			const ml::u8* _checkpoint;
-
+			/* line */
 			ml::uint _line;
 
-			ml::uint _column;
+			/* column base */
+			ml::uint _base;
 
-			/* state */
-			const lx::table* _state;
+			/* culumn cursor */
+			ml::uint _cursor;
 
-			std::vector<tk::token> _tokens;
+			/* tokens */
+			tk::token_list* _tokens;
 
+			/* errors */
 			std::vector<std::string> _errors;
 
 
-			auto _atoi(void) noexcept -> ml::i8;
+
+			// -- private methods ---------------------------------------------
+
+			/* lex */
+			auto _lex(void) -> void;
+
+			/* push token */
+			//template <bool, tk::is_token_class>
+			template <bool, tk::id>
+			auto push_token(void) -> void;
+
+			/* push byte token */
+			//template <tk::is_token_class>
+			template <tk::id>
+			auto push_byte_token(void) -> void;
+
+			/* push error */
+			template <ml::literal>
+			auto push_error(void) -> void;
 
 
 		public:
@@ -71,73 +92,11 @@ namespace lx {
 
 			// -- public methods ----------------------------------------------
 
-			auto lex(lx::context&) -> void;
-			auto lex2(lx::context&) -> void;
-
-
-			/* call actions */
-			template <lx::action...>
-			auto call(void) -> void;
-
-
-			/* switch state */
-			template <typename>
-			auto switch_state(void) noexcept -> void;
-
-			/* push state */
-			template <typename>
-			auto push_state(void) -> void;
-
-			/* pop state */
-			auto pop_state(void) -> void;
-
-
-			/* checkpoint */
-			auto checkpoint(void) noexcept -> void;
-
-			/* newline */
-			auto newline(void) noexcept -> void;
-
-			/* count */
-			auto count(void) noexcept -> void;
-
-			/* reset count */
-			auto reset_count(void) noexcept -> void;
-
-
-			/* push token */
-			template <tk::is_token_class, ml::uint = 0U>
-			auto push_token(void) -> void;
-
-			template <tk::is_token_class>
-			auto push_token2(void) -> void;
-
-			template <tk::is_token_class, typename... Tp>
-			auto push_token(const Tp&...) -> void;
-
-			template <tk::is_token_class>
-			auto push_token_byte(void) -> void;
-
-			template <tk::is_token_class>
-			auto push_byte_token(void) -> void;
-
-			/* push error */
-			template <ml::literal>
-			auto push_error(void) -> void;
-
-
-			auto end_of_file(void) -> void;
-
+			/* lex */
+			auto lex(const ml::byte_range&, tk::token_list&) -> void;
 
 	}; // class lexer
 
 } // namespace lx
 
 #endif // language_lexer_hpp
-
-
-
-			/* context */
-			//lx::context* _ctx;
-
-

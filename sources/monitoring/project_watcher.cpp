@@ -6,7 +6,7 @@
 
 // -- P R O J E C T  W A T C H E R --------------------------------------------
 
-ml::project_watcher::project_watcher(const char* path, ml::monitor& monitor)
+ml::project_watcher::project_watcher(const char* path, const ml::monitor& monitor)
 : _paths{path},
   _target{_paths.file(),   O_RDONLY},
   _parent{_paths.folder(), O_EVTONLY},
@@ -20,10 +20,10 @@ ml::project_watcher::project_watcher(const char* path, ml::monitor& monitor)
 
 // -- public methods ----------------------------------------------
 
-/* process events */
-auto ml::project_watcher::process_events(ml::application& app) -> void {
+/* has_changes */
+auto ml::project_watcher::has_changes(ml::monitor& monitor) -> bool {
 
-	auto& monitor = app.monitor();
+	bool changed = false;
 
 	if (_target.has_events()
 	 || _parent.has_events()) {
@@ -33,18 +33,17 @@ auto ml::project_watcher::process_events(ml::application& app) -> void {
 
 		_timer.reset();
 		monitor.subscribe(_timer);
-		return;
+		return false;
 	}
 
 	if (_timer.pop_state() == false)
-		return;
+		return false;
 
 	// check for lost tracking
 	if (_target.has_acc(NOTE_REVOKE)
 	 || _parent.has_acc(NOTE_REVOKE | NOTE_DELETE | NOTE_RENAME))
 		throw ml::runtime_error{"losing file monitoring"};
 
-	auto& project = app.project();
 
 	if (_target.has_acc(NOTE_DELETE | NOTE_RENAME)) {
 
@@ -54,8 +53,7 @@ auto ml::project_watcher::process_events(ml::application& app) -> void {
 		}
 	}
 	else if (_target.has_acc(NOTE_WRITE | NOTE_EXTEND)) {
-		ml::mapped_file mf{_target};
-		project.update(mf);
+		changed = true;
 	}
 
 	if (_parent.has_acc(NOTE_WRITE | NOTE_EXTEND)) {
@@ -67,12 +65,13 @@ auto ml::project_watcher::process_events(ml::application& app) -> void {
 
 			if (_target.is_open()) {
 				monitor.subscribe(_target);
-				ml::mapped_file mf{_target};
-				project.update(mf);
+				changed = true;
 			}
 		}
 	}
 
 	_target.reset();
 	_parent.reset();
+
+	return changed;
 }

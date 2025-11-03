@@ -2,16 +2,13 @@
 
 # -- atomic elements --
 
-^
-A
-#fij
+
+
+
+
+
 
 [note 'melody'
-	.seq @1/4 12 C4 D4 E4 F4 G4 A4 B4 C5
-	.repeat 2
+	.seq @1/4 C4 A3 B3 G3
+	.tri @1/4 D4 F4 E4 C4
 ]
-
-
-
-
-

@@ -1,82 +1,14 @@
 #include <iostream>
 #include "application.hpp"
 
-//#include "language/char_map.hpp"
-
-#include "language/syntax/block_list.hpp"
-#include "macros.hpp"
-#include "language/syntax/syntax_layout.hpp"
-#include "language/syntax/block_iterator.hpp"
-
-#include "language/tokens.hpp"
-#include "debug_chars.hpp"
-
-namespace sx {
-}
-
-
-auto is_lower(int c) -> bool {
-	return (c >= 'a') && (c <= 'z');
-}
 
 auto main(int ac, char** av) -> int {
 
 
-	//auto& bl = sx::layout;
-
-	//auto bv = bl.find_block("play");
-
-	//if (bv.block_not_found()) {
-	//	std::cout << "Block 'note' not found\n";
-	//	return 1;
-	//}
-
-	//auto pv = bv.find_param("title");
-	//
-	//if (pv.param_not_found()) {
-	//	std::cout << "Param 'title' not found\n";
-	//	return 1;
-	//}
-
-
-	//for (const auto& block : bl) {
-	//
-	//
-	//	std::cout << "block:";
-	//	for (const auto& alias : block.aliases())
-	//		std::cout << " '" << alias << "'";
-	//	std::cout << "\n";
-	//
-	//	for (const auto& param : block.params()) {
-	//		std::cout << "   param:";
-	//		for (const auto& palias : param.aliases())
-	//			std::cout << " '" << palias << "'";
-	//		std::cout << "\n";
-	//	}
-	//}
-	//return 0;
-
-
-
-
-
-
-
 	try {
-		std::cout << "\x1b[31m--- program started ---\x1b[0m\n";
+		// clear screen
+		std::cout << "\x1b[2J\x1b[H\x1b[31m--- program started ---\x1b[0m\n";
 
-		ml::unix_descriptor fd{ml::open("./hello.msh", O_RDONLY)};
-		ml::mapped_file mf{fd};
-		ml::project p;
-		p.update(mf);
-
-		return 0;
-
-
-		if (ac != 2) {
-			std::cerr << "Usage: " << av[0] << " <file-path>\n";
-			return 1;
-		}
 		ml::application::run(av[1U]);
 	}
 	catch (const std::exception& e) {

@@ -47,11 +47,14 @@ namespace ml {
 				self::reset();
 				::write(STDOUT_FILENO, mf.begin(), mf.size());
 
-				_analyzer.analyze(mf, *this);
+				_analyzer.analyze(mf);
 				//_parser.reset();
 
 			}
 
+			auto highlights(void) const noexcept -> void {
+				_analyzer.highlights();
+			}
 
 			// -- public modifiers --------------------------------------------
 

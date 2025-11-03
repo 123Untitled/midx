@@ -46,7 +46,7 @@ namespace sx {
 			// -- public accessors --------------------------------------------
 
 			/* action */
-			constexpr auto action(void) const noexcept -> pr::action {
+			constexpr auto action(void) const noexcept -> T::action_type {
 				return _bl->param_actions[_pi];
 			}
 

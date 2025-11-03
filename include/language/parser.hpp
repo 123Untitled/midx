@@ -1,8 +1,18 @@
 #ifndef language_parser_hpp
 #define language_parser_hpp
 
+#include "byte_range.hpp"
+#include "types.hpp"
 #include "literal.hpp"
 #include <vector>
+
+#include "language/syntax/syntax_layout.hpp"
+
+
+namespace tk {
+	class  token_list;
+	struct token;
+}
 
 
 // -- P R  N A M E S P A C E --------------------------------------------------
@@ -12,10 +22,6 @@ namespace pr {
 
 	// -- forward declarations ------------------------------------------------
 
-	class parser;
-	class table;
-	class context;
-	using action = auto (pr::parser::*)(void) -> void;
 
 
 	// -- P A R S E R ---------------------------------------------------------
@@ -30,16 +36,27 @@ namespace pr {
 			/* self type */
 			using self = pr::parser;
 
+			/* action type */
+			using action_type = auto (pr::parser::*)(void) -> void;
 
 		private:
 
 			// -- private members ---------------------------------------------
 
-			/* context */
-			pr::context* _ctx;
+			/* buffer */
+			const ml::u8* _buffer;
 
-			/* stack */
-			std::vector<const pr::table*> _stack;
+			/* tokens */
+			tk::token_list* _tokens;
+
+			/* current token */
+			tk::token* _current;
+
+			/* state stack */
+			std::vector<action_type> _stack;
+
+			/* syntax stack */
+			std::vector<sx::block_view_type> _context;
 
 
 		public:
@@ -52,63 +69,112 @@ namespace pr {
 
 			// -- public methods ----------------------------------------------
 
-			auto parse(pr::context&) -> void;
-
-			auto end_of_file(void) -> void;
-
-
-			/* call actions */
-			template <pr::action... As>
-			auto call(void) -> void {
-				((this->*As)(), ...);
-			}
+			/* parse */
+			auto parse(const ml::byte_range&, tk::token_list&) -> void;
 
 			/* switch state */
-			template <typename>
+			template <action_type>
 			auto switch_state(void) noexcept -> void;
 
 			/* push state */
-			template <typename>
+			template <action_type>
 			auto push_state(void) -> void;
 
 			/* pop state */
 			auto pop_state(void) -> void;
 
-			/* newline */
-			auto newline(void) noexcept -> void;
-
 			/* push error */
 			template <ml::literal>
 			auto push_error(void) -> void;
 
-			/* count */
-			auto count(void) noexcept -> void;
 
-			/* reset count */
-			auto reset_count(void) noexcept -> void;
+			/* mark invalid */
+			auto mark_invalid(void) noexcept -> void;
 
 
+			// -- main states -------------------------------------------------
 
-			// -- specifier actions -------------------------------------------
+			auto expect_block(void) -> void;
+			auto expect_specifier(void) -> void;
+			auto expect_identifier(void) -> void;
+			auto expect_dot(void) -> void;
+			auto expect_parameter(void) -> void;
 
-			/* search specifier */
-			auto search_specifier(void) -> void;
-
-			/* on track */
-			auto on_track(void) -> void;
-
-
-
-			// -- identifier actions ------------------------------------------
-
-			/* handle identifier */
-			auto handle_identifier(void) -> void;
+			auto panic_block(void) -> void;
+			auto panic_parameter(void) -> void;
 
 
-			// -- parameter actions -------------------------------------------
+			// -- context states ----------------------------------------------
 
-			/* search parameter */
-			auto search_parameter(void) -> void;
+			template <ml::literal L>
+			auto on_nestable_param(void) -> void;
+
+			// block trig
+			auto on_block_trig(void) -> void;
+			auto on_trig_sequence(void) -> void;
+			auto on_trig_repeat(void) -> void;
+			auto on_trig_linked(void) -> void;
+
+			// block note
+			auto on_block_note(void) -> void;
+			auto on_note_sequence(void) -> void;
+			auto on_note_repeat(void) -> void;
+			auto on_note_linked(void) -> void;
+
+			// block gate
+			auto on_block_gate(void) -> void;
+			auto on_gate_sequence(void) -> void;
+			auto on_gate_repeat(void) -> void;
+			auto on_gate_linked(void) -> void;
+
+			// block track
+			auto on_block_track(void) -> void;
+			auto on_track_trig(void) -> void;
+			auto on_track_note(void) -> void;
+			auto on_track_gate(void) -> void;
+
+
+			auto on_block_pattern(void) -> void;
+			auto on_block_song(void) -> void;
+
+
+			static constexpr action_type _actions[sx::max_action] {
+
+				// block trigger
+				&self::on_block_trig,
+				&self::on_trig_sequence,
+				&self::on_trig_repeat,
+				&self::on_trig_linked,
+
+				// block note
+				&self::on_block_note,
+				&self::on_note_sequence,
+				&self::on_note_repeat,
+				&self::on_note_linked,
+
+				// block gate
+				&self::on_block_gate,
+				&self::on_gate_sequence,
+				&self::on_gate_repeat,
+				&self::on_gate_linked,
+
+				// block track
+				&self::on_block_track,
+				&self::on_nestable_param<"trig">,
+				&self::on_nestable_param<"note">,
+				&self::on_nestable_param<"gate">,
+				//&self::on_track_trig,
+				//&self::on_track_note,
+				//&self::on_track_gate,
+
+				// block pattern
+				&self::on_block_pattern,
+
+				// block song
+				&self::on_block_song
+
+			};
+
 
 	}; // class parser
 

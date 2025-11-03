@@ -63,7 +63,7 @@ namespace sx {
 			// -- public accessors --------------------------------------------
 
 			/* action */
-			constexpr auto action(void) const noexcept -> pr::action {
+			constexpr auto action(void) const noexcept -> T::action_type {
 				return _bl->block_actions[_bi];
 			}
 
@@ -109,7 +109,7 @@ namespace sx {
 			// -- public methods ----------------------------------------------
 
 			/* find param */
-			constexpr auto find_param(const char* name) const noexcept -> sx::param_view<T> {
+			constexpr auto find_param(const lx::lexeme& param) const noexcept -> sx::param_view<T> {
 
 				const size_type ps = _bl->level_offsets[_bi];
 				const size_type pe = _bl->level_offsets[_bi + 1U];
@@ -121,7 +121,7 @@ namespace sx {
 
 					for (size_type i = pas; i < pae; ++i) {
 
-						if (sx::equal(_bl->param_aliases[i], name))
+						if (sx::equal(param, _bl->param_aliases[i]))
 							return sx::param_view<T>{*_bl, pi};
 					}
 				}

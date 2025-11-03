@@ -1,4 +1,5 @@
 #include "application.hpp"
+#include "system/mapped_file.hpp"
 
 
 // -- A P P L I C A T I O N ---------------------------------------------------
@@ -8,14 +9,24 @@
 /* path constructor */
 ml::application::application(const char* path)
 : _running{true},
-  _project{},
+  //_project{},
   _player{},
   _monitor{},
-  _watcher{path, _monitor} {
+  _signal{_monitor},
+  //_watcher{path, _monitor},
+  _server{_monitor},
+  _protocol{},
+  _analyzer{} {
 }
 
 
 // -- private methods ---------------------------------------------------------
+
+auto ml::application::reparse(void) -> void {
+	std::cout << "\x1b[2J\x1b[H";
+	_analyzer.analyze(_protocol.data());
+	_server.broadcast(_analyzer.highlights());
+}
 
 /* run */
 auto ml::application::_run(void) -> void {
@@ -24,7 +35,13 @@ auto ml::application::_run(void) -> void {
 
 	while (_running == true) {
 		_monitor.wait(*this);
-		_watcher.process_events(*this);
+
+		if (_protocol.require_update()) {
+			reparse();
+		}
+		//if (_watcher.has_changes(_monitor)) {
+		//	reparse();
+		//}
 	}
 
 	//_player.stop();

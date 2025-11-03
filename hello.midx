@@ -1,0 +1,20 @@
+# this is a comment
+
+[ note
+	.repeat
+	.seq
+]
+
+
+[ track 'Example Track'
+
+#.n 8398 fjfoij []
+	#.note 0x32
+
+	.trig [ ]
+]
+
+
+
+[ pattern
+]

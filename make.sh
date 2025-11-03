@@ -423,6 +423,30 @@ function _clean() {
 	fi
 }
 
+# test
+function _test() {
+
+	local -r session="tmux-$executable"
+
+	# create new tmux session
+	tmux new-session -d -s $session
+
+	# split window
+	tmux split-window -h -t $session
+
+	# send first command
+	tmux send-keys -t "$session"':0.0' 'nvim hello.midx; tmux kill-pane' C-m
+
+	# send second command
+	tmux send-keys -t "$session"':0.1' "$executable"'; tmux kill-pane' C-m
+
+	# select second pane
+	tmux select-pane -t "$session"':0.0'
+
+	# attach to session
+	tmux attach-session -t $session
+}
+
 
 # -- M A I N ------------------------------------------------------------------
 
@@ -441,6 +465,12 @@ case $1 in
 	run | launch)
 		_build
 		$executable
+		;;
+
+	# test
+	test)
+		_build
+		_test
 		;;
 
 	# clean

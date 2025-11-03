@@ -11,19 +11,19 @@ namespace sx {
 
 	// -- P A R A M  L I S T --------------------------------------------------
 
-	template <size_type NPARAMS, size_type NALIASES>
+	template <typename T, size_type NPARAMS, size_type NALIASES>
 	class param_list final {
 
 
 		public:
 
 			const char* _aliases[NALIASES];
-			pr::action  _actions[NPARAMS];
+			T           _actions[NPARAMS];
 			size_type   _offsets[NPARAMS + 1U];
 
 
 			template <size_type NEA>
-			constexpr auto flatten(const sx::entry<NEA>& e,
+			constexpr auto flatten(const sx::entry<T, NEA>& e,
 								   size_type& alias_index,
 								   size_type& param_index
 								   ) noexcept -> void {
@@ -37,7 +37,7 @@ namespace sx {
 			}
 
 			template <size_type... NEA>
-			constexpr param_list(const sx::entry<NEA>&... es) noexcept
+			constexpr param_list(const sx::entry<T, NEA>&... es) noexcept
 			: _aliases{}, _actions{}, _offsets{} {
 
 				size_type alias_index = 0U;
@@ -52,8 +52,8 @@ namespace sx {
 
 	// -- deduction guides ----------------------------------------------------
 
-	template <size_type... NEA>
-	param_list(const sx::entry<NEA>&...) -> param_list<sizeof...(NEA), (NEA + ... )>;
+	template <typename T, size_type... NEA>
+	param_list(const sx::entry<T, NEA>&...) -> param_list<T, sizeof...(NEA), (NEA + ... )>;
 
 } // namespace sx
 
