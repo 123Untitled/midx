@@ -1,9 +1,15 @@
 #include <iostream>
 #include "application.hpp"
 
+#include "anonymous.hpp"
 
 auto main(int ac, char** av) -> int {
 
+	//ml::anonymous anon;
+	//for (int i = 0; i < 100; ++i) {
+	//	std::cout << anon.new_anon() << "\n";
+	//}
+	//return 0;
 
 	try {
 		// clear screen

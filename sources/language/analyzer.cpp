@@ -27,7 +27,7 @@ auto ml::analyzer::analyze(const std::string& data) -> void {
 	// lex
 	_lexer.lex(br, _tokens);
 
-	_tokens.debug(br);
+	//_tokens.debug(br);
 
 	// parse
 	_parser.parse(br, _tokens);

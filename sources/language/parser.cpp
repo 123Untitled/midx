@@ -13,7 +13,7 @@
 /* default constructor */
 pr::parser::parser(void)
 : _buffer{nullptr}, _tokens{nullptr}, _current{nullptr},
-  _stack{}, _context{} {
+  _blocks{}, _stack{}, _states{} {
 }
 
 
@@ -24,13 +24,24 @@ auto pr::parser::parse(const ml::byte_range& br, tk::token_list& tokens) -> void
 	_buffer  = br.begin;
 	_tokens  = &tokens;
 	_current = nullptr;
+
 	_stack.clear();
+	_states.clear();
+	_blocks.clear();
+
 	_stack.reserve(tokens.parsable_size());
-	_stack.push_back(&pr::parser::expect_block);
+	_states.reserve(tokens.parsable_size());
+
+	_states.push_back(&pr::parser::expect_block);
 
 	for (auto& tok : tokens) {
 		_current = &tok;
-		(this->*(_stack.back()))();
+		(this->*(_states.back()))();
+	}
+
+
+	for (const auto& b : _blocks) {
+		b.debug();
 	}
 }
 
@@ -39,19 +50,19 @@ auto pr::parser::parse(const ml::byte_range& br, tk::token_list& tokens) -> void
 template <pr::parser::action_type A>
 auto pr::parser::switch_state(void) noexcept -> void {
 	// assume stack is never empty
-	_stack.back() = A;
+	_states.back() = A;
 }
 
 /* push state */
 template <pr::parser::action_type A>
 auto pr::parser::push_state(void) -> void {
-	_stack.push_back(A);
+	_states.push_back(A);
 }
 
 /* pop state */
 auto pr::parser::pop_state(void) -> void {
 	// assume stack is never empty
-	_stack.pop_back();
+	_states.pop_back();
 }
 
 
@@ -78,38 +89,11 @@ auto pr::parser::mark_invalid(void) noexcept -> void {
 	_current->id = tk::invalid;
 }
 
+auto pr::parser::top_block(void) noexcept -> ast::block& {
+	const ml::usz i = _stack.back();
+	return _blocks[i];
+}
 
-struct block;
-
-struct value final {
-	enum {
-		nested_block,
-		param_value
-	} type;
-
-	union {
-		block* nested_block;
-		tk::token* param_value;
-	} val;
-};
-
-struct param final {
-	tk::token* param_name;
-	std::vector<value> _values;
-};
-
-
-struct block {
-
-	tk::token* spec;
-
-	union {
-		const char* anonymous;
-		tk::token* token;
-	} identifier;
-
-	std::vector<param> _params;
-};
 
 
 
@@ -117,11 +101,14 @@ struct block {
 
 /* expect block */
 auto pr::parser::expect_block(void) -> void {
+	//std::cout << "expect_block\n";
 
 	switch (_current->id) {
 
 		case tk::bracket_open:
-			self::push_state<&pr::parser::expect_specifier>();
+			_blocks.emplace_back();
+			_stack.push_back(_blocks.size() - 1U);
+			_states.push_back(&pr::parser::expect_specifier);
 			break;
 
 		case tk::end_of_tokens:
@@ -130,38 +117,30 @@ auto pr::parser::expect_block(void) -> void {
 
 		default:
 			self::push_error<"expected block">();
-			self::mark_invalid();
+			_current->id = tk::invalid;
 	}
 }
 
 
 /* expect specifier */
 auto pr::parser::expect_specifier(void) -> void {
+	//std::cout << "expect_specifier\n";
+
+	// this is always top level block
+	// this state is never called for nested blocks
 
 	switch (_current->id) {
 
 		case tk::bracket_close:
-			self::pop_state();
+			_blocks.pop_back(); // so we don't keep empty blocks
+			_stack.pop_back();
+			_states.pop_back();
 			break;
 
 		case tk::text: {
-			// extract view
-			const auto& l = _current->lexeme;
-			auto bv = sx::layout.find_block(l);
-
-			if (bv.block_not_found()) {
-				std::cout << "unknown specifier: \x1b[31m'" << l << "'\x1b[0m\n";
-				_current->id = tk::invalid;
-				self::push_error<"unknown specifier">();
-				self::switch_state<&pr::parser::panic_block>();
-				return;
-			}
-
-			_context.push_back(bv);
-			//sx::action a = bv.action();
-
-			std::cout << "found specifier: \x1b[32m'" << l << "'\x1b[0m\n";
-			self::switch_state<&pr::parser::expect_identifier>();
+			auto& b = _blocks.back(); // maybe use _block_stack.back() instead
+			b.set_name(_current);
+			_states.back() = &pr::parser::expect_identifier;
 			break;
 		}
 
@@ -173,282 +152,310 @@ auto pr::parser::expect_specifier(void) -> void {
 
 /* expect identifier */
 auto pr::parser::expect_identifier(void) -> void {
+	//std::cout << "expect_identifier\n";
 
 	switch (_current->id) {
 
 		// start parameter
-		case tk::dot:
+		case tk::dot: {
 
 			// create anonymous identifier
+			auto& b = self::top_block();
+			b.set_anonymous(_blocks.size());
 
 			_current->id = tk::param_dot;
-			self::switch_state<&pr::parser::expect_parameter>();
+			_states.back() = &pr::parser::expect_parameter;
 			break;
+		}
 
 		// identifier
 		case tk::string: {
-			// handle identifier
-			self::switch_state<&pr::parser::expect_dot>();
+
+			// set identifier
+			auto& b = self::top_block();
+			b.set_id(_current);
+
+			// switch to expect dot
+			_states.back() = &pr::parser::expect_dot;
 			break;
 		}
 
 		// exit block
 		case tk::bracket_close:
-			self::pop_state();
-			_context.pop_back();
+			_blocks.pop_back(); // maybe we can remove this block if empty
+			_states.pop_back();
+			_stack.pop_back();
 			break;
 
 		// end of tokens
 		case tk::end_of_tokens:
+			// maybe remove block if empty
 			self::push_error<"block not closed">();
 			break;
 
 		// error
 		default:
 			self::push_error<"expected identifier or parameter">();
-			self::mark_invalid();
+			_current->id = tk::invalid;
+			_states.back() = &pr::parser::panic_block;
+	}
+}
+
+/* expect identifier */
+auto pr::parser::expect_identifier_nested(void) -> void {
+	//std::cout << "expect_identifier_nested\n";
+
+	switch (_current->id) {
+
+		// start parameter
+		case tk::dot: {
+
+			// create anonymous identifier
+			auto& b = self::top_block();
+			b.set_anonymous(_blocks.size());
+
+			_current->id = tk::param_dot;
+			_states.back() = &pr::parser::expect_parameter;
+			break;
+		}
+
+		// identifier
+		case tk::string: {
+
+			// set identifier
+			auto& b = self::top_block();
+			b.set_id(_current);
+
+			// switch to expect dot
+			_states.back() = &pr::parser::expect_dot;
+			break;
+		}
+
+		// exit block
+		case tk::bracket_close: {
+			_blocks.pop_back(); // maybe we can remove this block if empty
+			_states.pop_back();
+			_stack.pop_back();
+			auto& b = self::top_block();
+			b.remove_last_value();
+			break;
+		}
+
+		// end of tokens
+		case tk::end_of_tokens:
+			// maybe remove block if empty
+			self::push_error<"block not closed">();
+			break;
+
+		// error
+		default:
+			self::push_error<"expected identifier or parameter">();
+			_current->id = tk::invalid;
+			_states.back() = &pr::parser::panic_block;
 	}
 }
 
 /* expect dot */
 auto pr::parser::expect_dot(void) -> void {
+	//std::cout << "expect_dot\n";
 
 	switch (_current->id) {
 
 		// start parameter
 		case tk::dot:
 			_current->id = tk::param_dot;
-			self::switch_state<&pr::parser::expect_parameter>();
+			_states.back() = &pr::parser::expect_parameter;
 			break;
 
 		// exit block
 		case tk::bracket_close:
-			self::pop_state();
-			_context.pop_back();
+			_states.pop_back();
+			_stack.pop_back();
 			break;
 
 		default:
 			self::push_error<"expected parameter">();
-			self::switch_state<&pr::parser::panic_parameter>();
+			//_states.push_back(&pr::parser::panic_parameter);
+			_states.back() = &pr::parser::panic_parameter;
+			//self::switch_state<&pr::parser::panic_parameter>();
 	}
 }
 
 /* expect parameter */
 auto pr::parser::expect_parameter(void) -> void {
+	//std::cout << "expect_parameter\n";
 
 	switch (_current->id) {
 
 		case tk::text: {
-			const auto& bv = _context.back();
-			const auto& l = _current->lexeme;
 
-			auto pv = bv.find_param(l);
+			auto& b = self::top_block();
+			b.new_param(_current);
 
-			if (pv.param_not_found()) {
-				_current->id = tk::invalid;
-				std::cout << "unknown parameter: \x1b[31m'" << l << "'\x1b[0m\n";
-				self::push_error<"unknown parameter">();
-				self::switch_state<&pr::parser::panic_parameter>();
-				return;
-			}
-
-			std::cout << "found parameter: \x1b[32m'" << l << "'\x1b[0m\n";
-
-			// switch for next parameter or end of block
-			self::switch_state<&pr::parser::expect_dot>();
 			_current->id = tk::parameter;
-			const sx::action a = pv.action();
+			_states.back() = &pr::parser::expect_value;
+			break;
+		}
 
-			_stack.push_back(_actions[a]);
+		case tk::dot: {
 
+			self::push_error<"expected parameter name">();
+			// stay in the same state
+			break;
+		}
+
+		case tk::bracket_close: {
+			self::push_error<"expected parameter name">();
+			_states.pop_back();
+			_stack.pop_back();
 			break;
 		}
 
 		default:
 			self::push_error<"expected parameter">();
-			self::switch_state<&pr::parser::panic_parameter>();
+			//self::switch_state<&pr::parser::panic_parameter>();
+			_states.back() = &pr::parser::panic_parameter;
+			//_states.push_back(&pr::parser::panic_parameter);
+	}
+}
+
+/* expect value */
+auto pr::parser::expect_value(void) -> void {
+	//std::cout << "expect_value\n";
+
+	switch (_current->id) {
+
+		// inplace block
+		case tk::bracket_open: {
+
+			auto& b = self::top_block();
+			auto& p = b.last_param();
+
+			const ml::usz idx = _blocks.size();
+			_blocks.emplace_back();
+			_stack.push_back(idx);
+
+			p.new_value(idx);
+
+			_current->id = tk::nested_block;
+			_states.push_back(&pr::parser::expect_identifier_nested);
+			break;
+		}
+
+		case tk::bracket_close: {
+			_stack.pop_back();
+			_states.pop_back();
+			break;
+		}
+
+		//case tk::string: {
+			//auto& b = self::top_block();
+			//auto& p = b.last_param();
+			//p.new_value(_current);
+
+			//break;
+		//}
+
+		case tk::dot:
+			_states.back() = &pr::parser::expect_parameter;
+			break;
+
+		default:
+			auto& b = self::top_block();
+			auto& p = b.last_param();
+			p.new_value(_current);
+			//_current->id = tk::invalid;
+			//self::push_error<"expected parameter value">();
 	}
 }
 
 /* panic block */
 auto pr::parser::panic_block(void) -> void {
+	//std::cout << "panic_block\n";
 
 	switch (_current->id) {
 
 		case tk::bracket_open: {
-			self::push_state<&pr::parser::panic_block>();
-
-			// push fake block (maybe not needed?)
-			constexpr auto bv = sx::request_block<"note">();
-			_context.push_back(bv);
+			_states.push_back(&pr::parser::panic_block);
+			// maybe push fake block?
 			break;
 		}
 
 		case tk::bracket_close: {
-			self::pop_state();
-			_context.pop_back(); // pop fake block --^
+			_states.pop_back();
+			// maybe pop fake block?
 			break;
 		}
 
 		default:
-			self::mark_invalid();
+			_current->id = tk::invalid;
 	}
 }
 
 
 /* panic parameter */
 auto pr::parser::panic_parameter(void) -> void {
+	//std::cout << "panic_parameter\n";
 
 	switch (_current->id) {
 
 		case tk::dot:
-			self::switch_state<&pr::parser::expect_parameter>();
+			_states.back() = &pr::parser::expect_parameter;
 			break;
 
 		case tk::bracket_open:
-			self::push_state<&pr::parser::panic_block>();
+			_states.push_back(&pr::parser::panic_block);
 			break;
 
 		case tk::bracket_close:
-			self::pop_state();
+			_states.pop_back();
 			break;
 
 		default:
-			self::mark_invalid();
+			_current->id = tk::invalid;
 	}
 }
 
 
 
-// -- context states ----------------------------------------------------------
 
-/* on block trig */
-auto pr::parser::on_block_trig(void) -> void {
-	// nothing for now
-}
+/* expect specifier */
+		//case tk::text: {
+			// extract view
+			//const auto& l = _current->lexeme;
+			//auto bv = sx::layout.find_block(l);
+			//
+			//if (bv.block_not_found()) {
+			//	std::cout << "unknown specifier: \x1b[31m'" << l << "'\x1b[0m\n";
+			//	_current->id = tk::invalid;
+			//	self::push_error<"unknown specifier">();
+			//	self::switch_state<&pr::parser::panic_block>();
+			//	return;
+			//}
+			//
+			//_context.push_back(bv);
+			////sx::action a = bv.action();
+			//
+			//std::cout << "found specifier: \x1b[32m'" << l << "'\x1b[0m\n";
 
-/* on trig sequence */
-auto pr::parser::on_trig_sequence(void) -> void {
-	// parse values
-}
-
-/* on trig repeat */
-auto pr::parser::on_trig_repeat(void) -> void {
-	// 
-}
-
-/* on trig linked */
-auto pr::parser::on_trig_linked(void) -> void {
-	// expect bool
-}
-
-/* on block note */
-auto pr::parser::on_block_note(void) -> void {
-	// nothing for now
-}
-
-/* on note sequence */
-auto pr::parser::on_note_sequence(void) -> void {
-	// parse values
-}
-
-/* on note repeat */
-auto pr::parser::on_note_repeat(void) -> void {
-	// 
-}
-
-/* on note linked */
-auto pr::parser::on_note_linked(void) -> void {
-	// expect bool
-}
-
-/* on block gate */
-auto pr::parser::on_block_gate(void) -> void {
-	// nothing for now
-}
-
-/* on gate sequence */
-auto pr::parser::on_gate_sequence(void) -> void {
-	// parse values
-}
-
-/* on gate repeat */
-auto pr::parser::on_gate_repeat(void) -> void {
-	// 
-}
-
-/* on gate linked */
-auto pr::parser::on_gate_linked(void) -> void {
-	// expect bool
-}
-
-/* on block track */
-auto pr::parser::on_block_track(void) -> void {
-	// nothing for now
-}
-
-/* on track trig */
-auto pr::parser::on_track_trig(void) -> void {
-	// nothing for now
-}
-
-/* on track note */
-auto pr::parser::on_track_note(void) -> void {
-	// nothing for now
-}
-
-/* on track gate */
-auto pr::parser::on_track_gate(void) -> void {
-	// nothing for now
-}
-
-/* on block pattern */
-auto pr::parser::on_block_pattern(void) -> void {
-	// nothing for now
-}
-
-/* on block song */
-auto pr::parser::on_block_song(void) -> void {
-	// nothing for now
-}
-
-
-
-
-template <ml::literal L>
-auto pr::parser::on_nestable_param(void) -> void {
-
-	switch (_current->id) {
-
-		// inplace block
-		case tk::bracket_open: {
-			constexpr auto bv = sx::request_block<L>();
-			_context.push_back(bv);
-			_current->id = tk::nested_block;
-			//self::push_state<&pr::parser::expect_dot>();
-			self::push_state<&pr::parser::expect_identifier>();
-			break;
-		}
-
-		case tk::bracket_close:
-			self::pop_state();
-			break;
-
-		case tk::string:
-			// handle reference
-			break;
-
-		case tk::dot:
-			self::switch_state<&pr::parser::expect_parameter>();
-			break;
-
-		default:
-			self::mark_invalid();
-			self::push_error<"expected parameter value">();
-	}
-}
-
-
+/* expect parameter */
+		//case tk::text: {
+			//const auto& bv = _context.back();
+			//const auto& l = _current->lexeme;
+			//
+			//auto pv = bv.find_param(l);
+			//
+			//if (pv.param_not_found()) {
+			//	_current->id = tk::invalid;
+			//	std::cout << "unknown parameter: \x1b[31m'" << l << "'\x1b[0m\n";
+			//	self::push_error<"unknown parameter">();
+			//	self::switch_state<&pr::parser::panic_parameter>();
+			//	return;
+			//}
+			//
+			//std::cout << "found parameter: \x1b[32m'" << l << "'\x1b[0m\n";
+			//const sx::action a = pv.action();
+			//_stack.push_back(_actions[a]);
 
 //
 //[note 'theme'

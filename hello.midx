@@ -1,20 +1,22 @@
 # this is a comment
 
-[ note
-	.repeat
-	.seq
-]
 
-
-[ track 'Example Track'
-
-#.n 8398 fjfoij []
-	#.note 0x32
-
-	.trig [ ]
+[ note 'rythm1'
+	.seq @16/4 1 1 0 1 
 ]
 
 
 
-[ pattern
-]
+
+#[ note 'theme'
+#	.seq C4 E4 G4 B4
+#]
+
+#
+#[ track 'synth1'
+#	.note 'theme'
+#	.trig [] [] [ .seq 1 0 1 0 ]
+#	.cond {
+#	}
+#]
+

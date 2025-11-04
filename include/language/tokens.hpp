@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include "language/lexer/lexeme.hpp"
 
+#include <iostream>
 
 // -- T K  N A M E S P A C E --------------------------------------------------
 
@@ -43,7 +44,7 @@ namespace tk {
 		"at_sign",
 		"slash",
 		"dot",
-		"identifier",
+		"text",
 		"string",
 		"note",
 		"binary",
@@ -58,6 +59,42 @@ namespace tk {
 		"param_dot",
 		"param"
 	};
+
+	constexpr const char* color_operator = "\x1b[33m";
+	constexpr const char* color_identifier = "\x1b[37m";
+	constexpr const char* color_string = "\x1b[32m";
+	constexpr const char* color_number = "\x1b[35m";
+	constexpr const char* color_comment = "\x1b[90m";
+	constexpr const char* color_keyword = "\x1b[34m";
+	constexpr const char* color_normal = "\x1b[0m";
+
+	constexpr const char* token_colors[] {
+		color_operator,
+		color_operator,
+		color_operator,
+		color_operator,
+		color_operator,
+		color_keyword,
+		//color_normal,
+		color_string,
+		color_number,
+		color_number,
+		color_number,
+		color_number,
+		color_number,
+		color_normal,
+		color_comment,
+		color_normal,
+		"\x1b[4m", // underlined
+		color_comment,
+		color_keyword,
+		color_keyword
+	};
+
+	// specifier rouge
+	// identifier bleu
+	// number yellow
+
 	constexpr const char* token_to_highlight[] {
 		"Operator",
 		"Operator",
@@ -94,6 +131,23 @@ namespace tk {
 	}; // class token
 
 
+
+
 } // namespace tk
+
+	// overload output operator
+inline auto operator<<(std::ostream& os, const tk::token& t) -> std::ostream& {
+
+	os << "[" << tk::token_colors[t.id] << tk::token_names[t.id] << "\x1b[0m - ";
+	const char* ptr = (const char*)t.lexeme.data;
+	if (ptr == nullptr) {
+		os << "nullptr]";
+		return os;
+	}
+	for (ml::usz i = 0U; i < t.lexeme.size; ++i)
+		os << ptr[i];
+	os << "]";
+	return os;
+}
 
 #endif // language_tokens_hpp
