@@ -48,13 +48,23 @@ namespace pr {
 			tk::token* _current;
 
 
-			std::vector<ast::block> _blocks;
+			//std::vector<ast::block> _blocks;
 
-			std::vector<ml::usz> _stack; // stack of block indices
+			struct block_context final {
+					ml::usz bi;
+					ml::usz pi;
+				public:
+					explicit block_context(const ml::usz bi) noexcept
+					: bi{bi}, pi{UINT64_MAX} {
+					}
+			};
+
+			std::vector<block_context> _ctx; // stack of block indices
 
 			/* state stack */
 			std::vector<action_type> _states;
 
+			std::vector<std::string> _errors;
 			/* syntax stack */
 			//std::vector<sx::block_view_type> _context;
 
@@ -72,16 +82,23 @@ namespace pr {
 			/* parse */
 			auto parse(const ml::byte_range&, tk::token_list&) -> void;
 
+
 			/* switch state */
-			template <action_type>
+			template <typename>
 			auto switch_state(void) noexcept -> void;
 
 			/* push state */
-			template <action_type>
+			template <typename>
 			auto push_state(void) -> void;
+
+
+
 
 			/* pop state */
 			auto pop_state(void) -> void;
+
+			/* pop level */
+			auto pop_level(void) -> void;
 
 			/* push error */
 			template <ml::literal>
@@ -90,6 +107,17 @@ namespace pr {
 
 			auto top_block(void) noexcept -> ast::block&;
 
+			/* push block */
+			auto push_block(void) -> void;
+
+			/* push param */
+			auto push_param(void) -> void;
+
+			/* push value */
+			auto push_value(void) -> void;
+
+			/* push nested block */
+			auto push_nested_block(void) -> void;
 
 			/* mark invalid */
 			auto mark_invalid(void) noexcept -> void;
@@ -97,17 +125,35 @@ namespace pr {
 
 			// -- main states -------------------------------------------------
 
-			auto expect_block(void) -> void;
-			auto expect_specifier(void) -> void;
-			auto expect_identifier(void) -> void;
-			auto expect_identifier_nested(void) -> void;
-			auto expect_dot(void) -> void;
-			auto expect_parameter(void) -> void;
+			#define GENERATE_STATE(name) \
+				auto state_##name(void) -> void; \
+				struct name final { \
+					non_instantiable_class(name); \
+					static constexpr action_type state = &self::state_##name; }
 
-			auto expect_value(void) -> void;
+			GENERATE_STATE(expect_block);
+			GENERATE_STATE(expect_specifier);
+			GENERATE_STATE(expect_identifier);
+			GENERATE_STATE(expect_identifier_nested);
+			GENERATE_STATE(expect_dot);
+			GENERATE_STATE(expect_parameter);
+			GENERATE_STATE(expect_value);
+			GENERATE_STATE(panic_block);
+			GENERATE_STATE(panic_remove_block);
+			GENERATE_STATE(panic_parameter);
 
-			auto panic_block(void) -> void;
-			auto panic_parameter(void) -> void;
+			#undef GENERATE_STATE
+
+			//auto expect_block(void) -> void;
+			//auto expect_specifier(void) -> void;
+			//auto expect_identifier(void) -> void;
+			//auto expect_identifier_nested(void) -> void;
+			//auto expect_dot(void) -> void;
+			//auto expect_parameter(void) -> void;
+			//auto expect_value(void) -> void;
+			//auto panic_block(void) -> void;
+			//auto panic_remove_block(void) -> void;
+			//auto panic_parameter(void) -> void;
 
 	}; // class parser
 
