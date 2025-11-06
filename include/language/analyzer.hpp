@@ -4,6 +4,8 @@
 #include "language/lexer.hpp"
 #include "language/parser.hpp"
 #include "language/tokens/token_list.hpp"
+#include "language/ast/tree.hpp"
+#include "language/diagnostic.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -34,6 +36,13 @@ namespace ml {
 
 			/* token list */
 			tk::token_list _tokens;
+
+			/* ast */
+			as::tree _tree;
+
+			/* diagnostic */
+			an::diagnostic _diagnostic;
+
 
 			std::string _highlights;
 

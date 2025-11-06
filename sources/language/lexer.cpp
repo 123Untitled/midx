@@ -1,4 +1,5 @@
 #include "language/lexer.hpp"
+#include "language/diagnostic.hpp"
 #include "language/tokens/token_list.hpp"
 #include "language/lexer/char_class.hpp"
 
@@ -12,24 +13,23 @@ lx::lexer::lexer(void) noexcept
 : _head{nullptr}, _limit{nullptr}, _mark{nullptr},
   _line{0U},      _base{0U},       _cursor{0U},
   _tokens{nullptr},
-  _errors{} {
+  _diag{nullptr} {
 }
 
 
 // -- public methods ----------------------------------------------------------
 
 /* lex */
-auto lx::lexer::lex(const ml::byte_range& br, tk::token_list& tokens) -> void {
+auto lx::lexer::lex(const ml::byte_range& br, tk::token_list& tokens, an::diagnostic& diag) -> void {
 
 	_head   = br.begin;
 	_limit  = br.end;
 	_line   = 0U;
 	_base   = 0U;
 	_tokens = &tokens;
+	_diag   = &diag;
 
 	self::_lex();
-
-
 }
 
 
@@ -69,15 +69,12 @@ auto lx::lexer::push_byte_token(void) -> void {
 template <ml::literal E>
 auto lx::lexer::push_error(void) -> void {
 
-	std::string err;
-	err.append("\x1b[31merror\x1b[0m:");
-	err.append(std::to_string(_line));
-	err.append(":");
-	err.append(std::to_string(_base));
-	err.append(": ");
-	err.append(E.data);
-
-	_errors.emplace_back(std::move(err));
+	_diag->push_error(
+		E.data,
+		_line,
+		_base,
+		_base + 1U // will be changed after
+	);
 }
 
 /* lex */

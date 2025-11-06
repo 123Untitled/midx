@@ -2,9 +2,8 @@
 #define language_to_integer_hpp
 
 #include "types.hpp"
-#include "macros.hpp"
-#include "byte_range.hpp"
 #include "language/tokens.hpp"
+#include "language/diagnostic.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -12,16 +11,36 @@
 namespace ml {
 
 
+	/* to digit */
+	using to_digit = auto (const ml::u8) noexcept -> ml::u8;
 
-	template <ml::u8 base, auto (to_digit)(const ml::u8) -> ml::u8>
-	auto convert(const ml::u8* it, const ml::u8* end) noexcept -> ml::i8 {
+
+	/* to decimal digit */
+	inline constexpr auto to_dec_digit(const ml::u8 c) noexcept -> ml::u8 {
+		return c - '0';
+	}
+
+	/* to hex digit */
+	inline constexpr auto to_hex_digit(const ml::u8 c) noexcept -> ml::u8 {
+		return  (c >= '0' && c <= '9') ? (c - '0')
+			 : ((c >= 'A' && c <= 'F') ? (c - 'A' + 10U)
+									   : (c - 'a' + 10U));
+	}
+
+
+	/* convert integer */
+	template <ml::u8 base, ml::to_digit tdfn, bool neg>
+	auto convert(const tk::token& tk,
+				 an::diagnostic& diag) noexcept -> ml::i8 {
+
+		const ml::u8* it  = tk.lexeme.data;
+		const ml::u8* end = tk.lexeme.data
+						  + tk.lexeme.size;
 
 		ml::i8 num = 0U;
 		constexpr ml::i8 max       = +127;
 		constexpr ml::i8 min       = -128;
 		constexpr ml::i8 mul_limit = min / base;
-
-		bool neg = false;
 
 		// accumulate as negative to handle -128
 		while (it < end) {
@@ -30,15 +49,17 @@ namespace ml {
 			if (num < mul_limit) {
 				// push error
 				num = neg ? min : max;
+				diag.push_error("integer value overflow", tk);
 				break;
 			}
 			num *= base;
-			const ml::i8 digit = to_digit(*it);
+			const ml::i8 digit = tdfn(*it);
 
 			// check subtraction overflow
 			if (num < (min + digit)) {
 				// push error
 				num = neg ? min : max;
+				diag.push_error("integer value overflow", tk);
 				break;
 			}
 
@@ -47,52 +68,58 @@ namespace ml {
 		}
 
 		// finalize octave value
-		if (neg == false) {
+		if constexpr (neg == false) {
 			if (num == min) {
 				// push error
 				num = max;
+				diag.push_error("integer value overflow", tk);
 			}
-			else {
-				num = -num;
-			}
+			else { num = -num; }
 		}
+		return num;
 	}
 
+	/* convert decimal */
+	template <bool neg>
+	auto convert_dec = &convert<10U, to_dec_digit, neg>;
 
-	auto to_integer(tk::token& tk) noexcept -> ml::i8 {
+	/* convert binary */
+	template <bool neg>
+	auto convert_bin = &convert<2U,  to_dec_digit, neg>;
 
-		const ml::u8* it  = tk.lexeme.data;
-		const ml::u8* end = tk.lexeme.data
-						  + tk.lexeme.size;
+	/* convert octal */
+	template <bool neg>
+	auto convert_oct = &convert<8U,  to_dec_digit, neg>;
+
+	/* convert hexadecimal */
+	template <bool neg>
+	auto convert_hex = &convert<16U, to_hex_digit, neg>;
+
+
+
+
+	template <bool neg = false>
+	auto to_integer(tk::token& tk,
+					an::diagnostic& diag) noexcept -> ml::i8 {
 
 
 		switch (tk.id) {
 
 			// decimal number
 			case tk::decimal:
-				return convert<10U, [](const ml::u8 c) static constexpr noexcept -> ml::u8 {
-					return c - '0';
-				}>(it, end);
+				return convert_dec<neg>(tk, diag);
 
 			// binary number
 			case tk::binary:
-				return convert<2U, [](const ml::u8 c) static constexpr noexcept -> ml::u8 {
-					return c - '0';
-				}>(it + 2U, end);
+				return convert_bin<neg>(tk, diag);
 
 			// octal number
 			case tk::octal:
-				return convert<8U, [](const ml::u8 c) static constexpr noexcept -> ml::u8 {
-					return c - '0';
-				}>(it + 2U, end);
+				return convert_oct<neg>(tk, diag);
 
 			// hexadecimal number
 			case tk::hexadecimal:
-				return convert<16U, [](const ml::u8 c) static constexpr noexcept -> ml::u8 {
-					return  (c >= '0' && c <= '9') ? (c - '0')
-						 : ((c >= 'A' && c <= 'F') ? (c - 'A' + 10U)
-												   : (c - 'a' + 10U));
-				}>(it + 2U, end);
+				return convert_hex<neg>(tk, diag);
 
 			case tk::note:
 				break;

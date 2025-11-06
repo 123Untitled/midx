@@ -1,8 +1,9 @@
-#ifndef midilang_data_sequence_hpp
-#define midilang_data_sequence_hpp
+#ifndef data_sequence_hpp
+#define data_sequence_hpp
 
 #include <vector>
 #include "time/signature.hpp"
+#include "language/tokens.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -12,7 +13,7 @@ namespace ml {
 
 	// -- S E Q U E N C E -----------------------------------------------------
 
-	template <typename T, T D>
+	template <ml::u8 DEFAULT>
 	class sequence {
 
 
@@ -21,21 +22,29 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::sequence<T, D>;
+			using self = ml::sequence<DEFAULT>;
 
-
-			// -- private members ---------------------------------------------
 
 		protected:
 
-			/* signature */
-			ml::signature _signature;
+			// -- protected structs -------------------------------------------
+
+			struct slot final {
+				public:
+					ml::u8 value;
+					ml::signature sign;
+					tk::token* token;
+					ml::usz depth;
+			};
+
+
+			// -- protected members -------------------------------------------
 
 			/* sequence */
-			std::vector<T> _sequence;
+			std::vector<slot> _sequence;
 
 			/* current */
-			T _current;
+			slot* _current;
 
 
 		public:
@@ -44,7 +53,8 @@ namespace ml {
 
 			/* default constructor */
 			sequence(void) noexcept
-			: _signature{}, _sequence{}, _current{D} {
+			: _sequence{},
+			  _current{nullptr} {
 			}
 
 			/* copy constructor */
@@ -68,28 +78,18 @@ namespace ml {
 
 			// -- public accessors --------------------------------------------
 
-			/* signature */
-			auto signature(void) noexcept -> ml::signature& {
-				return _signature;
-			}
-
-			/* const signature */
-			auto signature(void) const noexcept -> const ml::signature& {
-				return _signature;
-			}
-
 			/* data */
-			auto data(void) noexcept -> std::vector<T>& {
+			auto data(void) noexcept -> std::vector<slot>& {
 				return _sequence;
 			}
 
 			/* const data */
-			auto data(void) const noexcept -> const std::vector<T>& {
+			auto data(void) const noexcept -> const std::vector<slot>& {
 				return _sequence;
 			}
 
 			/* current */
-			auto current(void) const noexcept -> const T& {
+			auto current(void) const noexcept -> const slot& {
 				return _current;
 			}
 
@@ -97,19 +97,19 @@ namespace ml {
 			// -- public modifiers --------------------------------------------
 
 			/* push */
-			auto push(const T& value) -> void {
+			auto push(const ml::u8 value) -> void {
 				_sequence.emplace_back(value);
 				_current = value; // ? for bug but not fixed
 			}
 
 			/* repush */
-			auto repush(void) -> void {
-				_sequence.emplace_back(
-						_sequence.empty() ?
-							D : _sequence.back()
-				);
-				_current = _sequence.back(); // ? for bug but not fixed
-			}
+			//auto repush(void) -> void {
+			//	_sequence.emplace_back(
+			//			_sequence.empty() ?
+			//				D : _sequence.back()
+			//	);
+			//	_current = _sequence.back(); // ? for bug but not fixed
+			//}
 
 			/* reset */
 			auto reset(void) noexcept -> void {
@@ -124,18 +124,20 @@ namespace ml {
 			/* next */
 			auto next(const ml::u64& timeline) noexcept -> bool {
 
+				_current = _sequence[timeline % _sequence.size()];
+
 				// check if signature is time
-				if (_signature.is_time(timeline) == false)
-					return false;
-
-				if (_sequence.empty() == true)
-					return true;
-
-				// get count from timeline beginning
-				const auto count = _signature.count(timeline);
-
-				// get current value
-				_current = _sequence[count % _sequence.size()];
+				//if (_signature.is_time(timeline) == false)
+				//	return false;
+				//
+				//if (_sequence.empty() == true)
+				//	return true;
+				//
+				//// get count from timeline beginning
+				//const auto count = _signature.count(timeline);
+				//
+				//// get current value
+				//_current = _sequence[count % _sequence.size()];
 
 				return true;
 			}
@@ -143,9 +145,9 @@ namespace ml {
 	}; // class sequence
 
 
-	// -- N O T E S -----------------------------------------------------------
+	// -- N O T E -------------------------------------------------------------
 
-	class notes final : public ml::sequence<ml::u8, 60U> {
+	class note final : public ml::sequence<60U> {
 
 
 		private:
@@ -153,7 +155,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::notes;
+			using self = ml::note;
 
 
 		public:
@@ -161,16 +163,16 @@ namespace ml {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			notes(void) noexcept = default;
+			note(void) noexcept = default;
 
 			/* copy constructor */
-			notes(const self&) = default;
+			note(const self&) = default;
 
 			/* move constructor */
-			notes(self&&) noexcept = default;
+			note(self&&) noexcept = default;
 
 			/* destructor */
-			~notes(void) noexcept = default;
+			~note(void) noexcept = default;
 
 
 			// -- public assignment operators ---------------------------------
@@ -181,12 +183,12 @@ namespace ml {
 			/* move assignment operator */
 			auto operator=(self&&) noexcept -> self& = default;
 
-	}; // class notes
+	}; // class note
 
 
-	// -- T R I G G E R S -----------------------------------------------------
+	// -- T R I G -------------------------------------------------------------
 
-	class triggers final : public ml::sequence<bool, false> {
+	class trig final : public ml::sequence<0U> {
 
 
 		private:
@@ -194,7 +196,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::triggers;
+			using self = ml::trig;
 
 
 		public:
@@ -202,16 +204,16 @@ namespace ml {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			triggers(void) noexcept = default;
+			trig(void) noexcept = default;
 
 			/* copy constructor */
-			triggers(const self&) = default;
+			trig(const self&) = default;
 
 			/* move constructor */
-			triggers(self&&) noexcept = default;
+			trig(self&&) noexcept = default;
 
 			/* destructor */
-			~triggers(void) noexcept = default;
+			~trig(void) noexcept = default;
 
 
 			// -- public assignment operators ---------------------------------
@@ -222,13 +224,13 @@ namespace ml {
 			/* move assignment operator */
 			auto operator=(self&&) noexcept -> self& = default;
 
-	}; // class triggers
+	}; // class trig
 
 
 
-	// -- G A T E S -----------------------------------------------------------
+	// -- G A T E -------------------------------------------------------------
 
-	class gates final : public ml::sequence<ml::u8, 100U> {
+	class gate final : public ml::sequence<100U> {
 
 
 		private:
@@ -236,7 +238,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::gates;
+			using self = ml::gate;
 
 
 		public:
@@ -244,16 +246,16 @@ namespace ml {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			gates(void) noexcept = default;
+			gate(void) noexcept = default;
 
 			/* copy constructor */
-			gates(const self&) = default;
+			gate(const self&) = default;
 
 			/* move constructor */
-			gates(self&&) noexcept = default;
+			gate(self&&) noexcept = default;
 
 			/* destructor */
-			~gates(void) noexcept = default;
+			~gate(void) noexcept = default;
 
 
 			// -- public assignment operators ---------------------------------
@@ -264,10 +266,12 @@ namespace ml {
 			/* move assignment operator */
 			auto operator=(self&&) noexcept -> self& = default;
 
-	}; // class gates
+	}; // class gate
 
 
-	class velocities final : public ml::sequence<ml::u8, 127U> {
+	// -- V E L O C I T Y -----------------------------------------------------
+
+	class velocity final : public ml::sequence<127U> {
 
 
 		private:
@@ -275,7 +279,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::velocities;
+			using self = ml::velocity;
 
 
 		public:
@@ -283,16 +287,16 @@ namespace ml {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			velocities(void) noexcept = default;
+			velocity(void) noexcept = default;
 
 			/* copy constructor */
-			velocities(const self&) = default;
+			velocity(const self&) = default;
 
 			/* move constructor */
-			velocities(self&&) noexcept = default;
+			velocity(self&&) noexcept = default;
 
 			/* destructor */
-			~velocities(void) noexcept = default;
+			~velocity(void) noexcept = default;
 
 
 			// -- public assignment operators ---------------------------------
@@ -303,10 +307,12 @@ namespace ml {
 			/* move assignment operator */
 			auto operator=(self&&) noexcept -> self& = default;
 
-	}; // class velocities
+	}; // class velocity
 
 
-	class channels final : public ml::sequence<ml::u8, 0U> {
+	// -- C H A N N E L -------------------------------------------------------
+
+	class channel final : public ml::sequence<0U> {
 
 
 		private:
@@ -314,7 +320,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::channels;
+			using self = ml::channel;
 
 
 		public:
@@ -322,16 +328,16 @@ namespace ml {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			channels(void) noexcept = default;
+			channel(void) noexcept = default;
 
 			/* copy constructor */
-			channels(const self&) = default;
+			channel(const self&) = default;
 
 			/* move constructor */
-			channels(self&&) noexcept = default;
+			channel(self&&) noexcept = default;
 
 			/* destructor */
-			~channels(void) noexcept = default;
+			~channel(void) noexcept = default;
 
 
 			// -- public assignment operators ---------------------------------
@@ -342,10 +348,10 @@ namespace ml {
 			/* move assignment operator */
 			auto operator=(self&&) noexcept -> self& = default;
 
-	}; // class channels
+	}; // class channel
 
 
 
 } // namespace ml
 
-#endif // midilang_data_sequence_hpp
+#endif // data_sequence_hpp

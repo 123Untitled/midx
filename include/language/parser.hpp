@@ -1,15 +1,22 @@
 #ifndef language_parser_hpp
 #define language_parser_hpp
 
+#include "macros.hpp"
 #include "byte_range.hpp"
 #include "types.hpp"
 #include "literal.hpp"
 #include <vector>
 
 #include "language/tokens/token_list.hpp"
-#include "language/ast.hpp"
 
-#include "language/syntax/syntax_layout.hpp"
+#include "language/diagnostic.hpp"
+
+namespace an {
+	class diagnostic;
+}
+namespace as {
+	class tree;
+}
 
 
 // -- P R  N A M E S P A C E --------------------------------------------------
@@ -35,38 +42,39 @@ namespace pr {
 
 		private:
 
+			// -- private structs ---------------------------------------------
+
+			struct context final {
+				action_type st;
+				tk::token*  tk;
+				auto execute(self& s) -> void {
+					(s.*st)();
+				}
+			}; // struct context
+
+
 			// -- private members ---------------------------------------------
 
-
-			/* buffer */
-			const ml::u8* _buffer;
+			/* state stack */
+			std::vector<context> _states;
 
 			/* tokens */
 			tk::token_list* _tokens;
 
+			/* diagnostic */
+			an::diagnostic* _diag;
+
 			/* current token */
 			tk::token* _current;
 
+			/* previous token */
+			tk::token* _prev;
 
-			//std::vector<ast::block> _blocks;
+			/* ast */
+			as::tree* _tree;
 
-			struct block_context final {
-					ml::usz bi;
-					ml::usz pi;
-				public:
-					explicit block_context(const ml::usz bi) noexcept
-					: bi{bi}, pi{UINT64_MAX} {
-					}
-			};
-
-			std::vector<block_context> _ctx; // stack of block indices
-
-			/* state stack */
-			std::vector<action_type> _states;
-
-			std::vector<std::string> _errors;
-			/* syntax stack */
-			//std::vector<sx::block_view_type> _context;
+			/* id counter */
+			ml::usz _counter;
 
 
 		public:
@@ -80,7 +88,7 @@ namespace pr {
 			// -- public methods ----------------------------------------------
 
 			/* parse */
-			auto parse(const ml::byte_range&, tk::token_list&) -> void;
+			auto parse(tk::token_list&, an::diagnostic&, as::tree&) -> void;
 
 
 			/* switch state */
@@ -91,36 +99,25 @@ namespace pr {
 			template <typename>
 			auto push_state(void) -> void;
 
-
-
-
-			/* pop state */
-			auto pop_state(void) -> void;
-
-			/* pop level */
-			auto pop_level(void) -> void;
-
 			/* push error */
 			template <ml::literal>
-			auto push_error(void) -> void;
+			auto push_error(const tk::token* = nullptr) -> void;
+
+			/* push warning */
+			template <ml::literal>
+			auto push_warning(const tk::token* = nullptr) -> void;
 
 
-			auto top_block(void) noexcept -> ast::block&;
+			auto new_id(void) noexcept -> ml::usz {
+				auto x = _counter++;
+				x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+				x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+				x = x ^ (x >> 31);
+				return x;
+			}
 
-			/* push block */
-			auto push_block(void) -> void;
 
-			/* push param */
-			auto push_param(void) -> void;
 
-			/* push value */
-			auto push_value(void) -> void;
-
-			/* push nested block */
-			auto push_nested_block(void) -> void;
-
-			/* mark invalid */
-			auto mark_invalid(void) noexcept -> void;
 
 
 			// -- main states -------------------------------------------------
@@ -131,9 +128,21 @@ namespace pr {
 					non_instantiable_class(name); \
 					static constexpr action_type state = &self::state_##name; }
 
+
+
+			template <bool>
+			auto state_expect_identifier(void) -> void;
+
+			template <bool N>
+			struct expect_identifier final {
+				non_instantiable_class(expect_identifier);
+				static constexpr action_type state = &self::state_expect_identifier<N>;
+			};
+
+
 			GENERATE_STATE(expect_block);
 			GENERATE_STATE(expect_specifier);
-			GENERATE_STATE(expect_identifier);
+			//GENERATE_STATE(expect_identifier);
 			GENERATE_STATE(expect_identifier_nested);
 			GENERATE_STATE(expect_dot);
 			GENERATE_STATE(expect_parameter);

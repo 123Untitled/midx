@@ -26,6 +26,8 @@ auto ml::application::reparse(void) -> void {
 	std::cout << "\x1b[2J\x1b[H";
 	_analyzer.analyze(_protocol.data());
 	_server.broadcast(_analyzer.highlights());
+	//_server.broadcast(_analyzer._diag_json);
+	//std::cout << _analyzer._diag_json << std::endl;
 }
 
 /* run */

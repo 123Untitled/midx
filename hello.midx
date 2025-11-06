@@ -1,18 +1,39 @@
 # this is a comment
 
-#[ note 'theme'
-#	.seq A#4 B4 C5
-#]
 
-[ track 'synth1'
-	.note 'theme'
-	.trig [
-		.seq 1 0 1 0 1
-	] 
-	.fx 3 2 4 5
+
+
+[track
+	.note
+	.trig
 ]
 
-[ pattern 'fijf'
-	.tracks 0xff
-	.timeline 2498
-]
+
+#[ pattern 'intro'
+#
+#
+#	.track [
+#		'bass'
+#	]
+
+
+		#.note [
+		#	'theme'
+		#	.seq A#3 B3 C4 D#4
+		#]
+		#.trig [
+		#	#'slap rhythm'
+		#	.seq 1 0 0 1
+		#]
+	#]
+	#[
+	#	'drums'
+	#	.note [
+	#		'mapping'
+	#		.seq C2 C2 C2 C2
+	#	]
+	#	.trig [
+	#		'rythm0A'
+	#		.seq 0 1 0 1
+	#	]
+	#]

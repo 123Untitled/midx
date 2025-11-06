@@ -34,6 +34,7 @@ namespace tk {
 		whitespace,
 		invalid,
 		nested_block,
+		specifier,
 		param_dot,
 		parameter
 	};
@@ -56,8 +57,9 @@ namespace tk {
 		"whitespace",
 		"invalid",
 		"nested_block",
+		"specifier",
 		"param_dot",
-		"param"
+		"parameter"
 	};
 
 	constexpr const char* color_operator = "\x1b[33m";
@@ -66,11 +68,12 @@ namespace tk {
 	constexpr const char* color_number = "\x1b[35m";
 	constexpr const char* color_comment = "\x1b[90m";
 	constexpr const char* color_keyword = "\x1b[34m";
+	constexpr const char* color_type = "\x1b[36m";
 	constexpr const char* color_normal = "\x1b[0m";
 
 	constexpr const char* token_colors[] {
-		color_operator,
-		color_operator,
+		color_comment,
+		color_comment,
 		color_operator,
 		color_operator,
 		color_operator,
@@ -87,6 +90,7 @@ namespace tk {
 		color_normal,
 		"\x1b[4m", // underlined
 		color_comment,
+		color_type,
 		color_keyword,
 		color_keyword
 	};
@@ -96,8 +100,8 @@ namespace tk {
 	// number yellow
 
 	constexpr const char* token_to_highlight[] {
-		"Operator",
-		"Operator",
+		"Comment",
+		"Comment",
 		"Operator",
 		"Operator",
 		"Operator",
@@ -115,8 +119,11 @@ namespace tk {
 		"Whitespace",
 		"Underlined",
 		"Comment",
-		"Keyword",
-		"Keyword"
+		"Type",
+		//"Keyword",
+		//"Keyword"
+		"Statement",
+		"Statement"
 	};
 
 

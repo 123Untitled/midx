@@ -1,5 +1,5 @@
-#ifndef midilang_data_track_hpp
-#define midilang_data_track_hpp
+#ifndef data_track_hpp
+#define data_track_hpp
 
 #include "data/sequence.hpp"
 #include "coremidi/eventlist.hpp"
@@ -8,6 +8,7 @@
 //#include "msh/midi/midi.hpp"
 
 #include <math.h>
+
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
@@ -130,31 +131,38 @@ namespace ml {
 
 
 			// -- private members ---------------------------------------------
+		public:
 
-			/* channel */
-			ml::channels _channels;
+			/* trig index */
+			ml::usz tr_index;
 
-			/* triggers */
-			ml::triggers _triggers;
+			/* channel index */
+			ml::usz ch_index;
 
-			/* notes */
-			ml::notes _notes;
+			/* note index */
+			ml::usz nt_index;
 
-			/* gate */
-			ml::gates _gates;
+			/* gate index */
+			ml::usz ga_index;
+
+			/* velocity index */
+			ml::usz vl_index;
+
+			/* octave index */
+			ml::usz oc_index;
+
+			/* semitone index */
+			ml::usz se_index;
+
+			/* probability index */
+			ml::usz pr_index;
+
+
 
 			/* note off */
 			ml::note_off _noff;
 
-			/* octave */
-			//ml::sequence<ml::i8> _octave;
 
-			/* velocities */
-			ml::velocities _velocities;
-
-
-
-		public:
 
 			// -- public lifecycle --------------------------------------------
 
@@ -166,12 +174,6 @@ namespace ml {
 
 			/* reset */
 			auto reset(void) noexcept -> void {
-				_channels.reset();
-				_triggers.reset();
-				_notes.reset();
-				_gates.reset();
-				_velocities.reset();
-
 				_noff.force_off();
 			}
 
@@ -185,6 +187,7 @@ namespace ml {
 				// bug reason: fs::track is deleted when vim saves
 				// so _noff is not triggered
 
+				/*
 				if (_noff.active() == true) {
 
 					if (_noff.is_off() == true) {
@@ -199,61 +202,62 @@ namespace ml {
 					 _gates.next(timeline);
 					 _notes.next(timeline);
 				_velocities.next(timeline);
+				*/
 
-				if (_triggers.signature().is_time(timeline) == false
-				 || _triggers.data().empty() == true)
-					return;
+				//if (_triggers.signature().is_time(timeline) == false
+				// || _triggers.data().empty() == true)
+				//	return;
 
 				// get count from timeline beginning
-				const auto count = _triggers.signature().count(timeline);
+				//const auto count = _triggers.signature().count(timeline);
 
 				// compute position
-				const auto pos = count % _triggers.data().size();
+				//const auto pos = count % _triggers.data().size();
 
 				// check if trigger is set
-				if (_triggers.data()[pos] == false)
-					return;
+				//if (_triggers.data()[pos] == false)
+				//	return;
 
 
-				ml::usz p = (pos + 1U) % _triggers.data().size();
-				ml::usz i = 1U;
+				//ml::usz p = (pos + 1U) % _triggers.data().size();
+				//ml::usz i = 1U;
 
 				// get next trigger
-				while (p != pos) {
-
-					if (_triggers.data()[p] == true)
-						break;
-
-					p = (p + 1U) % _triggers.data().size();
-					++i;
-				}
+				//while (p != pos) {
+				//
+				//	if (_triggers.data()[p] == true)
+				//		break;
+				//
+				//	p = (p + 1U) % _triggers.data().size();
+				//	++i;
+				//}
 
 				// convert i to ppqn
-				const ml::usz ticks = _triggers.signature().to_ticks(i);
+				//const ml::usz ticks = _triggers.signature().to_ticks(i);
 
 
 				//_gates.next(timeline);
 				//_notes.next(timeline);
 
-				const auto when =
-					static_cast<ml::usz>(::round(static_cast<double>(ticks))
-					* (static_cast<double>(_gates.current()) / 100.0));
+				//const auto when =
+				//	static_cast<ml::usz>(::round(static_cast<double>(ticks))
+				//	* (static_cast<double>(_gates.current()) / 100.0));
 
 				//const auto w = ml::round<ml::usz>(when);
 
 
-				if (when == 0U)
-					return;
-
-				evs.note_on(_channels.current(), _notes.current(), _velocities.current());
-
-				_noff = ml::note_off{
-					_channels.current(),
-					_notes.current(),
-					when
-				};
-
-				std::cout << "\x1b[32m/" << std::flush;
+				//if (when == 0U)
+				//	return;
+				//
+				//evs.note_on(_channels.current(), _notes.current(), _velocities.current());
+				//
+				//_noff = ml::note_off{
+				//	_channels.current(),
+				//	_notes.current(),
+				//	when
+				//};
+				//
+				//std::cout << "\x1b[32m/" << std::flush;
 			}
 
 

@@ -12,6 +12,9 @@
 namespace tk {
 	class token_list;
 } // namespace tk
+namespace an {
+	class diagnostic;
+} // namespace an
 
 
 // -- L X  N A M E S P A C E --------------------------------------------------
@@ -57,8 +60,8 @@ namespace lx {
 			/* tokens */
 			tk::token_list* _tokens;
 
-			/* errors */
-			std::vector<std::string> _errors;
+			/* diagnostic */
+			an::diagnostic* _diag;
 
 
 
@@ -93,7 +96,7 @@ namespace lx {
 			// -- public methods ----------------------------------------------
 
 			/* lex */
-			auto lex(const ml::byte_range&, tk::token_list&) -> void;
+			auto lex(const ml::byte_range&, tk::token_list&, an::diagnostic&) -> void;
 
 	}; // class lexer
 
