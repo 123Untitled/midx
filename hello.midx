@@ -1,39 +1,73 @@
 # this is a comment
 
 
+[nt] melody1
+.seq (D E) _ F G _ (A (B C5)) D5
+.rpt true
+.lnk false
+
+[track] bass
+.nt &melody1
 
 
-[track
-	.note
-	.trig
+[nt 'melody1'
+	# represent 127 in hexadecimal
+	.seq
+	#[ .seq D E F G ]
 ]
+
+#[nt 'melody2'
+#	.sequence D E F
+#]
+
+#[nt melody3
+#	.seq G F E D C B A
+#]
+
+#[track 'lead'
+#
+#	.note 'melody1' 'melody2' 'melody3'
+#	[ 'nested melody4'
+#		.seq C D E F
+#	]
+#]
+
+
+
+#[note 'melody3'
+#	.seq G A B
+#]
+#
+#[tr 'rhythm1'
+#	.seq 1 0 1 0
+#]
+
 
 
 #[ pattern 'intro'
 #
-#
 #	.track [
 #		'bass'
+#	] [
+#		.note [
+#			'theme'
+#			.seq A#3 B3 C4 D#4
+#		]
+#		.trig [
+#			#'slap rhythm'
+#			.seq 1 0 0 1
+#		]
 #	]
-
-
-		#.note [
-		#	'theme'
-		#	.seq A#3 B3 C4 D#4
-		#]
-		#.trig [
-		#	#'slap rhythm'
-		#	.seq 1 0 0 1
-		#]
-	#]
-	#[
-	#	'drums'
-	#	.note [
-	#		'mapping'
-	#		.seq C2 C2 C2 C2
-	#	]
-	#	.trig [
-	#		'rythm0A'
-	#		.seq 0 1 0 1
-	#	]
-	#]
+#
+#	[
+#		'drums'
+#		.note [
+#			'mapping'
+#			.seq C2 C2 C2 C2
+#		]
+#		.trig [
+#			'rythm0A'
+#			.seq 0 1 0 1
+#		]
+#	]
+#]

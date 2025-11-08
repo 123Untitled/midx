@@ -17,7 +17,7 @@ as::param_view::param_view(const as::tree& tree, const ml::usz pi) noexcept
 /* begin */
 auto as::param_view::begin(void) const noexcept -> as::value_iterator {
 	const auto& p = _tree->_params[_pi];
-	return as::value_iterator{*_tree, p._values_start};
+	return as::value_iterator{*_tree, p.vs};
 }
 
 /* end */
@@ -25,7 +25,7 @@ auto as::param_view::end(void) const noexcept -> as::value_iterator {
 	const auto& p = _tree->_params[_pi];
 	return as::value_iterator{
 		*_tree,
-		p._values_start + p._values_count
+		p.vs + p.vc
 	};
 }
 

@@ -77,6 +77,18 @@ auto lx::lexer::push_error(void) -> void {
 	);
 }
 
+/* push warning */
+template <ml::literal W>
+auto lx::lexer::push_warning(void) -> void {
+	_diag->push_warning(
+		W.data,
+		_line,
+		_base,
+		_base + 1U // will be changed after
+	);
+}
+
+
 /* lex */
 auto lx::lexer::_lex(void) -> void {
 
@@ -84,7 +96,7 @@ auto lx::lexer::_lex(void) -> void {
 	while (_head < _limit) {
 
 		start:
-		ml::u8 quote{'\''};
+		//ml::u8 quote{'\''};
 		const ml::u8 c = *_head;
 
 
@@ -220,27 +232,27 @@ auto lx::lexer::_lex(void) -> void {
 
 			// -- strings -----------------------------------------------------
 
-			case '"':
-				quote = '"';
-
-			case '\'': {
-				_mark = _head;
-				++_head;
-
-				while (_head < _limit
-				   && *_head != quote
-				   && *_head != '\n'
-				   && *_head != '\r')
-					++_head;
-
-				if (_head < _limit && *_head == quote)
-					++_head;
-				else
-					self::push_error<"unterminated string">();
-
-				self::push_token<true, tk::string>();
-				continue;
-			}
+			//case '"':
+			//	quote = '"';
+			//
+			//case '\'': {
+			//	_mark = _head;
+			//	++_head;
+			//
+			//	while (_head < _limit
+			//	   && *_head != quote
+			//	   && *_head != '\n'
+			//	   && *_head != '\r')
+			//		++_head;
+			//
+			//	if (_head < _limit && *_head == quote)
+			//		++_head;
+			//	else
+			//		self::push_warning<"unterminated string">();
+			//
+			//	self::push_token<true, tk::string>();
+			//	continue;
+			//}
 
 			// -- comments ----------------------------------------------------
 

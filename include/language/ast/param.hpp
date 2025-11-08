@@ -2,6 +2,7 @@
 #define language_ast_param_hpp
 
 #include "language/tokens.hpp"
+#include "language/syntax/parameter.hpp"
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
@@ -14,41 +15,82 @@ namespace as {
 	class param final {
 
 
+		// -- friends ---------------------------------------------------------
+
+		/* block as friend */
+		friend class block;
+
+
 		private:
-		public:
 
 			// -- private members ---------------------------------------------
 
-			tk::token* _token;
+			/* parameter */
+			tk::token* _param;
 
-			ml::usz _values_start;
-			ml::usz _values_count;
+			/* param id */
+			pa::id _param_id;
+
 
 		public:
 
+			/* values start index */
+			ml::usz vs;
+
+			/* values count */
+			ml::usz vc;
+
+
 			// -- public lifecycle --------------------------------------------
 
+			/* default constructor */
 			param(void) noexcept
-			:  _token{nullptr}, _values_start{0U}, _values_count{0U} {
+			:  _param{nullptr}, _param_id{pa::id::invalid},
+			   vs{0U}, vc{0U} {
 			}
 
-			explicit param(tk::token* tk, const ml::usz vs, const ml::usz vc = 0U) noexcept
-			: _token{tk}, _values_start{vs}, _values_count{vc} {
+			/* specifier constructor */
+			param(const sp::id spec_id, tk::token& tk, const ml::usz vs) noexcept
+			: _param{&tk}, _param_id{pa::id::invalid},
+			  vs{vs}, vc{0U} {
+
+				// search param id
+				_param_id = pa::search_table[static_cast<ml::usz>(spec_id)]
+					(tk.lexeme);
+
+				// set token id
+				_param->id = (_param_id == pa::id::invalid)
+						   ? tk::invalid
+						   : tk::parameter;
 			}
 
 
+			// -- public accessors --------------------------------------------
+
+			/* token */
 			auto token(void) const noexcept -> tk::token& {
-				return *_token;
+				return *_param;
 			}
+
+			/* param id */
+			auto param_id(void) const noexcept -> pa::id {
+				return _param_id;
+			}
+
+			/* param to spec id */
+			auto param_to_spec(void) const noexcept -> sp::id {
+				return pa::param_to_spec[static_cast<ml::usz>(_param_id)];
+			}
+
 
 			// -- public methods ----------------------------------------------
 
 			auto debug(void) const -> void {
 				std::cout << "    PARAM: ";
-				if (_token == nullptr) {
+				if (_param == nullptr) {
 					std::cout << "//////\n";
 				} else {
-					std::cout << *_token << "\n";
+					std::cout << *_param << "\n";
 				}
 			}
 

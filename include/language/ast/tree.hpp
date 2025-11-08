@@ -29,6 +29,9 @@ namespace as {
 		/* param_view as friend */
 		friend class param_view;
 
+		/* block_iterator as friend */
+		friend class block_iterator;
+
 		/* block_view as friend */
 		friend class block_view;
 
@@ -57,6 +60,9 @@ namespace as {
 			std::vector<as::param> _params_tmp;
 			std::vector<as::value> _values_tmp;
 
+			/* block order */
+			std::vector<ml::usz> _block_order;
+
 
 		public:
 
@@ -78,6 +84,8 @@ namespace as {
 				  _blocks_tmp.reserve( 4U);
 				  _params_tmp.reserve(16U);
 				  _values_tmp.reserve(64U);
+
+				  _block_order.reserve(_blocks.capacity());
 			}
 
 			auto new_block(void) -> void {
@@ -85,99 +93,88 @@ namespace as {
 				_blocks_tmp.emplace_back(_params_tmp.size());
 			}
 
-			auto new_param(tk::token* tk) -> void {
-				_params_tmp.emplace_back(tk, _values_tmp.size());
-				++(_blocks_tmp.back()._params_count);
+			auto new_param(tk::token& tk) -> void {
+				const sp::id spec_id = _blocks_tmp.back().spec_id();
+				_params_tmp.emplace_back(
+						spec_id, tk,
+						_values_tmp.size());
+				++(_blocks_tmp.back().pc);
 			}
 
 			auto new_value(tk::token* tk) -> void {
 				_values_tmp.emplace_back(tk);
-				++(_params_tmp.back()._values_count);
+				++(_params_tmp.back().vc);
 			}
 
 			auto new_nested_block(void) -> void {
 				//std::cout << "\x1b[33mNEW NESTED BLOCK\x1b[0m\n";
-				_blocks_tmp.emplace_back(_params_tmp.size());
 				// specifier from param
-				_blocks_tmp.back().specifier(_params_tmp.back());
+				_blocks_tmp.emplace_back(_params_tmp.size(),
+										 _params_tmp.back());
 			}
 
-			auto new_nested_value(const ml::usz n) -> void {
-				_values_tmp.emplace_back(n);
-				++(_params_tmp.back()._values_count);
-			}
-
+			/* remove last block */
 			auto remove_last_block(void) noexcept -> void {
-				//std::cout << "BEFORE REMOVE LAST BLOCK:\n";
-				//std::cout << " size of tmp_blocks: " << _blocks_tmp.size() << "\n";
-				//std::cout << " size of tmp_params: " << _params_tmp.size() << "\n";
-				//std::cout << " size of tmp_values: " << _values_tmp.size() << "\n";
-				//std::cout << "REMOVE LAST BLOCK\n";
+
 				const auto& b = _blocks_tmp.back();
-					  auto pi = b._params_start;
-				const auto pe = pi + b._params_count;
+					  auto pi = b.ps;
+				const auto pe = b.pc + pi;
 
 				ml::usz vc = 0U;
 				for (; pi < pe; ++pi) {
 					const auto& param = _params_tmp[pi];
-					vc += param._values_count;
+					vc += param.vc;
 				}
 
-				const ml::usz p_resize = _params_tmp.size() - b._params_count;
+				const ml::usz p_resize = _params_tmp.size() - b.pc;
 				const ml::usz v_resize = _values_tmp.size() - vc;
 
 				_blocks_tmp.pop_back();
 				_params_tmp.resize(p_resize);
 				_values_tmp.resize(v_resize);
-
-				//std::cout << "AFTER REMOVE LAST BLOCK:\n";
-				//std::cout << " size of tmp_blocks: " << _blocks_tmp.size() << "\n";
-				//std::cout << " size of tmp_params: " << _params_tmp.size() << "\n";
-				//std::cout << " size of tmp_values: " << _values_tmp.size() << "\n";
 			}
 
 
 
 			auto flush(void) -> void {
 
+				// insert block index in order vector
+				_block_order.emplace_back(_blocks.size());
+
 				// copy block
 				auto& b = _blocks.emplace_back(_blocks_tmp.back());
 
-				ml::usz params_resize = _params_tmp.size() - b._params_count;
+				ml::usz params_resize = _params_tmp.size() - b.pc;
 				ml::usz values_resize = _values_tmp.size();
 
 				// get params tmp start
-					  ml::usz pi = b._params_start;
-				const ml::usz pe = b._params_count + pi;
+					  ml::usz pi = b.ps;
+				const ml::usz pe = b.pc + pi;
 
 				// assign new params start
-				b._params_start = _params.size();
-
-				//std::cout << "FLUSH BLOCK:\n";
-				//std::cout << " size of tmp_blocks: " << _blocks_tmp.size() << "\n";
-				//std::cout << " size of tmp_params: " << _params_tmp.size() << "\n";
-				//std::cout << " size of tmp_values: " << _values_tmp.size() << "\n";
-				//
-				//std::cout << " PARAMS_START: " << b._params_start << "\n";
-				//std::cout << " PARAMS_COUNT: " << b._params_count << "\n";
+				b.ps = _params.size();
 
 				for (; pi < pe; ++pi) {
 
 					const auto& p = _params_tmp[pi];
 
-					_params.emplace_back(
-						// copy token
-						p._token,
-						// new values start
-						_values.size(),
-						// values count
-						p._values_count
-					);
+					_params.emplace_back(p);
+					// update param values start
+					_params.back().vs = _values.size();
 
-					values_resize -= p._values_count;
+					//_params.emplace_back(
+					//	// copy token
+					//	p._token,
+					//	// new values start
+					//	_values.size(),
+					//	// values count
+					//	p._values_count
+					//);
 
-						  ml::usz vi = p._values_start;
-					const ml::usz ve = p._values_count + vi;
+					values_resize -= p.vc;
+
+						  ml::usz vi = p.vs;
+					const ml::usz ve = p.vc + vi;
 					for (; vi < ve; ++vi)
 						_values.emplace_back(_values_tmp[vi]);
 				}
@@ -190,9 +187,18 @@ namespace as {
 
 				// handle nested block index
 				if (!_blocks_tmp.empty()) {
-					++(_params_tmp.back()._values_count);
+					++(_params_tmp.back().vc);
 					_values_tmp.emplace_back(_blocks.size() - 1U);
 				}
+
+			}
+
+			auto dbg(void) const -> void {
+				std::cout << "BLOCKS[" << _blocks.size()
+					<< "][" << _blocks_tmp.size()
+					<< "]TMP PARAMS[" << _params.size()
+					<< "][" << _params_tmp.size() << "]TMP VALUES[" << _values.size()
+					<< "][" << _values_tmp.size() << "]TMP\n";
 			}
 
 			auto last_block(void) noexcept -> as::block& {
@@ -207,18 +213,38 @@ namespace as {
 				_blocks_tmp.clear();
 				_params_tmp.clear();
 				_values_tmp.clear();
+
+				_block_order.clear();
+			}
+
+
+			auto sort(void) noexcept -> void {
+
+				// insertion sort
+				for (ml::usz i = 1U; i < _blocks.size(); ++i) {
+					const auto key = _block_order[i];
+					const auto key_spec = _blocks[key].spec_id();
+
+					ml::usz j = i;
+					while (j > 0U && _blocks[_block_order[j - 1U]].spec_id()
+									> key_spec) {
+						_block_order[j] = _block_order[j - 1U];
+						--j;
+					}
+					_block_order[j] = key;
+				}
 			}
 
 
 			// -- public iterators --------------------------------------------
 
 			/* begin */
-			auto begin(void) const noexcept -> as::block_iterator {
+			auto begin(void) noexcept -> as::block_iterator {
 				return as::block_iterator{*this, 0U};
 			}
 
 			/* end */
-			auto end(void) const noexcept -> as::block_iterator {
+			auto end(void) noexcept -> as::block_iterator {
 				return as::block_iterator{*this, _blocks.size()};
 			}
 
@@ -226,17 +252,28 @@ namespace as {
 			// -- public accessors --------------------------------------------
 
 			/* blocks */
-			auto blocks(void) const noexcept -> const self& {
+			auto blocks(void) noexcept -> self& {
 				return *this;
 			}
 
+			/* number of blocks */
+			auto num_blocks(void) const noexcept -> ml::usz {
+				return _blocks.size();
+			}
+
+			/* block at */
+			auto block_at(const ml::usz bi) noexcept -> as::block& {
+				return _blocks[bi];
+			}
+
+
 
 			/* debug */
-			auto debug(void) const -> void {
+			auto debug(void) -> void {
 
-				const auto& t = *this;
+				auto& t = *this;
 
-				for (const auto& b : t.blocks()) {
+				for (auto b : t.blocks()) {
 					b.block().debug();
 
 					for (const auto& p : b.params()) {

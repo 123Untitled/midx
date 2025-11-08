@@ -3,6 +3,7 @@
 
 #include "language/tokens.hpp"
 #include "language/ast/param.hpp"
+#include "language/syntax/specifier.hpp"
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
@@ -19,81 +20,120 @@ namespace as {
 
 			// -- private members ---------------------------------------------
 
-			enum class spec_type : ml::usz {
-				BLOCK,
-				FROM_PARAM
-			} _spec_type;
-
 			/* specifier */
 			tk::token* _specifier;
 
-			/* id type */
-			enum class id_type : ml::usz {
-				ANONYMOUS,
-				TOKEN
-			} _id_type;
+			/* spec id */
+			sp::id _spec_id;
 
 			/* identifier */
-			union {
-				ml::usz anonymous;
-				tk::token* token;
-			} _identifier;
+			tk::token* _identifier;
 
 
 		public:
-			ml::usz _params_start;
-			ml::usz _params_count;
 
-		public:
+			// -- public members ----------------------------------------------
+
+			/* params start index */
+			ml::usz ps;
+
+			/* params count */
+			ml::usz pc;
+
 
 			// -- public lifecycle --------------------------------------------
 
+			/* default constructor */
 			block(void) noexcept
-			: _spec_type{spec_type::BLOCK},
-			  _specifier{nullptr},
-			  _id_type{id_type::ANONYMOUS},
-			  _identifier{0U},
-			  _params_start{0U},
-			  _params_count{0U} {
+			: _specifier{nullptr},
+			  _spec_id{sp::id::invalid},
+			  _identifier{nullptr},
+			  ps{0U}, pc{0U} {
 			}
 
-			/* constructor */
+			/* params start constructor */
 			block(const ml::usz ps) noexcept
-			: _spec_type{spec_type::BLOCK},
-			  _specifier{nullptr},
-			  _id_type{id_type::ANONYMOUS},
-			  _identifier{0U},
-			  _params_start{ps},
-			  _params_count{0U} {
+			: _specifier{nullptr},
+			  _spec_id{sp::id::invalid},
+			  _identifier{nullptr},
+			  ps{ps}, pc{0U} {
+			}
+
+			/* nested constructor */
+			block(const ml::usz ps, const as::param& p) noexcept
+			: _specifier{p._param},
+			  _spec_id{
+				  // convert param id to spec id
+				  p.param_to_spec()
+			  },
+			  _identifier{nullptr},
+			  ps{ps}, pc{0U} {
 			}
 
 
-			// -- public methods ----------------------------------------------
+			// -- public modifiers --------------------------------------------
 
+			/* specifier */
 			auto specifier(tk::token* tk) noexcept -> void {
-				_spec_type = spec_type::BLOCK;
+
 				_specifier = tk;
+				_spec_id = sp::to_id(tk->lexeme);
+
+				// invalidate token if spec id is invalid
+				_specifier->id = (_spec_id == sp::id::invalid)
+							   ? tk::invalid
+							   : tk::specifier;
 			}
 
-			auto specifier(const as::param& p) noexcept -> void {
-				_spec_type = spec_type::FROM_PARAM;
-				_specifier = p._token;
+			/* identifier */
+			auto identifier(tk::token* tk) noexcept -> void {
+				_identifier = tk;
 			}
 
+
+			// -- public accessors --------------------------------------------
+
+			/* specifier */
 			auto specifier(void) const noexcept -> tk::token& {
 				return *_specifier;
 			}
 
-			auto anonymous(const ml::usz id) noexcept -> void {
-				_id_type = id_type::ANONYMOUS;
-				_identifier.anonymous = id;
+			/* const specifier */
+			auto specifier(void) noexcept -> const tk::token& {
+				return *_specifier;
 			}
 
-			auto identifier(tk::token* tk) noexcept -> void {
-				_id_type = id_type::TOKEN;
-				_identifier.token = tk;
+
+			/* spec id */
+			auto spec_id(void) const noexcept -> sp::id {
+				return _spec_id;
 			}
 
+
+			/* identifier */
+			auto identifier(void) noexcept -> tk::token& {
+				return *_identifier;
+			}
+
+			/* const identifier */
+			auto identifier(void) const noexcept -> const tk::token& {
+				return *_identifier;
+			}
+
+
+			/* is anonymous */
+			auto is_anonymous(void) const noexcept -> bool {
+				return (_identifier == nullptr);
+			}
+
+			/* is nested */
+			auto is_nested(void) const noexcept -> bool {
+				return _specifier->id == tk::parameter;
+			}
+
+
+
+			// -- public methods ----------------------------------------------
 
 			auto debug(void) const -> void {
 
@@ -103,14 +143,12 @@ namespace as {
 				} else {
 					std::cout << *_specifier << " ";
 				}
-				if (_id_type == id_type::ANONYMOUS) {
-					std::cout << "__anon_" << _identifier.anonymous;
+				if (_identifier == nullptr) {
+					std::cout << "__anonymous";
 				} else {
-					std::cout << *(_identifier.token);
+					std::cout << *(_identifier);
 				}
-				std::cout << "\n";
-
-				// debug output
+				std::cout << '\n';
 			}
 	};
 

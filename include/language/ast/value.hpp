@@ -51,6 +51,24 @@ namespace as {
 			}
 
 
+			// -- public accessors --------------------------------------------
+
+			/* is nested */
+			auto is_nested(void) const noexcept -> bool {
+				return _type == value_type::BLOCK;
+			}
+
+			/* block index */
+			auto block_index(void) const noexcept -> ml::usz {
+				return _value.block;
+			}
+
+			/* token */
+			auto token(void) const noexcept -> tk::token& {
+				return *(_value.token);
+			}
+
+
 			// -- public methods ----------------------------------------------
 
 			auto debug(void) const -> void {

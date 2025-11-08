@@ -37,6 +37,11 @@ namespace ml {
 		const ml::u8* end = tk.lexeme.data
 						  + tk.lexeme.size;
 
+		if constexpr (base != 10U) {
+			// skip base prefix
+			it += 2U;
+		}
+
 		ml::i8 num = 0U;
 		constexpr ml::i8 max       = +127;
 		constexpr ml::i8 min       = -128;
@@ -123,7 +128,10 @@ namespace ml {
 
 			case tk::note:
 				break;
+
 			default:
+				diag.push_error("invalid value", tk);
+				tk.id = tk::invalid;
 				break;
 		}
 

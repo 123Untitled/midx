@@ -32,7 +32,7 @@ namespace as {
 			// -- private members ---------------------------------------------
 
 			/* tree reference */
-			const as::tree* _tree;
+			as::tree* _tree;
 
 			/* block index */
 			ml::usz _bi;
@@ -43,7 +43,7 @@ namespace as {
 			// -- public lifecycle --------------------------------------------
 
 			/* constructor */
-			block_view(const as::tree&, const ml::usz) noexcept;
+			block_view(as::tree&, const ml::usz) noexcept;
 
 
 			// -- public iterators --------------------------------------------
@@ -58,10 +58,13 @@ namespace as {
 			// -- public accessors --------------------------------------------
 
 			/* params */
-			auto params(void) const noexcept -> const self&;
+			auto params(void) noexcept -> self&;
 
 			/* block */
-			auto block(void) const noexcept -> const as::block&;
+			auto block(void) noexcept -> as::block&;
+
+			/* block index */
+			auto bi(void) const noexcept -> ml::usz;
 
 	}; // class block_view
 

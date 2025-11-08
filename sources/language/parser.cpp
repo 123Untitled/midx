@@ -36,7 +36,6 @@ auto pr::parser::parse(tk::token_list& tokens,
 	_prev    = nullptr;
 	_counter = UINT64_MAX / 2U;
 
-	   tree.clear();
 	_states.clear();
 
 	self::push_state<expect_block>();
@@ -44,8 +43,11 @@ auto pr::parser::parse(tk::token_list& tokens,
 	for (auto& tok : tokens) {
 		_current = &tok;
 		(this->*(_states.back().st))();
+		//_tree->dbg();
 		_prev = _current;
 	}
+
+	_tree->sort();
 }
 
 
@@ -95,7 +97,6 @@ auto pr::parser::push_warning(const tk::token* tk) -> void {
 
 /* expect block */
 auto pr::parser::state_expect_block(void) -> void {
-	//std::cout << "expect_block\n";
 
 	switch (_current->id) {
 
@@ -119,7 +120,6 @@ auto pr::parser::state_expect_block(void) -> void {
 
 /* expect specifier */
 auto pr::parser::state_expect_specifier(void) -> void {
-	//std::cout << "expect_specifier\n";
 
 	// this is always top level block
 	// this state is never called for nested blocks
@@ -135,10 +135,8 @@ auto pr::parser::state_expect_specifier(void) -> void {
 
 		// specifier
 		case tk::text: {
-			auto& b = _tree->last_block();
-			b.specifier(_current);
+			_tree->last_block().specifier(_current);
 			switch_state<expect_identifier<false>>();
-			_current->id = tk::specifier;
 			break;
 		}
 
@@ -164,15 +162,12 @@ auto pr::parser::state_expect_specifier(void) -> void {
 /* expect identifier */
 template <bool N>
 auto pr::parser::state_expect_identifier(void) -> void {
-	//std::cout << "expect_identifier\n";
 
 	switch (_current->id) {
 
 		// start parameter
 		case tk::dot: {
-			// create anonymous identifier
-			auto& b = _tree->last_block();
-			b.anonymous(new_id());
+			// anonymous identifier
 
 			_current->id = tk::param_dot;
 			switch_state<expect_parameter>();
@@ -221,7 +216,6 @@ auto pr::parser::state_expect_identifier(void) -> void {
 
 /* expect dot */
 auto pr::parser::state_expect_dot(void) -> void {
-	//std::cout << "expect_dot\n";
 
 	switch (_current->id) {
 
@@ -252,14 +246,12 @@ auto pr::parser::state_expect_dot(void) -> void {
 
 /* expect parameter */
 auto pr::parser::state_expect_parameter(void) -> void {
-	//std::cout << "expect_parameter\n";
 
 	switch (_current->id) {
 
 		case tk::text: {
-			_tree->new_param(_current);
+			_tree->new_param(*_current);
 			_prev->id = tk::param_dot;
-			_current->id = tk::parameter;
 			switch_state<expect_value>();
 			break;
 		}
@@ -297,7 +289,6 @@ auto pr::parser::state_expect_parameter(void) -> void {
 
 /* expect value */
 auto pr::parser::state_expect_value(void) -> void {
-	//std::cout << "expect_value\n";
 
 	switch (_current->id) {
 
@@ -337,7 +328,7 @@ auto pr::parser::state_expect_value(void) -> void {
 
 /* panic block */
 auto pr::parser::state_panic_block(void) -> void {
-	//std::cout << "panic_block\n";
+	std::cout << "panic_block\n";
 
 	switch (_current->id) {
 
@@ -362,7 +353,6 @@ auto pr::parser::state_panic_block(void) -> void {
 
 /* remove block */
 auto pr::parser::state_panic_remove_block(void) -> void {
-	//std::cout << "panic_remove_block\n";
 
 	switch (_current->id) {
 
@@ -386,7 +376,6 @@ auto pr::parser::state_panic_remove_block(void) -> void {
 
 /* panic parameter */
 auto pr::parser::state_panic_parameter(void) -> void {
-	//std::cout << "panic_parameter\n";
 
 	switch (_current->id) {
 
@@ -399,10 +388,12 @@ auto pr::parser::state_panic_parameter(void) -> void {
 			break;
 
 		case tk::bracket_close:
+			_tree->flush();
 			_states.pop_back();
 			break;
 
 		case tk::end_of_tokens:
+			// NEED TO FLUSH ALL BLOCKS MAYBE ???
 			_states.pop_back();
 			break;
 

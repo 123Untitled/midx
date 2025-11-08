@@ -1,4 +1,5 @@
 
+# -------------
 array of trigger
 + array of step before next trigger.
 or only one array contains struct with
@@ -7,3 +8,17 @@ struct {
 	bool trig;
 	uint step_to_next;
 };
+
+
+# -----------
+.scale
+implement lookup table for scale like relative jumps
+.scale C minor
+jump[127] = {0, -1, 0, 0, -1, 0, -1, 0, 0, -1, 0, -1}
+but how to choose + or - ?
+imlement many modes like: follow mouvement, go down, go up, random, etc.
+
+
+# -----------
+change comment symbol + accept Cb Fb or B# E# as valid note names
+

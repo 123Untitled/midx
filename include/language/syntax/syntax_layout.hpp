@@ -1,181 +1,157 @@
 #ifndef language_syntax_layout_hpp
 #define language_syntax_layout_hpp
 
-#include "language/syntax/block_list.hpp"
-#include "language/syntax/block_view.hpp"
-
 #include "language/ast/tree.hpp"
+#include "language/tokens.hpp"
+#include "language/identifier_map.hpp"
+#include "language/diagnostic.hpp"
+#include "data/model.hpp"
+#include "atoi.hpp"
 
-#include "time/signature.hpp"
 
 
 // -- S X  N A M E S P A C E --------------------------------------------------
 
 namespace sx {
 
-	// NOTE, TRIG, GATE, OCTAVE, VELOCITY, PROB, SEMITONE, SWING, CONDITION, CHANNEL
-	// sequence, repeat, linked
-
-	// TRACK
-	// trig, note, gate, octave, velocity, prob, semitone, swing, condition, channel
-
-	// PATTERN
-	// section, length
-
-	// SONG
-	// timeline, start, loop
-
-
-	template <ml::u8 DEFAULT>
-	class sequence {
-		public:
-
-			//A   (B  (C  D))  E  F _ _ _
-			//100 (80 (29 11)) 20 28 100_ _ _
-
-			struct slot final {
-				public:
-					ml::u8 value;
-					ml::signature sign;
-					tk::token* token;
-					ml::usz depth;
-			};
-
-			std::vector<slot> _slots;
-
-			auto parse(const as::param_view& pv) -> void {
-
-				for (const auto& v : pv.values()) {
-
-
-				}
-			}
-	};
-
-
 	class builder {
 
 		public:
 
+			using fn_block = auto (sx::builder::*)(as::block_view&) -> void;
+			using fn_param = auto (sx::builder::*)(as::param_view&) -> void;
 
-			auto empty(void) const noexcept -> void {
+			as::tree* _tree;
+			std::vector<mx::usz> _remap;
+			sx::identifier_map _id_map;
+			mx::model _model;
+			an::diagnostic* _diag;
+
+
+			auto build(as::tree& tree, an::diagnostic& diag) -> void {
+
+				_tree = &tree;
+				_diag = &diag;
+				 _model.clear();
+				 _remap.clear();
+				_id_map.clear();
+				 _remap.resize(tree.num_blocks());
+
+
+				for (auto bv : tree.blocks()) {
+
+
+					auto& b         = bv.block();
+					const auto spid = b.spec_id();
+
+					// skip anonymous
+					if (spid != sp::id::invalid && b.is_anonymous() == false) {
+
+						// insert block identifiers
+						if (_id_map.insert(b, bv.bi()) == false) {
+							diag.push_error("duplicate identifier", b.identifier());
+							b.identifier().id = tk::invalid;
+						}
+					}
+
+					// dispatch block builder
+					auto fnb = block_dispatch[static_cast<ml::usz>(spid)];
+					(this->*fnb)(bv);
+				}
+
+				// debug tree
+				tree.debug();
 			}
 
 
-			static constexpr auto layout = sx::block_list {
+			template <sp::id ID>
+			auto build_block_atomic(as::block_view& bv) -> void {
+				// tr, nt, ga, vl, oc, se, ch, pr
+				const auto idx = _model.new_sequence();
+				_remap[bv.bi()] = idx;
 
-				// block trigger
-				sx::block{
-					sx::entry{&sx::builder::empty, "trig", "tr", "trigger"},
-					sx::param_list{
-						sx::entry{&sx::builder::empty, "sequence", "seq"},
-						sx::entry{&sx::builder::empty, "repeat", "rpt"},
-						sx::entry{&sx::builder::empty, "linked", "lnk"}
+				// loop over params
+				for (const auto& pv : bv.params()) {
+
+					auto& p = pv.param();
+
+					if (p.param_id() == pa::id::invalid) {
+						_diag->push_error("invalid parameter", p.token());
+						continue;
 					}
-				},
 
-				// block note
-				sx::block{
-					sx::entry{&sx::builder::empty, "note", "nt", "no"},
-					sx::param_list{
-						sx::entry{&sx::builder::empty, "sequence", "seq"},
-						sx::entry{&sx::builder::empty, "repeat", "rpt"},
-						sx::entry{&sx::builder::empty, "linked", "lnk"}
-					}
-				},
+					switch (p.param_id()) {
 
+						case pa::id::seq: {
+							// loop over values
+							for (const auto& vv : pv.values()) {
 
-				// block gate
-				sx::block{
-					sx::entry{&sx::builder::empty, "gate", "ga"},
-					sx::param_list{
-						sx::entry{&sx::builder::empty, "sequence", "seq"},
-						sx::entry{&sx::builder::empty, "repeat", "rpt"},
-						sx::entry{&sx::builder::empty, "linked", "lnk"}
-					}
-				},
+								auto& v = vv.value();
 
-				// block track
-				sx::block{
-					sx::entry{&sx::builder::empty, "track"},
-					sx::param_list{
-						sx::entry{&sx::builder::empty, "trig", "tr", "trigger"},
-						sx::entry{&sx::builder::empty, "note", "nt", "no"},
-						sx::entry{&sx::builder::empty, "gate", "ga"},
-					}
-				},
+								if (v.is_nested()) {
+									p.token().id = tk::invalid;
+									_diag->push_error("nested block not allowed here", p.token());
+									continue;
+								}
 
-				// block pattern
-				sx::block{
-					sx::entry{&sx::builder::empty, "pattern", "ptn"},
-					sx::param_list{
-						sx::entry{&sx::builder::empty, "sequence", "seq"},
-						sx::entry{&sx::builder::empty, "repeat", "rpt"},
-						sx::entry{&sx::builder::empty, "linked", "lnk"}
+								mx::i8 n = ml::to_integer<>(v.token(), *_diag);
+								std::cout << (int)n << "\n";
+							}
+
+							break;
+						}
+						case pa::id::rpt: {
+							break;
+						}
+						case pa::id::lnk: {
+							break;
+						}
+						default: {
+							continue;
+						}
 					}
 				}
+			}
+
+
+			auto build_block_track(as::block_view& bv) -> void {
+			}
+
+			auto build_block_pattern(as::block_view& bv) -> void {
+			}
+			auto build_block_song(as::block_view& bv) -> void {
+			}
+
+			/* invalid block */
+			auto build_block_invalid(as::block_view& bv) -> void {
+				//_diag->push_error("invalid specifier", bv.block().specifier());
+			}
+
+
+
+			static constexpr fn_block block_dispatch[static_cast<ml::usz>(sp::id::count)] {
+				&sx::builder::build_block_atomic<sp::id::trig>,
+				&sx::builder::build_block_atomic<sp::id::note>,
+				&sx::builder::build_block_atomic<sp::id::gate>,
+				&sx::builder::build_block_atomic<sp::id::velo>,
+				&sx::builder::build_block_atomic<sp::id::octa>,
+				&sx::builder::build_block_atomic<sp::id::semi>,
+				&sx::builder::build_block_atomic<sp::id::chan>,
+				&sx::builder::build_block_atomic<sp::id::prob>,
+				&sx::builder::build_block_track,
+				&sx::builder::build_block_pattern,
+				&sx::builder::build_block_song,
+				&sx::builder::build_block_invalid
+			};
+
+			static constexpr fn_param param_dispatch[static_cast<ml::usz>(pa::id::count)] {
 			};
 
 
-			auto build(const as::tree& tree) -> void {
-
-				for (const auto& b : tree.blocks()) {
-
-					auto& spec = b.block().specifier();
-
-					auto bv = layout.find_block(spec.lexeme);
-
-					if (bv.block_not_found()) {
-						std::cout << "block not \x1b[31mfound\x1b[0m: " << spec.lexeme << "\n";
-						spec.id = tk::invalid;
-						continue;
-					}
-					else {
-						std::cout << "block \x1b[32mfound\x1b[0m: " << spec.lexeme << "\n";
-					}
+	}; // class builder
 
 
-					for (const auto& p : b.params()) {
-
-						auto& tk = p.param().token();
-
-						auto pv = bv.find_param(tk.lexeme);
-
-						if (pv.param_not_found()) {
-							std::cout << "  param not \x1b[31mfound\x1b[0m: " << tk.lexeme << "\n";
-							tk.id = tk::invalid;
-							continue;
-						}
-						else {
-							std::cout << "  param \x1b[32mfound\x1b[0m: " << tk.lexeme << "\n";
-						}
-
-						for (const auto& v : p.values()) {
-
-
-
-						}
-					}
-				}
-			}
-	};
-
-
-	//using layout_type = std::remove_cvref<decltype(layout)>::type;
-	//using block_view_type = sx::block_view<sx::layout_type>;
-	//
-	//
-	//template <ml::literal L>
-	//consteval auto request_block(void) noexcept -> block_view_type {
-	//	constexpr auto bv = sx::layout.template find_block<L>();
-	//	//constexpr auto bv = sx::layout.find_block(l);
-	//	static_assert(!bv.block_not_found(), "requested block not found in layout");
-	//	return bv;
-	//}
 
 } // namespace sx
 
 #endif // language_syntax_syntax_layout_hpp
-
-
-

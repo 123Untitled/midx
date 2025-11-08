@@ -31,7 +31,7 @@ namespace as {
 			// -- private members ---------------------------------------------
 
 			/* tree reference */
-			const as::tree* _tree;
+			as::tree* _tree;
 
 			/* block index */
 			ml::usz _bi;
@@ -42,34 +42,23 @@ namespace as {
 			// -- public lifecycle --------------------------------------------
 
 			/* constructor */
-			block_iterator(const as::tree& tree,
-						   const ml::usz bi = 0U) noexcept
-			: _tree{&tree}, _bi{bi} {
-			}
+			block_iterator(as::tree& tree,
+						   const ml::usz bi = 0U) noexcept;
 
 
 			// -- public operators --------------------------------------------
 
 			/* dereference operator */
-			auto operator*(void) const noexcept -> as::block_view {
-				return as::block_view{*_tree, _bi};
-			}
+			auto operator*(void) const noexcept -> as::block_view;
 
 			/* pre-increment operator */
-			auto operator++(void) noexcept -> self& {
-				++_bi;
-				return *this;
-			}
+			auto operator++(void) noexcept -> self&;
 
 			/* equality operators */
-			constexpr auto operator==(const self& other) const noexcept -> bool {
-				return _bi == other._bi;
-			}
+			auto operator==(const self&) const noexcept -> bool;
 
 			/* inequality operators */
-			constexpr auto operator!=(const self& other) const noexcept -> bool {
-				return _bi != other._bi;
-			}
+			auto operator!=(const self&) const noexcept -> bool;
 
 	}; // class block_iterator
 

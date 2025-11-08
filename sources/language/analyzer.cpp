@@ -25,22 +25,23 @@ auto ml::analyzer::analyze(const std::string& data) -> void {
 		reinterpret_cast<const ml::u8*>(data.data() + data.size())
 	};
 
-	_tokens.clear();
+		_tokens.clear();
+		  _tree.clear();
 	_diagnostic.clear();
 
 	// lex
 	_lexer.lex(br, _tokens, _diagnostic);
 
-	//_tokens.debug(br);
-
 	// parse
 	_parser.parse(_tokens, _diagnostic, _tree);
 
-	_tree.debug();
+	//_tree.debug();
 
 	sx::builder b;
 
-	b.build(_tree);
+	b.build(_tree, _diagnostic);
+
+	//_tokens.debug(br);
 
 
 

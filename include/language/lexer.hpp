@@ -4,7 +4,6 @@
 #include "byte_range.hpp"
 #include "literal.hpp"
 #include "language/tokens.hpp"
-#include <vector>
 
 
 // -- forward declarations ----------------------------------------------------
@@ -83,6 +82,10 @@ namespace lx {
 			/* push error */
 			template <ml::literal>
 			auto push_error(void) -> void;
+
+			/* push warning */
+			template <ml::literal>
+			auto push_warning(void) -> void;
 
 
 		public:

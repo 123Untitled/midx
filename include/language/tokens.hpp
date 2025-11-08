@@ -130,11 +130,24 @@ namespace tk {
 	// -- T O K E N -----------------------------------------------------------
 
 	struct token final {
-		tk::id     id;
-		lx::lexeme lexeme;
-		ml::uint line;
-		ml::uint col_head;
-		ml::uint col_tail;
+
+
+		private:
+			
+			// -- private types -----------------------------------------------
+
+			/* self type */
+			using self = tk::token;
+
+
+		public:
+
+			tk::id     id;
+			lx::lexeme lexeme;
+			ml::uint line;
+			ml::uint col_head;
+			ml::uint col_tail;
+
 	}; // class token
 
 

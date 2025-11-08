@@ -7,7 +7,7 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* constructor */
-as::block_view::block_view(const as::tree& tree, const ml::usz bi) noexcept
+as::block_view::block_view(as::tree& tree, const ml::usz bi) noexcept
 : _tree{&tree}, _bi{bi} {
 }
 
@@ -18,7 +18,7 @@ as::block_view::block_view(const as::tree& tree, const ml::usz bi) noexcept
 auto as::block_view::begin(void) const noexcept -> as::param_iterator {
 	return as::param_iterator{
 		*_tree,
-		_tree->_blocks[_bi]._params_start
+		_tree->_blocks[_bi].ps
 	};
 }
 
@@ -26,8 +26,7 @@ auto as::block_view::begin(void) const noexcept -> as::param_iterator {
 auto as::block_view::end(void) const noexcept -> as::param_iterator {
 	const auto& b = _tree->_blocks[_bi];
 	return as::param_iterator{
-		*_tree,
-		b._params_start + b._params_count
+		*_tree, b.ps + b.pc
 	};
 }
 
@@ -35,11 +34,16 @@ auto as::block_view::end(void) const noexcept -> as::param_iterator {
 // -- public accessors --------------------------------------------------------
 
 /* params */
-auto as::block_view::params(void) const noexcept -> const self& {
+auto as::block_view::params(void) noexcept -> self& {
 	return *this;
 }
 
 /* block */
-auto as::block_view::block(void) const noexcept -> const as::block& {
+auto as::block_view::block(void) noexcept -> as::block& {
 	return _tree->_blocks[_bi];
+}
+
+/* block index */
+auto as::block_view::bi(void) const noexcept -> ml::usz {
+	return _bi;
 }

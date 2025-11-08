@@ -294,6 +294,57 @@ namespace sx {
 
 #endif // language_syntax_block_list_hpp
 
+			//static constexpr auto layout = sx::block_list {
+			//
+			//	// block trigger
+			//	sx::block{
+			//		sx::entry{&sx::builder::empty, "trig", "tr", "trigger"},
+			//		sx::param_list{
+			//			sx::entry{&sx::builder::empty, "sequence", "seq"},
+			//			sx::entry{&sx::builder::empty, "repeat", "rpt"},
+			//			sx::entry{&sx::builder::empty, "linked", "lnk"}
+			//		}
+			//	},
+			//
+			//	// block note
+			//	sx::block{
+			//		sx::entry{&sx::builder::empty, "note", "nt", "no"},
+			//		sx::param_list{
+			//			sx::entry{&sx::builder::empty, "sequence", "seq"},
+			//			sx::entry{&sx::builder::empty, "repeat", "rpt"},
+			//			sx::entry{&sx::builder::empty, "linked", "lnk"}
+			//		}
+			//	},
+			//
+			//
+			//	// block gate
+			//	sx::block{
+			//		sx::entry{&sx::builder::empty, "gate", "ga"},
+			//		sx::param_list{
+			//			sx::entry{&sx::builder::empty, "sequence", "seq"},
+			//			sx::entry{&sx::builder::empty, "repeat", "rpt"},
+			//			sx::entry{&sx::builder::empty, "linked", "lnk"}
+			//		}
+			//	},
+			//
+			//	// block track
+			//	sx::block{
+			//		sx::entry{&sx::builder::empty, "track"},
+			//		sx::param_list{
+			//			sx::entry{&sx::builder::empty, "trig", "tr", "trigger"},
+			//			sx::entry{&sx::builder::empty, "note", "nt", "no"},
+			//			sx::entry{&sx::builder::empty, "gate", "ga"},
+			//		}
+			//	},
+			//
+			//	// block pattern
+			//	sx::block{
+			//		sx::entry{&sx::builder::empty, "pattern", "ptn"},
+			//		sx::param_list{
+			//			sx::entry{&sx::builder::empty, "track", "seq"}
+			//		}
+			//	}
+			//};
 
 
 

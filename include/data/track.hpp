@@ -130,33 +130,17 @@ namespace ml {
 			using self = ml::track;
 
 
+
 			// -- private members ---------------------------------------------
+
+			/* indices to sequences */
+			ml::usz _indices[SEQ_COUNT];
+
+			/* states */
+			ml::seq_slot* _states[SEQ_COUNT];
+
+
 		public:
-
-			/* trig index */
-			ml::usz tr_index;
-
-			/* channel index */
-			ml::usz ch_index;
-
-			/* note index */
-			ml::usz nt_index;
-
-			/* gate index */
-			ml::usz ga_index;
-
-			/* velocity index */
-			ml::usz vl_index;
-
-			/* octave index */
-			ml::usz oc_index;
-
-			/* semitone index */
-			ml::usz se_index;
-
-			/* probability index */
-			ml::usz pr_index;
-
 
 
 			/* note off */
@@ -258,6 +242,29 @@ namespace ml {
 				//};
 				//
 				//std::cout << "\x1b[32m/" << std::flush;
+			}
+
+
+			// -- public accessors --------------------------------------------
+
+			/* index */
+			template <seq_type T>
+			auto index(void) const noexcept -> ml::usz {
+				static_assert(T < SEQ_COUNT, "invalid sequence type");
+				return _indices[T];
+			}
+
+			/* play */
+			auto play(std::vector<ml::sequence>& seqs, const ml::u64 timeline) noexcept -> void {
+
+				_states[TR] = &seqs[_indices[TR]].next(timeline);
+				_states[NT] = &seqs[_indices[NT]].next(timeline);
+				_states[GA] = &seqs[_indices[GA]].next(timeline);
+				_states[VL] = &seqs[_indices[VL]].next(timeline);
+				_states[OC] = &seqs[_indices[OC]].next(timeline);
+				_states[SE] = &seqs[_indices[SE]].next(timeline);
+				_states[CH] = &seqs[_indices[CH]].next(timeline);
+				_states[PR] = &seqs[_indices[PR]].next(timeline);
 			}
 
 

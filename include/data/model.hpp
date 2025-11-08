@@ -35,42 +35,11 @@ namespace mx {
 				PR_DEFAULT = 100
 			};
 
-			using tr_seq = ml::sequence<TR_DEFAULT>;
-			using nt_seq = ml::sequence<NT_DEFAULT>;
-			using ga_seq = ml::sequence<GA_DEFAULT>;
-			using ch_seq = ml::sequence<CH_DEFAULT>;
-			using vl_seq = ml::sequence<VL_DEFAULT>;
-			using oc_seq = ml::sequence<OC_DEFAULT>;
-			using se_seq = ml::sequence<SE_DEFAULT>;
-			using pr_seq = ml::sequence<PR_DEFAULT>;
-
 
 			// -- private members ---------------------------------------------
 
-			/* trigs */
-			std::vector<tr_seq> _trs;
-
-			/* notes */
-			std::vector<nt_seq> _nts;
-
-			/* gates */
-			std::vector<ga_seq> _gas;
-
-			/* channels */
-			std::vector<ch_seq> _chs;
-
-			/* velocities */
-			std::vector<vl_seq> _vls;
-
-			/* octaves */
-			std::vector<oc_seq> _ocs;
-
-			/* semitones */
-			std::vector<se_seq> _ses;
-
-			/* probabilities */
-			std::vector<pr_seq> _prs;
-
+			/* sequences */
+			std::vector<ml::sequence> _seqs;
 
 
 			/* tracks */
@@ -98,19 +67,23 @@ namespace mx {
 			~model(void) noexcept = default;
 
 
-			auto play(void) -> void {
+			auto new_sequence(void) -> ml::usz {
+				_seqs.emplace_back();
+				return _seqs.size() - 1U;
+			}
+
+			auto clear(void) noexcept -> void {
+				_seqs.clear();
+				_tracks.clear();
+				_patterns.clear();
+			}
+
+			auto play(const ml::u64 timeline) -> void {
 
 
-				for (const auto& t : _tracks) {
+				for (auto& t : _tracks) {
 
-					auto& tr = _trs[t.tr_index];
-					auto& nt = _nts[t.nt_index];
-					auto& gt = _gas[t.ga_index];
-					auto& ch = _chs[t.ch_index];
-					auto& vl = _vls[t.vl_index];
-					auto& oc = _ocs[t.oc_index];
-					auto& se = _ses[t.se_index];
-					auto& pr = _prs[t.pr_index];
+					t.play(_seqs, timeline);
 				}
 			}
 
