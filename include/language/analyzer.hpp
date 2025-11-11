@@ -6,6 +6,8 @@
 #include "language/tokens/token_list.hpp"
 #include "language/ast/tree.hpp"
 #include "language/diagnostic.hpp"
+#include "language/syntax/syntax_layout.hpp"
+#include "data/model.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -28,6 +30,8 @@ namespace ml {
 
 			// -- private members ---------------------------------------------
 
+			std::string _data;
+
 			/* lexer */
 			lx::lexer _lexer;
 
@@ -43,6 +47,10 @@ namespace ml {
 			/* diagnostic */
 			an::diagnostic _diagnostic;
 
+			sx::builder _builder;
+
+			/* model */
+			mx::model _model;
 
 			std::string _highlights;
 
@@ -61,11 +69,21 @@ namespace ml {
 			auto analyze(void) -> void;
 
 			/* analyze from string */
-			auto analyze(const std::string&) -> void;
+			auto analyze(std::string&) -> void;
 
 			/* highlights */
-			auto highlights(void) const noexcept -> const std::string& {
+			auto highlights(void) noexcept -> std::string& {
 				return _highlights;
+			}
+
+			/* has errors */
+			auto has_errors(void) const noexcept -> bool {
+				return _diagnostic.has_errors();
+			}
+
+			/* model */
+			auto model(void) noexcept -> mx::model& {
+				return _model;
 			}
 
 	}; // class analyzer

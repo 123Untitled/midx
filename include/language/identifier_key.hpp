@@ -24,8 +24,13 @@ namespace sx {
 
 			// -- private members ---------------------------------------------
 
-			/* block */
-			const as::block* _block;
+			/* specifier id */
+			const sp::id _spec_id;
+
+			/* lexeme */
+			const lx::lexeme* _lexeme;
+			///* block */
+			//const as::block* _block;
 
 
 		public:
@@ -35,7 +40,14 @@ namespace sx {
 
 			/* constructor */
 			identifier_key(const as::block& b) noexcept
-			: _block{&b} {
+			//: _block{&b} {
+			: _spec_id{b.spec_id()},
+			  _lexeme{&b.identifier().lexeme} {
+			}
+
+			identifier_key(const sp::id id, const lx::lexeme& l) noexcept
+			: _spec_id{id},
+			  _lexeme{&l} {
 			}
 
 
@@ -53,11 +65,16 @@ namespace sx {
 					auto operator()(const self& key) const noexcept -> ml::usz {
 
 						// assume token is not anonymous
-						auto&  tk = key._block->identifier();
-						sp::id id = key._block->spec_id();
+						//auto&  tk = key._block->identifier();
+						//sp::id id = key._block->spec_id();
+						//
+						//ml::usz h = tk.lexeme.hash();
+						//return  h ^ static_cast<ml::usz>(id)
+						//		  + 0x9e3779b9 + (h << 6U)
+						//					   + (h >> 2U);
 
-						ml::usz h = tk.lexeme.hash();
-						return  h ^ static_cast<ml::usz>(id)
+						mx::usz h = key._lexeme->hash();
+						return  h ^ static_cast<mx::usz>(key._spec_id)
 								  + 0x9e3779b9 + (h << 6U)
 											   + (h >> 2U);
 					}
@@ -73,13 +90,20 @@ namespace sx {
 				// assume token is not anonymous
 
 				// compare spec ids
-				if (_block->spec_id() != other._block->spec_id())
+				//if (_block->spec_id() != other._block->spec_id())
+				//	return false;
+				//
+				//// compare lexemes
+				//const auto& lx1 =       _block->identifier().lexeme;
+				//const auto& lx2 = other._block->identifier().lexeme;
+				//return lx1 == lx2;
+
+				// compare spec ids
+				if (_spec_id != other._spec_id)
 					return false;
 
 				// compare lexemes
-				const auto& lx1 =       _block->identifier().lexeme;
-				const auto& lx2 = other._block->identifier().lexeme;
-				return lx1 == lx2;
+				return *_lexeme == *(other._lexeme);
 			}
 
 	}; // class identifier_key

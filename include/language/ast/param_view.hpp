@@ -63,6 +63,9 @@ namespace as {
 			/* param */
 			auto param(void) const noexcept -> const as::param&;
 
+			/* num values */
+			auto num_values(void) const noexcept -> ml::usz;
+
 	}; // class param_view
 
 } // namespace as

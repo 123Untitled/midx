@@ -22,3 +22,7 @@ imlement many modes like: follow mouvement, go down, go up, random, etc.
 # -----------
 change comment symbol + accept Cb Fb or B# E# as valid note names
 
+
+# -----------
+implement panic parameter 
+

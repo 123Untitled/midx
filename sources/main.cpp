@@ -19,6 +19,7 @@
 
 auto main(int ac, char** av) -> int {
 
+
 	try {
 		// clear screen
 		std::cout << "\x1b[2J\x1b[H\x1b[31m--- program started ---\x1b[0m\n";

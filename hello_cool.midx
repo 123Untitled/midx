@@ -1,0 +1,94 @@
+[tr] rsyn1 .seq  1 0 0 1 0
+
+[ga] gsyn1 .seq 50 30 80
+
+[oc] osyn1 .seq  -1 0 +1
+
+
+[se] ssyn1 .seq  0 0 5 0 0 0
+.lnk true
+.rst true
+
+[ch] csyn1
+.seq 1 1
+
+
+[nt] theme
+.seq
+53 53 53 53 53 53 53 53
+53 53 53 53 53 53 53 53
+51 51 51 51 51 51 51 51
+51 51 51 51 51 51 51 51
+48 48 48 48 48 48 48 48
+48 48 48 48 48 48 48 48
+60 60 60 60 60 60 60 60
+60 60 60 60 60 60 60 60
+
+
+[track] bas2
+.ga &gsyn1
+.se &ssyn1
+.oc &osyn1
+.tr &rsyn1
+.nt &theme
+.ch &csyn1
+
+
+
+
+[tr] rsyn2 .seq  0 1 0 0 0
+[ga] gsyn2 .seq 50 30 80
+[oc] osyn2 .seq  -1 0 +1
+[ch] csyn2 .seq 2
+
+
+[nt] theme2
+.seq
+55 55 56 58
+
+
+[track] synth2
+.ga &gsyn2
+.oc &osyn2
+.tr &rsyn2
+.nt &theme2
+.ch &csyn2
+
+
+# -- K I C K ------------------------------------------------------------------
+
+[ch]ch.seq 0
+
+[octa] o2
+	.seq  -1
+
+[tr] rythm0B .seq 1 0 0 0  0 0 0 0
+				  0 0 0 0  0 0 0 0
+				  1 0 0 0  0 0 0 0
+				  0 0 0 0  1 0 0 0
+
+[track] kick
+.tr &rythm0B
+.ch &ch
+.oc &o2
+.nt &theme
+
+
+# -- S N A R E ----------------------------------------------------------------
+
+[tr] snry .seq
+1 0 0 0 0 0 0 0
+1 0 0 0 0 0 1 0
+
+[vl] vls
+#.seq 127 20 20 20 90 20 20 20
+
+[ch] chsn .seq 3
+
+[track] sn
+.vl &vls
+.tr &snry
+.ch &chsn
+
+
+

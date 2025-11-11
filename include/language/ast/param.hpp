@@ -45,7 +45,8 @@ namespace as {
 
 			/* default constructor */
 			param(void) noexcept
-			:  _param{nullptr}, _param_id{pa::id::invalid},
+			: _param{nullptr},
+			  _param_id{pa::id::invalid},
 			   vs{0U}, vc{0U} {
 			}
 

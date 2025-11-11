@@ -1,20 +1,23 @@
-#ifndef midilang_player_hpp
-#define midilang_player_hpp
+#ifndef player_hpp
+#define player_hpp
 
 #include "time/clock.hpp"
 #include <vector>
 #include "coremidi/eventlist.hpp"
 
+#include "monitoring/server.hpp"
 
-// -- M L  N A M E S P A C E --------------------------------------------------
+#include "system/concurrency/mutex.hpp"
 
-namespace ml {
+
+// -- M X  N A M E S P A C E --------------------------------------------------
+
+namespace mx {
 
 
 	// -- forward declarations ------------------------------------------------
 
-	/* application */
-	class application;
+	class model;
 
 
 	// -- P L A Y E R ---------------------------------------------------------
@@ -27,10 +30,18 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::player;
+			using self = mx::player;
 
 
 			// -- private members ---------------------------------------------
+
+			/* mutex */
+			mx::mutex _mutex;
+
+			/* model reference */
+			mx::model* _model;
+
+			ml::server* _server;
 
 			/* clock */
 			ml::clock _clock;
@@ -58,6 +69,14 @@ namespace ml {
 			~player(void) noexcept;
 
 
+
+			auto model(mx::model& m) noexcept -> void;
+
+			auto server(ml::server& s) noexcept -> void {
+				_server = &s;
+			}
+
+
 			// -- public methods ----------------------------------------------
 
 			/* start */
@@ -79,6 +98,13 @@ namespace ml {
 			auto clock_stop(void) -> void override;
 
 
+			// -- public accessors --------------------------------------------
+
+			/* is playing */
+			auto is_playing(void) const noexcept -> bool {
+				return _clock.is_running();
+			}
+
 		private:
 
 			// -- private static methods --------------------------------------
@@ -88,6 +114,6 @@ namespace ml {
 
 	}; // class player
 
-} // namespace ml
+} // namespace mx
 
-#endif // midilang_player_hpp
+#endif // player_hpp

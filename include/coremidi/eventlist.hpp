@@ -3,7 +3,7 @@
 
 #include "coremidi/source.hpp"
 #include "coremidi/types.hpp"
-#include "coremidi/output.hpp"
+//#include "coremidi/output.hpp"
 
 #include <vector>
 
@@ -34,6 +34,24 @@ namespace cm {
 				// The maximum size of an event list is 65,536 bytes.
 				MAX_EVENT = 65'536
 			};
+
+
+			// -- private members ---------------------------------------------
+
+			/* buffer */
+			std::vector<UInt8> _buffer;
+
+			/* A variable-length list of MIDI event packets. */
+			/*       - protocol (MIDIProtocolID) -> The MIDI protocol variant of the events in the list. */
+			/*       - numpackets (UInt32) -> The number of MIDI event packet structures in the list. */
+			/*       - packet (MIDIEventpacket) -> An array of variable-length MIDI event packet structures. */
+			::MIDIEventList* _list;
+
+			/* A series of simultaneous MIDI events in Universal MIDI packets (UMP) format. */
+			/*       - timeStamp (UInt64) -> The event packet timestamp. */
+			/*       - wordCount (UInt32) -> The number of valid MIDI 32-bit words in this event packet. */
+			/*       - words (UInt32 []) -> A variable-length stream of native-endian 32-bit Universal MIDI packets (UMP). */
+			::MIDIEventPacket* _packet;
 
 
 		public:
@@ -81,7 +99,7 @@ namespace cm {
 			/* note on */
 			auto note_on(const cm::u8,
 						 const cm::u8,
-						 const cm::u8 = 100U) -> void;
+						 const cm::u8) -> void;
 
 			/* note off */
 			auto note_off(const cm::u8,
@@ -109,22 +127,6 @@ namespace cm {
 			auto _resize(void) -> bool;
 
 
-			// -- private members ---------------------------------------------
-
-			/* buffer */
-			std::vector<UInt8> _buffer;
-
-			/* A variable-length list of MIDI event packets. */
-			/*       - protocol (MIDIProtocolID) -> The MIDI protocol variant of the events in the list. */
-			/*       - numpackets (UInt32) -> The number of MIDI event packet structures in the list. */
-			/*       - packet (MIDIEventpacket) -> An array of variable-length MIDI event packet structures. */
-			::MIDIEventList* _list;
-
-			/* A series of simultaneous MIDI events in Universal MIDI packets (UMP) format. */
-			/*       - timeStamp (UInt64) -> The event packet timestamp. */
-			/*       - wordCount (UInt32) -> The number of valid MIDI 32-bit words in this event packet. */
-			/*       - words (UInt32 []) -> A variable-length stream of native-endian 32-bit Universal MIDI packets (UMP). */
-			::MIDIEventPacket* _packet;
 
 	}; // class eventlist
 

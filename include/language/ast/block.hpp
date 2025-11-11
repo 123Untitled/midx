@@ -43,47 +43,24 @@ namespace as {
 
 			// -- public lifecycle --------------------------------------------
 
-			/* default constructor */
-			block(void) noexcept
-			: _specifier{nullptr},
-			  _spec_id{sp::id::invalid},
-			  _identifier{nullptr},
-			  ps{0U}, pc{0U} {
-			}
+			/* deleted default constructor */
+			block(void) = delete;
 
-			/* params start constructor */
-			block(const ml::usz ps) noexcept
-			: _specifier{nullptr},
-			  _spec_id{sp::id::invalid},
+			/* token constructor */
+			block(tk::token& tk, const ml::usz ps) noexcept
+			: _specifier{&tk},
+			  _spec_id{sp::to_id(tk.lexeme)},
 			  _identifier{nullptr},
 			  ps{ps}, pc{0U} {
-			}
-
-			/* nested constructor */
-			block(const ml::usz ps, const as::param& p) noexcept
-			: _specifier{p._param},
-			  _spec_id{
-				  // convert param id to spec id
-				  p.param_to_spec()
-			  },
-			  _identifier{nullptr},
-			  ps{ps}, pc{0U} {
-			}
-
-
-			// -- public modifiers --------------------------------------------
-
-			/* specifier */
-			auto specifier(tk::token* tk) noexcept -> void {
-
-				_specifier = tk;
-				_spec_id = sp::to_id(tk->lexeme);
 
 				// invalidate token if spec id is invalid
 				_specifier->id = (_spec_id == sp::id::invalid)
 							   ? tk::invalid
 							   : tk::specifier;
 			}
+
+
+			// -- public modifiers --------------------------------------------
 
 			/* identifier */
 			auto identifier(tk::token* tk) noexcept -> void {
@@ -123,12 +100,7 @@ namespace as {
 
 			/* is anonymous */
 			auto is_anonymous(void) const noexcept -> bool {
-				return (_identifier == nullptr);
-			}
-
-			/* is nested */
-			auto is_nested(void) const noexcept -> bool {
-				return _specifier->id == tk::parameter;
+				return _identifier == nullptr;
 			}
 
 

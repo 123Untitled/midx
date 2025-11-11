@@ -58,7 +58,7 @@ namespace lx {
 			// -- public methods ----------------------------------------------
 
 			/* hash */
-			auto hash(void) const noexcept -> ml::usz {
+			auto hash(void) const noexcept -> mx::usz {
 				ml::usz h = 0U;
 				for (ml::usz i = 0U; i < size; ++i)
 					h = h * 31U + static_cast<ml::usz>(data[i]);

@@ -42,6 +42,13 @@ auto ml::monitor::unsubscribe(ml::watcher& w) const -> void {
 		throw ml::system_error{"kevent"};
 }
 
+/* record */
+auto ml::monitor::record(const struct ::kevent& ev) const -> void {
+	// record event
+	if (::kevent(_kqueue, &ev, 1, nullptr, 0, nullptr) == -1)
+		throw ml::system_error{"kevent"};
+}
+
 /* wait */
 auto ml::monitor::wait(ml::application& app) -> void {
 
@@ -63,7 +70,6 @@ auto ml::monitor::wait(ml::application& app) -> void {
 	}
 
 	for (int i = 0; i < ret; ++i) {
-
 		// handle event
 		auto* watcher = static_cast<ml::watcher*>(_events[i].udata);
 		watcher->on_event(app, _events[i]);

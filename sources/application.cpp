@@ -16,18 +16,32 @@ ml::application::application(const char* path)
   //_watcher{path, _monitor},
   _server{_monitor},
   _protocol{},
-  _analyzer{} {
+  _analyzers{},
+  _active{0U} {
+
+	_player.server(_server);
 }
 
 
 // -- private methods ---------------------------------------------------------
 
 auto ml::application::reparse(void) -> void {
-	std::cout << "\x1b[2J\x1b[H";
-	_analyzer.analyze(_protocol.data());
-	_server.broadcast(_analyzer.highlights());
-	//_server.broadcast(_analyzer._diag_json);
-	//std::cout << _analyzer._diag_json << std::endl;
+
+	auto& analyzer = _analyzers[_active];
+
+	analyzer.analyze(_protocol.data());
+	_server.broadcast(analyzer.highlights());
+	std::cout << "\x1b[31mANALYZER: " << _active << "\x1b[0m\n";
+
+	if (analyzer.has_errors() == false) {
+
+
+		_player.model(analyzer.model());
+		_active = (_active + 1U) % 2U;
+
+		if (_player.is_playing() == false)
+			_player.start();
+	}
 }
 
 /* run */
@@ -40,13 +54,14 @@ auto ml::application::_run(void) -> void {
 
 		if (_protocol.require_update()) {
 			reparse();
+			_protocol.reset();
 		}
 		//if (_watcher.has_changes(_monitor)) {
 		//	reparse();
 		//}
 	}
 
-	//_player.stop();
+	_player.stop();
 }
 
 

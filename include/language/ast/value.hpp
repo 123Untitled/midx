@@ -18,17 +18,8 @@ namespace as {
 
 			// -- private members ---------------------------------------------
 
-			/* value type */
-			enum class value_type : ml::usz {
-				BLOCK,
-				TOKEN
-			} _type;
-
 			/* value */
-			union {
-				ml::usz    block;
-				tk::token* token;
-			} _value;
+			tk::token* _value;
 
 
 		public:
@@ -37,52 +28,27 @@ namespace as {
 
 			/* default constructor */
 			value(void) noexcept
-			: _type{value_type::TOKEN}, _value{.token = nullptr} {
-			}
-
-			/* nested block constructor */
-			explicit value(const ml::usz bi) noexcept
-			: _type{value_type::BLOCK}, _value{.block = bi} {
+			: _value{nullptr} {
 			}
 
 			/* token constructor */
-			explicit value(tk::token* v) noexcept
-			: _type{value_type::TOKEN}, _value{.token = v} {
+			explicit value(tk::token& tk) noexcept
+			: _value{&tk} {
 			}
 
 
 			// -- public accessors --------------------------------------------
 
-			/* is nested */
-			auto is_nested(void) const noexcept -> bool {
-				return _type == value_type::BLOCK;
-			}
-
-			/* block index */
-			auto block_index(void) const noexcept -> ml::usz {
-				return _value.block;
-			}
-
 			/* token */
 			auto token(void) const noexcept -> tk::token& {
-				return *(_value.token);
+				return *_value;
 			}
 
 
 			// -- public methods ----------------------------------------------
 
 			auto debug(void) const -> void {
-				std::cout << "        VALUE: ";
-				switch (_type) {
-					case value_type::TOKEN:
-						std::cout << *(_value.token) << '\n';
-						break;
-					case value_type::BLOCK:
-						std::cout << "[nested block #" << _value.block << "]\n";
-						break;
-					default:
-						break;
-				}
+				std::cout << "        VALUE: " << *_value << '\n';
 			}
 
 	}; // class value

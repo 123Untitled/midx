@@ -2,6 +2,9 @@
 #include "diagnostics/runtime_error.hpp"
 #include "diagnostics/system_error.hpp"
 #include "coremidi/coremidi.hpp"
+#include "data/model.hpp"
+#include "time/signature.hpp"
+#include "system/concurrency/lock_guard.hpp"
 
 #include <iostream>
 
@@ -10,8 +13,10 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* default constructor */
-ml::player::player(void)
-: _clock{},
+mx::player::player(void)
+: _mutex{},
+  _model{},
+  _clock{},
   _srcs{cm::sources()},
   _evs{},
   _thread{},
@@ -20,12 +25,12 @@ ml::player::player(void)
 	if (_srcs.empty())
 		throw ml::runtime_error("no midi sources");
 
-	//for (const auto& src : _srcs)
-	//	std::cout << src.name() << std::endl;
+	for (const auto& src : _srcs)
+		std::cout << src.name() << std::endl;
 }
 
 /* destructor */
-ml::player::~player(void) noexcept {
+mx::player::~player(void) noexcept {
 	self::stop();
 }
 
@@ -33,7 +38,7 @@ ml::player::~player(void) noexcept {
 // -- public methods ----------------------------------------------------------
 
 /* start */
-auto ml::player::start(void) -> void {
+auto mx::player::start(void) -> void {
 
 	// check if clock is already running
 	if (_clock.is_running() == true)
@@ -47,47 +52,71 @@ auto ml::player::start(void) -> void {
 }
 
 /* stop */
-auto ml::player::stop(void) noexcept -> void {
+auto mx::player::stop(void) noexcept -> void {
 	_clock.stop();
 
-	if (_running == false)
+	if (_running == false) {
+		std::cout << "clock is already stopped" << std::endl;
 		return;
+	}
 
+	std::cout << "stopping player..." << std::endl;
 	static_cast<void>(::pthread_join(_thread, nullptr));
 
 	_running = false;
+	std::cout << "player stopped" << std::endl;
 }
 
 
 // -- public overrides --------------------------------------------------------
 
 /* start */
-auto ml::player::clock_start(void) -> void {
+auto mx::player::clock_start(void) -> void {
 	_evs.start();
 	_evs.send(_srcs[0U]);
 	_evs.clear();
 	std::cout << "clock started" << std::endl;
 }
 
+auto mx::player::model(mx::model& m) noexcept -> void {
+	const mx::lock_guard guard{_mutex};
+	_model = &m;
+}
+
 /* tick */
-auto ml::player::clock_tick(const ml::u64& count) -> void {
+auto mx::player::clock_tick(const ml::u64& count) -> void {
 
 	// send tick
 	_evs.tick();
 
-	std::cout << "tick: " << count << std::endl;
+	const ml::signature ppqn_24{1, 16};
 
-	//_app->tree().play(_evs, count);
+	//std::cout << "tick: " << count << std::endl;
 
-	//_events.pack(_ev);
-	// send events
+	if (_model && ppqn_24.is_time(count) == false)
+		return;
+
+	std::stringstream ss;
+	ss << "{\"type\":\"animation\",\"highlights\":[";
+
+	{
+		const mx::lock_guard guard{_mutex};
+		_model->play(ss, _evs, ppqn_24.count(count));
+	}
+
+	ss << "]}\r\n";
+	auto str = ss.str();
+	std::cout << str << std::endl;
+	_server->broadcast(str);
+
+
+	// send and clear events
 	_evs.send(_srcs[0U]);
-	// clear events
 	_evs.clear();
 }
 
 /* stop */
-auto ml::player::clock_stop(void) -> void {
+auto mx::player::clock_stop(void) -> void {
 
 	std::cout << "clock stopped" << std::endl;
 	// note off all notes
@@ -107,8 +136,8 @@ auto ml::player::clock_stop(void) -> void {
 // -- private static methods --------------------------------------------------
 
 /* entrypoint */
-auto ml::player::_entrypoint(void* arg) -> void* {
-	auto& player = *static_cast<ml::player*>(arg);
+auto mx::player::_entrypoint(void* arg) -> void* {
+	auto& player = *static_cast<mx::player*>(arg);
 	player._clock.start(player);
 	return nullptr;
 }

@@ -19,6 +19,11 @@ namespace cc {
 		return c >= 'A' && c <= 'Z';
 	}
 
+	/* is alpha */
+	inline constexpr auto is_alpha(const ml::u8 c) noexcept -> bool {
+		return cc::is_lower(c) || cc::is_upper(c);
+	}
+
 	/* is note */
 	inline constexpr auto is_note(const ml::u8 c) noexcept -> bool {
 		return c >= 'A' && c <= 'G';
@@ -27,6 +32,11 @@ namespace cc {
 	/* is digit */
 	inline constexpr auto is_digit(const ml::u8 c) noexcept -> bool {
 		return c >= '0' && c <= '9';
+	}
+
+	/* is alnum */
+	inline constexpr auto is_alnum(const ml::u8 c) noexcept -> bool {
+		return cc::is_alpha(c) || cc::is_digit(c);
 	}
 
 	/* is xdigit */

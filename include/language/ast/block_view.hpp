@@ -64,7 +64,10 @@ namespace as {
 			auto block(void) noexcept -> as::block&;
 
 			/* block index */
-			auto bi(void) const noexcept -> ml::usz;
+			auto bi(void) const noexcept -> mx::usz;
+
+			/* num params */
+			auto num_params(void) const noexcept -> mx::usz;
 
 	}; // class block_view
 

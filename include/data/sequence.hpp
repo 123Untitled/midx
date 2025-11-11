@@ -4,6 +4,7 @@
 #include <vector>
 #include "time/signature.hpp"
 #include "language/tokens.hpp"
+#include "language/syntax/specifier.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -13,7 +14,7 @@ namespace ml {
 
 	// -- constants -----------------------------------------------------------
 
-	enum seq_type : ml::usz {
+	enum seq_type : mx::usz {
 		TR, // trigger
 		NT, // note
 		GA, // gate
@@ -22,8 +23,32 @@ namespace ml {
 		SE, // semitone
 		CH, // channel
 		PR, // probability
-		SEQ_COUNT
+		seq_count,
+		invalid_seq = seq_count
 	};
+
+	constexpr mx::i8 seq_defs[seq_type::seq_count] {
+		0,    // TR
+		60,   // NT
+		100,  // GA
+		127,  // VL
+		0,    // OC
+		0,    // SE
+		0,    // CH
+		100   // PR
+	}; 
+
+	constexpr ml::seq_type to_seq_type[static_cast<ml::usz>(sp::id::count)] {
+		seq_type::TR, // trig
+		seq_type::NT, // note
+		seq_type::GA, // gate
+		seq_type::VL, // velo
+		seq_type::OC, // octa
+		seq_type::SE, // semi
+		seq_type::CH, // chan
+		seq_type::PR  // prob
+	};
+
 
 
 	struct seq_slot final {
@@ -94,15 +119,26 @@ namespace ml {
 				return _sequence;
 			}
 
+			/* is empty */
+			auto empty(void) const noexcept -> bool {
+				return _sequence.empty();
+			}
 
 
 			// -- public modifiers --------------------------------------------
 
 			/* push */
-			auto push(const ml::i8 value) -> void {
-				//_sequence.emplace_back(value);
-				//_current = value; // ? for bug but not fixed
+			auto push(const ml::i8 value, tk::token& tk) -> void {
+				_sequence.emplace_back(
+					ml::seq_slot{
+						.value = value,
+						.sign  = ml::signature{},
+						.token = &tk,
+						.depth = 0U
+					}
+				);
 			}
+
 
 			/* repush */
 			//auto repush(void) -> void {
@@ -124,7 +160,7 @@ namespace ml {
 			// -- public methods ----------------------------------------------
 
 			/* next */
-			auto next(const ml::u64& timeline) noexcept -> ml::seq_slot& {
+			auto next(const ml::u64& timeline) const noexcept -> const ml::seq_slot& {
 
 				return _sequence[timeline % _sequence.size()];
 

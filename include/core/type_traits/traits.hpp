@@ -1,0 +1,385 @@
+#pragma once
+
+#include "core/config/class.hpp"
+#include "core/type_traits/type_modifications/remove_cv.hpp"
+#include "core/type_traits/relationships_and_property_queries/is_same.hpp"
+#include "core/type_traits/relationships_and_property_queries/is_one_of.hpp"
+#include "core/type_traits/type_categories/is_integral.hpp"
+
+
+// -- M X  N A M E S P A C E --------------------------------------------------
+
+namespace ms {
+
+
+	// -- R E M O V E  R E F E R E N C E --------------------------------------
+
+	namespace impl {
+
+
+		/* remove reference */
+		template <typename T>
+		struct remove_reference final {
+			using type = T;
+			non_instantiable(remove_reference);
+		};
+
+		/* lvalue specialization */
+		template <typename T>
+		struct remove_reference<T&> final {
+			using type = T;
+			non_instantiable(remove_reference);
+		};
+
+		/* rvalue specialization */
+		template <typename T>
+		struct remove_reference<T&&> final {
+			using type = T;
+			non_instantiable(remove_reference);
+		};
+
+	} // namespace impl
+
+
+	/* remove reference */
+	template <typename T>
+	using remove_reference = typename ms::impl::remove_reference<T>::type;
+
+
+
+
+
+
+	// -- R E M O V E  P O I N T E R ------------------------------------------
+
+	namespace impl {
+
+
+		/* remove pointer */
+		template <typename T>
+		struct remove_pointer final {
+			using type = T;
+			non_instantiable(remove_pointer);
+		};
+
+		/* pointer specialization */
+		template <typename T>
+		struct remove_pointer<T*> final {
+			using type = T;
+			non_instantiable(remove_pointer);
+		};
+
+		/* const pointer specialization */
+		template <typename T>
+		struct remove_pointer<T* const> final {
+			using type = T;
+			non_instantiable(remove_pointer);
+		};
+
+		/* volatile pointer specialization */
+		template <typename T>
+		struct remove_pointer<T* volatile> final {
+			using type = T;
+			non_instantiable(remove_pointer);
+		};
+
+		/* const volatile pointer specialization */
+		template <typename T>
+		struct remove_pointer<T* const volatile> final {
+			using type = T;
+			non_instantiable(remove_pointer);
+		};
+
+	} // namespace impl
+
+
+	/* remove pointer */
+	template <typename T>
+	using remove_pointer = typename ms::impl::remove_pointer<T>::type;
+
+
+
+	// -- R E M O V E  E X T E N T --------------------------------------------
+
+	namespace impl {
+
+		/* remove extent */
+		template <typename T>
+		struct remove_extent final {
+			using type = T;
+			non_instantiable(remove_extent);
+		};
+
+		/* array with unknown bound specialization */
+		template <typename T>
+		struct remove_extent<T[]> final {
+			using type = T;
+			non_instantiable(remove_extent);
+		};
+
+		/* array with known bound specialization */
+		template <typename T, decltype(sizeof(0)) N>
+		struct remove_extent<T[N]> final {
+			using type = T;
+			non_instantiable(remove_extent);
+		};
+
+	} // namespace impl
+
+
+	/* remove extent */
+	template <typename T>
+	using remove_extent = typename ms::impl::remove_extent<T>::type;
+
+
+
+
+
+
+	// -- R E M O V E  C V R --------------------------------------------------
+
+	/* remove const volatile reference */
+	template <typename T>
+	using remove_cvr = ms::remove_cv<ms::remove_reference<T>>;
+
+
+
+	// -- R E M O V E  C V P --------------------------------------------------
+
+	/* remove const volatile pointer */
+	template <typename T>
+	using remove_cvp = ms::remove_cv<ms::remove_pointer<T>>;
+
+
+	// -- R E M O V E  C V E --------------------------------------------------
+
+	/* remove const volatile extent */
+	template <typename T>
+	using remove_cve = ms::remove_cv<ms::remove_extent<T>>;
+
+
+	// -- R E M O V E  C V P E ------------------------------------------------
+
+	/* remove const volatile pointer extent */
+	template <typename T>
+	using remove_cvpe = ms::remove_cv<ms::remove_pointer<ms::remove_extent<T>>>;
+
+
+
+
+	// -- I S  A R R A Y ------------------------------------------------------
+
+	namespace impl {
+
+		/* is array */
+		template <typename T>
+		struct is_array final {
+			static constexpr bool value = false;
+			non_instantiable(is_array);
+		};
+
+		/* is array unbounded specialization */
+		template <typename T>
+		struct is_array<T[]> final {
+			non_instantiable(is_array);
+			static constexpr bool value = true;
+		};
+
+		/* is array bounded specialization */
+		template <typename T, decltype(sizeof(0)) N>
+		struct is_array<T[N]> final {
+			static constexpr bool value = true;
+			non_instantiable(is_array);
+		};
+
+	} // namespace impl
+
+
+	/* is array */
+	template <typename T>
+	concept is_array = ms::impl::is_array<T>::value;
+
+	/* is array of */
+	template <typename T, typename U>
+	concept is_array_of = ms::is_array<T> && ms::is_same<ms::remove_cve<T>, U>;
+
+
+	// -- I S  P O I N T E R --------------------------------------------------
+
+	namespace impl {
+
+		/* is pointer */
+		template <typename T>
+		struct is_pointer {
+			static constexpr bool value = false;
+			non_instantiable(is_pointer);
+		};
+
+		/* pointer specialisation */
+		template <typename T>
+		struct is_pointer<T*> {
+			static constexpr bool value = true;
+			non_instantiable(is_pointer);
+		};
+
+		/* helper */
+		template <typename T>
+		struct is_pointer_helper final : public ms::impl::is_pointer<ms::remove_cv<T>> {
+			non_instantiable(is_pointer_helper);
+		};
+
+	} // namespace impl
+
+
+	/* is pointer */
+	template<typename T>
+	concept is_pointer = ms::impl::is_pointer_helper<T>::value;
+
+
+	/* is pointer of */
+	template <typename T, typename U>
+	concept is_pointer_of = ms::is_pointer<T> && ms::is_same<ms::remove_cvp<T>, U>;
+
+
+	// -- I S  B O O L --------------------------------------------------------
+
+	/* is bool */
+	template <typename T>
+	concept is_bool = ms::is_same<ms::remove_cv<T>, bool>;
+
+
+
+
+	// -- I S  F L O A T I N G  P O I N T -------------------------------------
+
+	/* is floating point */
+	template <typename T>
+	concept is_floating_point = ms::is_one_of<ms::remove_cv<T>,
+		float, double, long double>;
+
+
+	// -- I S  A R I T H M E T I C --------------------------------------------
+
+	/* is arithmetic */
+	template <typename T>
+	concept is_arithmetic = ms::is_integral<T> || ms::is_floating_point<T>;
+
+
+	// -- I S  C H A R --------------------------------------------------------
+
+	template <typename T>
+	concept is_character = ms::is_one_of<ms::remove_cv<T>,
+		char, wchar_t, char8_t, char16_t, char32_t>;
+
+
+
+
+	// -- I S  L V A L U E  R E F E R E N C E ---------------------------------
+
+	namespace impl {
+
+		/* is lvalue reference */
+		template <typename T>
+		struct is_lvalue_reference final {
+			static constexpr bool value = false;
+			non_instantiable(is_lvalue_reference);
+		};
+
+		/* lvalue reference specialisation */
+		template <typename T>
+		struct is_lvalue_reference<T&> final {
+			static constexpr bool value = true;
+			non_instantiable(is_lvalue_reference);
+		};
+
+	} // namespace impl
+
+
+	/* is lvalue reference */
+	template <typename T>
+	concept is_lvalue_reference = ms::impl::is_lvalue_reference<T>::value;
+
+
+	// -- E X T E N T ---------------------------------------------------------
+
+	namespace impl {
+
+
+		/* extent for non-array types */
+		template <typename type, unsigned = 0U>
+		struct extent final {
+			static constexpr unsigned value = 0U;
+			non_instantiable(extent);
+		};
+
+		/* extent for unbounded array types (first dimension) */
+		template <typename type>
+		struct extent<type[], 0U> final {
+			static constexpr unsigned value = 0U;
+			non_instantiable(extent);
+		};
+
+		/* extent for unbounded array types (subsequent dimensions) */
+		template <typename T, unsigned D>
+		struct extent<T[], D> final {
+			static constexpr unsigned value = ms::impl::extent<T, D - 1U>::value;
+			non_instantiable(extent);
+		};
+
+		/* extent for bounded array types (first dimension) */
+		template <typename T, unsigned N>
+		struct extent<T[N], 0U> final {
+			static constexpr unsigned value = N;
+			non_instantiable(extent);
+		};
+
+		/* extent for bounded array types (subsequent dimensions) */
+		template <typename T, unsigned N, unsigned D>
+		struct extent<T[N], D> final {
+			static constexpr unsigned value = ms::impl::extent<T, D - 1U>::value;
+			non_instantiable(extent);
+		};
+
+	} // namespace impl
+
+
+	/* extent */
+	template <typename T, unsigned D = 0U>
+	constexpr unsigned extent = ms::impl::extent<T, D>::value;
+
+
+
+	// -- T O  L V A L U E  R E F E R E N C E ---------------------------------
+
+	/* forward lvalue helper */
+	template <typename T>
+	using to_lvalue = ms::remove_reference<T>&;
+
+
+	// -- T O  R V A L U E  R E F E R E N C E ---------------------------------
+
+	/* forward rvalue helper */
+	template <typename T>
+	using to_rvalue = ms::remove_reference<T>&&;
+
+
+
+	//// -- A L W A Y S  F A L S E ----------------------------------------------
+	//
+	//namespace impl {
+	//
+	//
+	//	template <typename...>
+	//	struct always_false {
+	//		static constexpr bool value = false;
+	//		non_instantiable(always_false);
+	//	};
+	//
+	//} // namespace impl
+	//
+	//
+	///* always false */
+	//template <typename... Tp>
+	//concept always_false = ms::impl::always_false<Tp...>::value;
+
+} // namespace ms

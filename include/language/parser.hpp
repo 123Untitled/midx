@@ -42,39 +42,26 @@ namespace pr {
 
 		private:
 
-			// -- private structs ---------------------------------------------
-
-			struct context final {
-				action_type st;
-				tk::token*  tk;
-				auto execute(self& s) -> void {
-					(s.*st)();
-				}
-			}; // struct context
-
-
 			// -- private members ---------------------------------------------
 
-			/* state stack */
-			std::vector<context> _states;
-
-			/* tokens */
-			tk::token_list* _tokens;
+			/* ast */
+			as::tree* _tree;
 
 			/* diagnostic */
 			an::diagnostic* _diag;
+
+			/* state */
+			action_type _state;
+
+
+			/* specifier */
+			tk::token* _specifier;
 
 			/* current token */
 			tk::token* _current;
 
 			/* previous token */
 			tk::token* _prev;
-
-			/* ast */
-			as::tree* _tree;
-
-			/* id counter */
-			ml::usz _counter;
 
 
 		public:
@@ -91,13 +78,13 @@ namespace pr {
 			auto parse(tk::token_list&, an::diagnostic&, as::tree&) -> void;
 
 
+		private:
+
+			// -- private methods ---------------------------------------------
+
 			/* switch state */
 			template <typename>
 			auto switch_state(void) noexcept -> void;
-
-			/* push state */
-			template <typename>
-			auto push_state(void) -> void;
 
 			/* push error */
 			template <ml::literal>
@@ -106,17 +93,6 @@ namespace pr {
 			/* push warning */
 			template <ml::literal>
 			auto push_warning(const tk::token* = nullptr) -> void;
-
-
-			auto new_id(void) noexcept -> ml::usz {
-				auto x = _counter++;
-				x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
-				x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
-				x = x ^ (x >> 31);
-				return x;
-			}
-
-
 
 
 
@@ -129,40 +105,18 @@ namespace pr {
 					static constexpr action_type state = &self::state_##name; }
 
 
-
-			template <bool>
-			auto state_expect_identifier(void) -> void;
-
-			template <bool N>
-			struct expect_identifier final {
-				non_instantiable_class(expect_identifier);
-				static constexpr action_type state = &self::state_expect_identifier<N>;
-			};
-
-
-			GENERATE_STATE(expect_block);
+			GENERATE_STATE(expect_block_open);
+			GENERATE_STATE(expect_block_close);
 			GENERATE_STATE(expect_specifier);
-			//GENERATE_STATE(expect_identifier);
-			GENERATE_STATE(expect_identifier_nested);
+			GENERATE_STATE(expect_identifier);
 			GENERATE_STATE(expect_dot);
 			GENERATE_STATE(expect_parameter);
 			GENERATE_STATE(expect_value);
+
 			GENERATE_STATE(panic_block);
-			GENERATE_STATE(panic_remove_block);
 			GENERATE_STATE(panic_parameter);
 
 			#undef GENERATE_STATE
-
-			//auto expect_block(void) -> void;
-			//auto expect_specifier(void) -> void;
-			//auto expect_identifier(void) -> void;
-			//auto expect_identifier_nested(void) -> void;
-			//auto expect_dot(void) -> void;
-			//auto expect_parameter(void) -> void;
-			//auto expect_value(void) -> void;
-			//auto panic_block(void) -> void;
-			//auto panic_remove_block(void) -> void;
-			//auto panic_parameter(void) -> void;
 
 	}; // class parser
 

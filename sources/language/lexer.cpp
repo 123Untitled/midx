@@ -109,7 +109,8 @@ auto lx::lexer::_lex(void) -> void {
 
 			do {
 				++_head;
-			} while (_head < _limit && cc::is_lower(*_head));
+			} while (_head < _limit
+				&& (cc::is_alnum(*_head) || *_head == '_'));
 
 			self::push_token<true, tk::text>();
 			continue;
@@ -285,6 +286,15 @@ auto lx::lexer::_lex(void) -> void {
 				break;
 			case '.':
 				self::push_byte_token<tk::dot>();
+				break;
+			case '&':
+				self::push_byte_token<tk::ampersand>();
+				break;
+			case '-':
+				self::push_byte_token<tk::hyphen>();
+				break;
+			case '+':
+				self::push_byte_token<tk::plus>();
 				break;
 
 			default:

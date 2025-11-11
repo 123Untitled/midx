@@ -37,10 +37,6 @@ auto cm::eventlist::clear(void) -> void {
 /* send */
 auto cm::eventlist::send(const cm::source& source) -> void {
 
-	// check packet validity
-	//if (_packet == nullptr)
-	//	return;
-
 	// send midi to source device
 	const ::OSStatus err = ::MIDIReceivedEventList(source.id(), _list);
 
@@ -56,6 +52,7 @@ auto cm::eventlist::note_on(const cm::u8 channel,
 							const cm::u8 velocity) -> void {
 
 	self::_add(::MIDI1UPNoteOn(0U, channel, note, velocity));
+
 }
 
 /* note off */

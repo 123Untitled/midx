@@ -1,11 +1,11 @@
-#ifndef containers_flat_trie_hpp
-#define containers_flat_trie_hpp
+#ifndef core_containers_flat_trie_hpp
+#define core_containers_flat_trie_hpp
 
 #include "types.hpp"
 #include "macros.hpp"
 #include "literal.hpp"
 #include "language/lexer/lexeme.hpp"
-#include "core/type_traits/conditional.hpp"
+#include "core/type_traits/type_transformations/conditional.hpp"
 
 #include <string_view>
 #include <iostream>
@@ -269,4 +269,4 @@ namespace mx {
 
 } // namespace mx
 
-#endif // containers_flat_trie_hpp
+#endif // core_containers_flat_trie_hpp

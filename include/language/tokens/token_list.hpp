@@ -106,6 +106,14 @@ namespace tk {
 			/* debug */
 			auto debug(const ml::byte_range&) -> void;
 
+
+			// -- public operators --------------------------------------------
+
+			/* index operator */
+			auto operator[](const mx::usz index) noexcept -> tk::token& {
+				return _tokens[index];
+			}
+
 	}; // class token_list
 
 

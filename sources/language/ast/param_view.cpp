@@ -41,3 +41,9 @@ auto as::param_view::values(void) const noexcept -> const self& {
 auto as::param_view::param(void) const noexcept -> const as::param& {
 	return _tree->_params[_pi];
 }
+
+/* num values */
+auto as::param_view::num_values(void) const noexcept -> ml::usz {
+	const auto& p = _tree->_params[_pi];
+	return p.vc;
+}

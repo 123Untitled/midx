@@ -49,8 +49,12 @@ auto ml::clock::start(ml::clockable& obj) -> void {
 	// loop while running
 	while (_running == true) {
 
-		self::_begin();
-		self::_compute_timeline();
+		//self::_begin();
+		_start = ml::now();
+		//self::_compute_timeline();
+		// accumulate elapsed time
+		_timeline += static_cast<double>(_elapsed)
+				   / static_cast<double>(ml::nano_per_sec);
 
 		// tick notification
 		obj.clock_tick(_count);

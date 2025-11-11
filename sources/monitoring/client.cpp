@@ -6,6 +6,14 @@
 
 // -- C L I E N T -------------------------------------------------------------
 
+// -- public lifecycle --------------------------------------------------------
+
+/* monitor constructor */
+ml::client::client(const ml::monitor& monitor) noexcept
+: _monitor{&monitor}, _socket{}, _reader{} {
+}
+
+
 // -- public methods ----------------------------------------------------------
 
 /* initialize */
@@ -15,59 +23,26 @@ auto ml::client::initialize(ml::socket&& sck, const ml::monitor& monitor) -> voi
 }
 
 /* send */
-auto ml::client::send(const std::string& msg) -> void {
+auto ml::client::send(std::string&& msg) -> void {
 
-	const ml::isz res = ::send(_socket, msg.data(), msg.size(), 0);
-	if (res == -1)
-		throw ml::system_error{"send"};
+	_send_buffer = static_cast<std::string&&>(msg);
+
+	const struct ::kevent ev {
+		.ident  = static_cast<::uintptr_t>(_socket.operator int()),
+		.filter = EVFILT_WRITE,
+		.flags  = EV_ADD | EV_ENABLE,
+		.fflags = 0U,
+		.data   = 0,
+		.udata  = this
+	};
+
+	_monitor->record(ev);
 }
 
 /* disconnect */
 auto ml::client::disconnect(const ml::monitor& monitor) -> void {
 	monitor.unsubscribe(*this);
 	_socket.close();
-	_buffer.clear();
-}
-
-/* read */
-auto ml::client::read(ml::application& app) -> void {
-
-	constexpr ml::usz buffer_size = 1024U;
-
-
-
-	// read data from socket...
-	while (true) {
-
-		_buffer.resize(_buffer.size() + buffer_size);
-
-		void* offset = _buffer.data() + (_buffer.size() - buffer_size);
-
-		const ::ssize_t res = ::recv(_socket, offset, buffer_size, 0);
-
-		if (res == -1) {
-
-			_buffer.resize(_buffer.size() - buffer_size);
-
-			if (errno == EAGAIN
-			 || errno == EWOULDBLOCK)
-				break;
-
-			throw ml::system_error{"recv"};
-		}
-
-		// connection closed
-		if (res == 0) {
-			self::disconnect(app.monitor());
-			break;
-		}
-
-		// new size
-		const ml::usz size = (_buffer.size() - buffer_size)
-						   + static_cast<ml::usz>(res);
-
-		_buffer.resize(size);
-	}
 }
 
 
@@ -84,12 +59,53 @@ auto ml::client::on_event(ml::application& app, const struct ::kevent& ev) -> vo
 	}
 
 	if ((ev.filter == EVFILT_READ)) {
-		self::read(app);
-		app.protocol().feed(_buffer);
+
+		// read socket
+		if (_reader.recv(_socket) == false)
+			return;
+
+		// handle disconnection
+		if (_reader.eof()) {
+			this->disconnect(app.monitor());
+			return;
+		}
+
+		// feed data to application
+		app.protocol().feed(_reader);
 	}
 
 	if ((ev.filter == EVFILT_WRITE)) {
-		// ready to write
+		std::cout << "client: write event\n";
+
+		// send data
+		const auto sent = ::send(
+			_socket,
+			_send_buffer.data(),
+			_send_buffer.size(),
+			0);
+
+		if (sent < 0)
+			throw ml::system_error{"send"};
+
+		std::cout << "client: sent " << sent << " bytes\n";
+
+		// erase sent data
+		_send_buffer.erase(0U, static_cast<mx::usz>(sent));
+
+		// if all data sent, remove write event
+		if (_send_buffer.empty()) {
+			const struct ::kevent dev {
+				.ident  = static_cast<::uintptr_t>(_socket.operator int()),
+				.filter = EVFILT_WRITE,
+				.flags  = EV_DELETE,
+				.fflags = 0U,
+				.data   = 0,
+				.udata  = nullptr
+			};
+			_monitor->record(dev);
+			std::cout << "client: all data sent, write event removed\n";
+		}
+
 	}
 }
 
@@ -97,8 +113,8 @@ auto ml::client::on_event(ml::application& app, const struct ::kevent& ev) -> vo
 auto ml::client::make_add(void) noexcept -> struct ::kevent {
 	const struct ::kevent ev {
 		.ident  = static_cast<::uintptr_t>(_socket.operator int()),
-		.filter = EVFILT_READ | EVFILT_WRITE,
-		.flags  = EV_ADD | EV_ENABLE | EV_CLEAR,
+		.filter = EVFILT_READ,
+		.flags  = EV_ADD | EV_ENABLE /* | EV_CLEAR, stay in level-triggered mode */,
 		.fflags = 0U,
 		.data   = 0,
 		.udata  = this
@@ -110,7 +126,7 @@ auto ml::client::make_add(void) noexcept -> struct ::kevent {
 auto ml::client::make_del(void) const noexcept -> struct ::kevent {
 	const struct ::kevent ev {
 		.ident  = static_cast<::uintptr_t>(_socket.operator int()),
-		.filter = EVFILT_READ | EVFILT_WRITE,
+		.filter = EVFILT_READ,
 		.flags  = EV_DELETE,
 		.fflags = 0U,
 		.data   = 0,

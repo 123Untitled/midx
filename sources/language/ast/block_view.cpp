@@ -47,3 +47,8 @@ auto as::block_view::block(void) noexcept -> as::block& {
 auto as::block_view::bi(void) const noexcept -> ml::usz {
 	return _bi;
 }
+
+/* num params */
+auto as::block_view::num_params(void) const noexcept -> ml::usz {
+	return _tree->_blocks[_bi].pc;
+}

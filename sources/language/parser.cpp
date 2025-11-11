@@ -12,13 +12,12 @@
 
 /* default constructor */
 pr::parser::parser(void)
-: _states{},
-  _tokens{nullptr}, _diag{nullptr},
-  _current{nullptr}, _prev{nullptr},
-  _tree{},
-  _counter{UINT64_MAX / 2U} {
-
-	_states.reserve(16U);
+: _tree{nullptr},
+  _diag{nullptr},
+  _state{},
+  _specifier{nullptr},
+  _current{nullptr},
+  _prev{nullptr} {
 }
 
 
@@ -28,21 +27,15 @@ auto pr::parser::parse(tk::token_list& tokens,
 					   an::diagnostic& diag,
 					   as::tree& tree) -> void {
 
-	//_buffer  = br.begin;
-	_tokens  = &tokens;
-	_diag    = &diag;
-	_tree    = &tree;
-	_current = nullptr;
-	_prev    = nullptr;
-	_counter = UINT64_MAX / 2U;
+	_tree = &tree;
+	_diag = &diag;
 
-	_states.clear();
-
-	self::push_state<expect_block>();
+	self::switch_state<expect_block_open>();
 
 	for (auto& tok : tokens) {
 		_current = &tok;
-		(this->*(_states.back().st))();
+		//(this->*(_states.back().st))();
+		(this->*_state)();
 		//_tree->dbg();
 		_prev = _current;
 	}
@@ -54,13 +47,7 @@ auto pr::parser::parse(tk::token_list& tokens,
 /* switch state */
 template <typename S>
 auto pr::parser::switch_state(void) noexcept -> void {
-	_states.back().st = S::state;
-}
-
-/* push state */
-template <typename S>
-auto pr::parser::push_state(void) -> void {
-	_states.emplace_back(S::state, _current);
+	_state = S::state;
 }
 
 /* push error */
@@ -95,22 +82,22 @@ auto pr::parser::push_warning(const tk::token* tk) -> void {
 
 // -- states ------------------------------------------------------------------
 
-/* expect block */
-auto pr::parser::state_expect_block(void) -> void {
+/* expect block open */
+auto pr::parser::state_expect_block_open(void) -> void {
 
 	switch (_current->id) {
 
+		// block opening
 		case tk::bracket_open: {
-			_tree->new_block();
-			//_current->id = tk::specifier;
-			push_state<expect_specifier>();
+			switch_state<expect_specifier>();
 			break;
 		}
 
+		// end of tokens
 		case tk::end_of_tokens:
-			_states.pop_back();
 			break;
 
+		// otherwise error
 		default:
 			push_warning<"expected block">();
 			_current->id = tk::invalid;
@@ -121,93 +108,89 @@ auto pr::parser::state_expect_block(void) -> void {
 /* expect specifier */
 auto pr::parser::state_expect_specifier(void) -> void {
 
-	// this is always top level block
-	// this state is never called for nested blocks
-
 	switch (_current->id) {
 
 		// block closing
 		case tk::bracket_close:
-			// so we don't keep empty blocks
-			_tree->remove_last_block();
-			_states.pop_back();
+			switch_state<expect_block_open>();
 			break;
 
 		// specifier
 		case tk::text: {
-			_tree->last_block().specifier(_current);
-			switch_state<expect_identifier<false>>();
+			_specifier = _current;
+			switch_state<expect_block_close>();
 			break;
 		}
 
 		// end of tokens
 		case tk::end_of_tokens:
-			push_warning<"block not closed">(
-					_states.back().tk
-			);
-			_states.pop_back();
+			push_warning<"block not closed">(_prev);
 			break;
 
 		// otherwise error
 		default: {
 			push_error<"expected specifier">();
-			switch_state<panic_remove_block>();
-			if (_current->id == tk::bracket_open)
-				push_state<panic_block>();
+			switch_state<panic_block>();
+			_current->id = tk::invalid;
+		}
+	}
+}
+
+/* expect block close */
+auto pr::parser::state_expect_block_close(void) -> void {
+
+	switch (_current->id) {
+
+		// block closing
+		case tk::bracket_close:
+			_tree->new_block(*_specifier);
+			if (_specifier->id == tk::invalid)
+				push_error<"invalid specifier">(_specifier);
+			switch_state<expect_identifier>();
+			break;
+
+		// otherwise error
+		default: {
+			push_error<"block not closed">(_current);
+			switch_state<panic_block>();
 			_current->id = tk::invalid;
 		}
 	}
 }
 
 /* expect identifier */
-template <bool N>
 auto pr::parser::state_expect_identifier(void) -> void {
 
 	switch (_current->id) {
 
-		// start parameter
-		case tk::dot: {
-			// anonymous identifier
-
-			_current->id = tk::param_dot;
-			switch_state<expect_parameter>();
+		// identifier
+		case tk::text: {
+			_tree->last_block().identifier(_current);
+			_current->id = tk::string;
+			switch_state<expect_dot>();
 			break;
 		}
 
-		// identifier
-		case tk::string: {
-			// set identifier
-			auto& b = _tree->last_block();
-			b.identifier(_current);
+		// dot
+		case tk::dot:
+			_current->id = tk::param_dot;
+			switch_state<expect_parameter>();
+			break;
 
-			// switch to expect dot
-			switch_state<expect_dot>();
+		// restart block
+		case tk::bracket_open: {
+			switch_state<expect_specifier>();
 			break;
 		}
 
 		// end of tokens
 		case tk::end_of_tokens:
-			push_warning<"block not closed">(
-					_states.back().tk
-			);
-
-		// exit block
-		case tk::bracket_close:
-			// we only keep this block if not nested
-			// because we need to validate specifier
-			if constexpr (N == false)
-				_tree->flush();
-			else
-				_tree->remove_last_block();
-			_states.pop_back();
 			break;
 
-		// error
+		// otherwise error
 		default: {
-			push_error<"expected identifier or parameter">();
-			switch_state<panic_remove_block>();
-			if (_current->id == tk::bracket_open)
-				push_state<panic_block>();
+			push_warning<"expected identifier">(_specifier);
+			switch_state<panic_block>();
 			_current->id = tk::invalid;
 		}
 	}
@@ -225,22 +208,20 @@ auto pr::parser::state_expect_dot(void) -> void {
 			switch_state<expect_parameter>();
 			break;
 
+		// restart block
+		case tk::bracket_open: {
+			switch_state<expect_specifier>();
+			break;
+		}
+
 		// end of tokens
 		case tk::end_of_tokens:
-			push_warning<"block not closed">(
-					_states.back().tk
-			);
-
-		// exit block
-		case tk::bracket_close:
-			_tree->flush();
-			_states.pop_back();
 			break;
 
+		// otherwise error
 		default:
 			push_error<"expected parameter">();
-			switch_state<panic_parameter>();
-			// maybe a remove parameter panic state?
+			_current->id = tk::invalid;
 	}
 }
 
@@ -251,8 +232,17 @@ auto pr::parser::state_expect_parameter(void) -> void {
 
 		case tk::text: {
 			_tree->new_param(*_current);
-			_prev->id = tk::param_dot;
+			if (_current->id == tk::invalid)
+				push_error<"invalid parameter">(_current);
 			switch_state<expect_value>();
+			break;
+		}
+
+		// restart block
+		case tk::bracket_open: {
+			push_error<"expected parameter">(_prev);
+			_prev->id = tk::invalid;
+			switch_state<expect_specifier>();
 			break;
 		}
 
@@ -267,23 +257,14 @@ auto pr::parser::state_expect_parameter(void) -> void {
 		}
 
 		case tk::end_of_tokens:
-			push_warning<"block not closed">(
-					_states.back().tk
-			);
-
-		case tk::bracket_close: {
-			push_error<"expected parameter">(_prev);
+			push_warning<"expected parameter">(_prev);
 			_prev->id = tk::invalid;
-			_tree->flush();
-			_states.pop_back();
 			break;
-		}
 
 		default:
 			push_error<"expected parameter">(_prev);
 			_current->id = _prev->id = tk::invalid;
-			switch_state<panic_parameter>();
-			//_states.push_back(&pr::parser::panic_parameter);
+			switch_state<expect_dot>();
 	}
 }
 
@@ -292,111 +273,51 @@ auto pr::parser::state_expect_value(void) -> void {
 
 	switch (_current->id) {
 
-		// inplace block
+		// restart block
 		case tk::bracket_open: {
-			//_current->id = tk::nested_block;
-			_tree->new_nested_block();
-			push_state<expect_identifier<true>>();
-			break;
-		}
-
-		case tk::bracket_close: {
-			_tree->flush();
-			_states.pop_back();
+			switch_state<expect_specifier>();
 			break;
 		}
 
 		case tk::dot:
 			switch_state<expect_parameter>();
+			_current->id = tk::param_dot;
 			break;
 
+		case tk::bracket_close: {
+			push_error<"already in block">();
+			break;
+		}
+
 		case tk::end_of_tokens: {
-
-			push_warning<"block not closed">(_states.back().tk);
-			_tree->flush();
-			_states.pop_back();
-
-			while (_states.empty() == false)
-				_states.back().execute(*this);
 			break;
 		}
 
 		default:
-			_tree->new_value(_current);
+			_tree->new_value(*_current);
 	}
 }
 
 /* panic block */
 auto pr::parser::state_panic_block(void) -> void {
-	std::cout << "panic_block\n";
 
 	switch (_current->id) {
 
-		case tk::bracket_open: {
-			push_state<panic_block>();
-			break;
-		}
-
-		case tk::bracket_close: {
-			_states.pop_back();
-			break;
-		}
-
-		case tk::end_of_tokens:
-			_states.pop_back();
-			break;
-
-		default:
-			_current->id = tk::invalid;
-	}
-}
-
-/* remove block */
-auto pr::parser::state_panic_remove_block(void) -> void {
-
-	switch (_current->id) {
-
-		case tk::bracket_open: {
-			push_state<panic_block>();
-			break;
-		}
-
-		case tk::end_of_tokens:
-		case tk::bracket_close: {
-			_tree->remove_last_block();
-			_states.pop_back();
-			break;
-		}
-
-		default:
-			_current->id = tk::invalid;
-	}
-}
-
-
-/* panic parameter */
-auto pr::parser::state_panic_parameter(void) -> void {
-
-	switch (_current->id) {
-
-		case tk::dot:
-			switch_state<expect_parameter>();
-			break;
-
+		// block opening
 		case tk::bracket_open:
-			self::push_state<panic_block>();
+			switch_state<expect_specifier>();
 			break;
 
+		// block closing
 		case tk::bracket_close:
-			_tree->flush();
-			_states.pop_back();
+			switch_state<expect_block_open>();
 			break;
 
+		// end of tokens
 		case tk::end_of_tokens:
-			// NEED TO FLUSH ALL BLOCKS MAYBE ???
-			_states.pop_back();
 			break;
 
+		// otherwise stay in panic
 		default:
 			_current->id = tk::invalid;
 	}

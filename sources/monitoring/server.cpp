@@ -9,7 +9,7 @@
 
 /* default constructor */
 ml::server::server(const ml::monitor& monitor)
-: ml::watcher{}, _socket{AF_UNIX, SOCK_STREAM}, _client{} {
+: ml::watcher{}, _socket{AF_UNIX, SOCK_STREAM}, _client{monitor} {
 
 	const char* path = "/tmp/midx.sock";
 	::unlink(path);
@@ -30,12 +30,12 @@ ml::server::server(const ml::monitor& monitor)
 // -- public methods ----------------------------------------------------------
 
 /* broadcast */
-auto ml::server::broadcast(const std::string& msg) -> void {
+auto ml::server::broadcast(std::string& msg) -> void {
 
 	if (_client.is_connected() == false)
 		return;
 
-	_client.send(msg);
+	_client.send(std::move(msg));
 }
 
 

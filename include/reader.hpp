@@ -4,16 +4,17 @@
 #include "types.hpp"
 #include "diagnostics/system_error.hpp"
 #include <unistd.h>
+#include <sys/socket.h>
 
 
-// -- M L  N A M E S P A C E --------------------------------------------------
+// -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- R E A D E R ---------------------------------------------------------
 
-	template <ml::usz N>
+	template <mx::usz N>
 	class reader final {
 
 
@@ -30,13 +31,13 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::reader<N>;
+			using self = mx::reader<N>;
 
 
 			// -- private members ---------------------------------------------
 
 			/* buffer */
-			char _buffer[N];
+			mx::u8 _buffer[N];
 
 			/* size */
 			size_type _size;
@@ -48,7 +49,7 @@ namespace ml {
 
 			/* default constructor */
 			reader(void) noexcept
-			: /* _buffer{} uninitialized */ _size{0U} {
+			: /* uninitialized */ _size{0U} {
 			}
 
 			/* copy constructor */
@@ -72,11 +73,11 @@ namespace ml {
 
 			// -- public modifiers --------------------------------------------
 
-			/* read */
-			auto read(const int& descriptor) -> void {
+			/* recv */
+			auto recv(const int& socket, const int flags = 0) -> bool {
 
-				// read from file descriptor
-				const auto status = ::read(descriptor, _buffer, N);
+				// read from socket
+				const auto status = ::recv(socket, _buffer, N, flags);
 
 				// check for error
 				if (status < 0) {
@@ -85,40 +86,33 @@ namespace ml {
 
 					// skip non-fatal errors
 					if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-						return;
+						return false;
 
-					throw ml::system_error{"read"};
+					throw ml::system_error{"recv"};
 				}
 
 				// cast size
 				_size = static_cast<size_type>(status);
-			}
 
-			/* reset */
-			auto reset(const int& descriptor) -> void {
-
-				// read from file descriptor
-				const auto status = ::lseek(descriptor, 0, SEEK_SET);
-
-				// check for error
-				if (status < 0)
-					throw ml::system_error{"lseek"};
-
-				// reset size
-				_size = 0U;
+				return true;
 			}
 
 
 			// -- public accessors --------------------------------------------
 
-			/* data */
-			auto data(void) noexcept -> char (&)[N] {
+			/* const data */
+			auto data(void) const noexcept -> const mx::u8 (&)[N] {
 				return _buffer;
 			}
 
-			/* const data */
-			auto data(void) const noexcept -> const char (&)[N] {
+			/* begin */
+			auto begin(void) const noexcept -> const mx::u8* {
 				return _buffer;
+			}
+
+			/* end */
+			auto end(void) const noexcept -> const mx::u8* {
+				return _buffer + _size;
 			}
 
 			/* size */

@@ -5,6 +5,7 @@
 #include "types.hpp"
 #include <string>
 #include <iostream>
+#include "reader.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -187,6 +188,7 @@ namespace ml {
 				}
 			}
 
+
 			auto _start(const ml::u8* it, const ml::u8* end) -> void {
 
 				_complete = false;
@@ -201,6 +203,14 @@ namespace ml {
 
 
 		public:
+			auto reset(void) noexcept -> void {
+				_complete = false;
+				_cmd = command::UNKNOWN;
+				_data.clear();
+				_size = 0U;
+				_states[0U] = &ml::protocol::_read_status;
+				_index = 1U;
+			}
 
 			protocol(void) noexcept
 			: _states{&ml::protocol::_start,
@@ -211,22 +221,23 @@ namespace ml {
 			}
 
 
+
 			auto require_update(void) const noexcept -> bool {
 				return _cmd == command::UPDATE
 				&& _complete == true;
 			}
 
-			auto feed(std::string& data) -> void {
+			template <mx::usz N>
+			auto feed(const mx::reader<N>& reader) -> void {
+
 				// process data according to protocol
 				(this->*_states[_index])(
-					reinterpret_cast<const ml::u8*>(data.data()),
-					reinterpret_cast<const ml::u8*>(data.data() + data.size())
+					reader.begin(),
+					reader.end()
 				);
-
-				data.clear();
 			}
 
-			auto data(void) const noexcept -> const std::string& {
+			auto data(void) noexcept -> std::string& {
 				return _data;
 			}
 

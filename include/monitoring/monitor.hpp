@@ -82,6 +82,10 @@ namespace ml {
 			/* unsubscribe */
 			auto unsubscribe(ml::watcher&) const -> void;
 
+			/* record */
+			auto record(const struct ::kevent&) const -> void;
+
+
 			/* wait */
 			auto wait(ml::application&) -> void;
 

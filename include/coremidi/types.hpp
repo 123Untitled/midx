@@ -48,7 +48,7 @@ namespace cm {
 	using s64 = SInt64;
 
 	using u8 = UInt8;
-	using s8 = SInt8;
+	using i8 = SInt8;
 
 } // namespace coremidi
 

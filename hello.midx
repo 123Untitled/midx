@@ -1,73 +1,32 @@
-# this is a comment
+[tr] rsyn1 .seq 1 0 1 0 1 1
 
 
-[nt] melody1
-.seq (D E) _ F G _ (A (B C5)) D5
-.rpt true
-.lnk false
+[oc] oct1
+.seq 0 0 -1 -2
+.lnk
+.rst
 
-[track] bass
-.nt &melody1
+[ga] gsyn1 .seq 50
 
+[ch] channel_seq1 .seq 0 1 1
+[semi] sm .seq 0 0 5 0
 
-[nt 'melody1'
-	# represent 127 in hexadecimal
-	.seq
-	#[ .seq D E F G ]
-]
-
-#[nt 'melody2'
-#	.sequence D E F
-#]
-
-#[nt melody3
-#	.seq G F E D C B A
-#]
-
-#[track 'lead'
-#
-#	.note 'melody1' 'melody2' 'melody3'
-#	[ 'nested melody4'
-#		.seq C D E F
-#	]
-#]
+[nt] theme
+.seq
+53 53 53 53 53 53 53 53
+53 53 53 53 53 53 53 53
+51 51 51 51 51 51 51 51
+51 51 51 51 51 51 51 51
+48 48 48 48 48 48 48 48
+48 48 48 48 48 48 48 48
+60 60 60 60 60 60 60 60
+60 60 60 60 60 60 60 60
 
 
-
-#[note 'melody3'
-#	.seq G A B
-#]
-#
-#[tr 'rhythm1'
-#	.seq 1 0 1 0
-#]
-
-
-
-#[ pattern 'intro'
-#
-#	.track [
-#		'bass'
-#	] [
-#		.note [
-#			'theme'
-#			.seq A#3 B3 C4 D#4
-#		]
-#		.trig [
-#			#'slap rhythm'
-#			.seq 1 0 0 1
-#		]
-#	]
-#
-#	[
-#		'drums'
-#		.note [
-#			'mapping'
-#			.seq C2 C2 C2 C2
-#		]
-#		.trig [
-#			'rythm0A'
-#			.seq 0 1 0 1
-#		]
-#	]
-#]
+[track] bas2
+.ga	&gsyn1
+.tr &rsyn1
+.nt &theme
+.ch &channel_seq1
+.oc &oct1
+.se &sm

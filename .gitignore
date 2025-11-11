@@ -24,3 +24,6 @@
 
 # ignore desktop service store
 /**/.DS_Store
+
+
+/traim

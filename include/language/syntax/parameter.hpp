@@ -51,8 +51,8 @@ namespace pa {
 	/* search from atomic */
 	static auto search_from_atomic = &pa::to_id<
 		pa::entry<pa::id::seq, "sequence", "seq">,
-		pa::entry<pa::id::rpt, "repeat", "rpt">,
-		pa::entry<pa::id::lnk, "linked", "lnk">
+		pa::entry<pa::id::lnk, "linked", "lnk">,
+		pa::entry<pa::id::rpt, "reset", "rst">
 	>;
 
 	/* search from track */

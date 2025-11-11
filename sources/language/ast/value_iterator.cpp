@@ -14,9 +14,14 @@ as::value_iterator::value_iterator(const as::tree& tree, const ml::usz vi) noexc
 
 // -- public operators --------------------------------------------------------
 
+/* [] operator */
+auto as::value_iterator::operator[](const ml::isz index) const noexcept -> const as::value& {
+	return _tree->_values[_vi + index];
+}
+
 /* dereference operator */
-auto as::value_iterator::operator*(void) const noexcept -> as::value_view {
-	return as::value_view{*_tree, _vi};
+auto as::value_iterator::operator*(void) const noexcept -> const as::value& {
+	return _tree->_values[_vi];
 }
 
 /* pre-increment operator */

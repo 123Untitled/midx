@@ -47,8 +47,11 @@ namespace as {
 
 			// -- public operators --------------------------------------------
 
+			/* [] operator */
+			auto operator[](const ml::isz) const noexcept -> const as::value&;
+
 			/* dereference operator */
-			auto operator*(void) const noexcept -> as::value_view;
+			auto operator*(void) const noexcept -> const as::value&;
 
 			/* pre-increment operator */
 			auto operator++(void) noexcept -> self&;

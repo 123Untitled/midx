@@ -37,7 +37,7 @@ namespace ml {
 
 
 			//ml::project _project;
-			ml::player _player;
+			mx::player _player;
 
 			ml::monitor _monitor;
 
@@ -49,7 +49,9 @@ namespace ml {
 
 			ml::protocol _protocol;
 
-			ml::analyzer _analyzer;
+			ml::analyzer _analyzers[2U];
+
+			mx::usz _active;
 
 
 
@@ -85,12 +87,12 @@ namespace ml {
 			auto reparse(void) -> void;
 
 			/* player */
-			auto player(void) noexcept -> ml::player& {
+			auto player(void) noexcept -> mx::player& {
 				return _player;
 			}
 
 			/* const player */
-			auto player(void) const noexcept -> const ml::player& {
+			auto player(void) const noexcept -> const mx::player& {
 				return _player;
 			}
 

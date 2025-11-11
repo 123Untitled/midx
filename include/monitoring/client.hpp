@@ -3,6 +3,7 @@
 
 #include "system/socket.hpp"
 #include "monitoring/watcher.hpp"
+#include "reader.hpp"
 
 #include <sys/event.h>
 #include <string>
@@ -34,26 +35,34 @@ namespace ml {
 
 			// -- private members ---------------------------------------------
 
+			/* monitoring */
+			const ml::monitor* _monitor;
+
 			/* socket */
 			ml::socket _socket;
 
 			/* buffer */
-			std::string _buffer;
+			mx::reader<4096U> _reader;
+
+			/* send buffer */
+			std::string _send_buffer;
 
 
 
 			// -- private methods ---------------------------------------------
 
 			auto disconnect(const ml::monitor&) -> void;
-			auto read(ml::application&) -> void;
 
 
 		public:
 
 			// -- public lifecycle --------------------------------------------
 
-			/* default constructor */
-			client(void) noexcept = default;
+			/* deleted default constructor */
+			client(void) = delete;
+
+			/* monitor constructor */
+			client(const ml::monitor&) noexcept;
 
 			/* deleted copy constructor */
 			client(const self&) = delete;
@@ -79,7 +88,7 @@ namespace ml {
 			auto initialize(ml::socket&&, const ml::monitor&) -> void;
 
 
-			auto send(const std::string&) -> void;
+			auto send(std::string&&) -> void;
 
 
 			auto is_connected(void) const noexcept -> bool {
