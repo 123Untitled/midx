@@ -4,7 +4,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- T R A N S I T I O N -------------------------------------------------
@@ -18,7 +18,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::transition<T>;
+			using self = mx::transition<T>;
 
 			/* state type */
 			using state_type = typename T::state_type;
@@ -102,6 +102,6 @@ namespace ml {
 
 	}; // class transition
 
-} // namespace ml
+} // namespace mx
 
 #endif // ml_language_transition_hpp

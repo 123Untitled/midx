@@ -6,7 +6,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- M A P P E D  F I L E ------------------------------------------------
@@ -19,7 +19,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::mapped_file;
+			using self = mx::mapped_file;
 
 
 			// -- private members ---------------------------------------------
@@ -28,7 +28,7 @@ namespace ml {
 			void* _mapping;
 
 			/* size */
-			ml::usz _size;
+			mx::usz _size;
 
 
 		public:
@@ -63,16 +63,16 @@ namespace ml {
 			// -- public accessors --------------------------------------------
 
 			/* begin */
-			auto begin(void) const noexcept -> const ml::u8*;
+			auto begin(void) const noexcept -> const mx::u8*;
 
 			/* end */
-			auto end(void) const noexcept -> const ml::u8*;
+			auto end(void) const noexcept -> const mx::u8*;
 
 			/* size */
-			auto size(void) const noexcept -> ml::usz;
+			auto size(void) const noexcept -> mx::usz;
 
 	}; // class mapped_file
 
-} // namespace ml
+} // namespace mx
 
 #endif // ml_system_mapped_file_hpp

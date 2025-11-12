@@ -8,7 +8,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- S Y S T E M  E R R O R ----------------------------------------------
@@ -21,7 +21,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::system_error;
+			using self = mx::system_error;
 
 
 			// -- private members ---------------------------------------------
@@ -111,6 +111,6 @@ namespace ml {
 
 	}; // class system_error
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_system_error_hpp

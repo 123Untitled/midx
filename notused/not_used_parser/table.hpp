@@ -15,7 +15,7 @@ namespace pr {
 	template <typename, pr::action...>
 	struct rule;
 
-	template <ml::u8... Is, pr::action... As>
+	template <mx::u8... Is, pr::action... As>
 	struct rule<tk::token_class<Is...>, As...> final {
 		non_instantiable_class(rule);
 	};
@@ -63,7 +63,7 @@ namespace pr {
 			template <typename>
 			struct config;
 
-			template <ml::u8... Is, pr::action... As>
+			template <mx::u8... Is, pr::action... As>
 			struct config<pr::rule<tk::token_class<Is...>, As...>> final {
 				non_instantiable_class(config);
 				static consteval auto apply(self& tbl) noexcept -> void {

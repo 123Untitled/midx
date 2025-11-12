@@ -27,8 +27,8 @@ namespace lx {
 
 			// -- public members ----------------------------------------------
 
-			const ml::u8* data;
-			const ml::usz size;
+			const mx::u8* data;
+			const mx::usz size;
 
 
 
@@ -42,7 +42,7 @@ namespace lx {
 					return false;
 
 				// data check
-				for (ml::usz i = 0; i < size; ++i) {
+				for (mx::usz i = 0; i < size; ++i) {
 					if (data[i] != other.data[i])
 						return false; }
 
@@ -59,9 +59,9 @@ namespace lx {
 
 			/* hash */
 			auto hash(void) const noexcept -> mx::usz {
-				ml::usz h = 0U;
-				for (ml::usz i = 0U; i < size; ++i)
-					h = h * 31U + static_cast<ml::usz>(data[i]);
+				mx::usz h = 0U;
+				for (mx::usz i = 0U; i < size; ++i)
+					h = h * 31U + static_cast<mx::usz>(data[i]);
 				return h;
 			}
 

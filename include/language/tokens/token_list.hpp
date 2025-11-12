@@ -37,7 +37,7 @@ namespace tk {
 			std::vector<tk::token> _tokens;
 
 			/* parse indices */
-			std::vector<ml::usz> _parse_indices;
+			std::vector<mx::usz> _parse_indices;
 
 
 		public:
@@ -59,14 +59,14 @@ namespace tk {
 			/* for each */
 			template <typename F, typename... Tp>
 			auto for_each(F&& f, Tp&&... args) const -> void {
-				for (ml::usz i = 0U; i < _tokens.size(); ++i)
+				for (mx::usz i = 0U; i < _tokens.size(); ++i)
 					f(_tokens[i], std::forward<Tp>(args)...);
 			}
 
 			/* for each parse */
 			template <typename F, typename... Tp>
 			auto for_each_parse(F&& f, Tp&&... args) const -> void {
-				for (ml::usz i = 0U; i < _parse_indices.size(); ++i)
+				for (mx::usz i = 0U; i < _parse_indices.size(); ++i)
 					f(_tokens[_parse_indices[i]], std::forward<Tp>(args)...);
 			}
 
@@ -89,12 +89,12 @@ namespace tk {
 			// -- public accessors --------------------------------------------
 
 			/* size */
-			auto size(void) const noexcept -> ml::usz {
+			auto size(void) const noexcept -> mx::usz {
 				return _tokens.size();
 			}
 
 			/* parsable size */
-			auto parsable_size(void) const noexcept -> ml::usz {
+			auto parsable_size(void) const noexcept -> mx::usz {
 				return _parse_indices.size();
 			}
 
@@ -104,7 +104,7 @@ namespace tk {
 			}
 
 			/* debug */
-			auto debug(const ml::byte_range&) -> void;
+			auto debug(const mx::byte_range&) -> void;
 
 
 			// -- public operators --------------------------------------------
@@ -130,7 +130,7 @@ namespace tk {
 			tk::token_list* _list;
 
 			/* index */
-			ml::usz _index;
+			mx::usz _index;
 
 
 		public:
@@ -138,7 +138,7 @@ namespace tk {
 			// -- public lifecycle --------------------------------------------
 
 			/* constructor */
-			iterator(tk::token_list& list, const ml::usz index = 0U) noexcept
+			iterator(tk::token_list& list, const mx::usz index = 0U) noexcept
 			: _list{&list}, _index{index} {
 			}
 

@@ -1,15 +1,18 @@
 #ifndef midilang_time_clock_hpp
 #define midilang_time_clock_hpp
 
-#include "types.hpp"
+#include <pthread.h>
+
+#include "core/types.hpp"
 #include "time/bpm.hpp"
+#include "monitoring/watcher.hpp"
 
 #include <time.h>
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- C L O C K A B L E ---------------------------------------------------
@@ -22,7 +25,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::clockable;
+			using self = mx::clockable;
 
 
 		public:
@@ -60,7 +63,7 @@ namespace ml {
 			virtual auto clock_stop(void) -> void = 0;
 
 			/* tick */
-			virtual auto clock_tick(const ml::u64&) -> void = 0;
+			virtual auto clock_tick(const mx::u64&) -> void = 0;
 
 	}; // class clockable
 
@@ -75,25 +78,33 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::clock;
+			using self = mx::clock;
 
 
 			// -- private members ---------------------------------------------
+
+			/* thread */
+			::pthread_t _thread;
+
+			/* event fd */
+			int _efd;
+
+			mx::watcher* _watcher;
 
 			/* running */
 			bool _running;
 
 			/* bpm */
-			ml::bpm _bpm;
+			mx::bpm _bpm;
 
 			/* nano clock */
-			ml::i64 _nano_clock;
+			mx::i64 _nano_clock;
 
 			/* nano target */
-			ml::i64 _nano_target;
+			mx::i64 _nano_target;
 
 			/* count */
-			ml::u64 _count;
+			mx::u64 _count;
 
 
 			/* timeline */
@@ -102,15 +113,15 @@ namespace ml {
 			/* request */
 			struct ::timespec  _request;
 
-			ml::i64 _start;
-			ml::i64 _last_start;
-			ml::i64 _end;
+			mx::i64 _start;
+			mx::i64 _last_start;
+			mx::i64 _end;
 
-			ml::i64 _elapsed;
-			ml::i64 _acc_ref;
-			ml::i64 _acc_stamp;
-			ml::i64 _acc_diff;
-			ml::i64 _loop_diff;
+			mx::i64 _elapsed;
+			mx::i64 _acc_ref;
+			mx::i64 _acc_stamp;
+			mx::i64 _acc_diff;
+			mx::i64 _loop_diff;
 
 
 		public:
@@ -118,7 +129,7 @@ namespace ml {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			clock(void) noexcept;
+			clock(const int efd, mx::watcher&) noexcept;
 
 			/* copy constructor */
 			clock(const self&) noexcept = default;
@@ -142,13 +153,10 @@ namespace ml {
 			// -- public methods ----------------------------------------------
 
 			/* start */
-			auto start(ml::clockable&) -> void;
+			auto start(void) -> void;
 
 			/* stop */
 			auto stop(void) noexcept -> void;
-
-
-			// -- public modifiers --------------------------------------------
 
 			/* bpm */
 			auto bpm(const unsigned&) noexcept -> void;
@@ -160,10 +168,10 @@ namespace ml {
 			auto is_running(void) const noexcept -> bool;
 
 			/* bpm */
-			auto bpm(void) const noexcept -> const ml::bpm&;
+			auto bpm(void) const noexcept -> const mx::bpm&;
 
 			/* count */
-			auto count(void) const noexcept -> ml::u64;
+			auto count(void) const noexcept -> mx::u64;
 
 			/* timeline */
 			auto timeline(void) const noexcept -> double;
@@ -171,7 +179,17 @@ namespace ml {
 
 		private:
 
+			// -- private static methods --------------------------------------
+
+			/* entrypoint */
+			static auto _entrypoint(void*) noexcept -> void*;
+
+
 			// -- private methods ---------------------------------------------
+
+
+			/* loop */
+			auto _loop(void) noexcept -> void;
 
 			/* init clock */
 			auto _init_clock(void) noexcept -> void;
@@ -190,6 +208,6 @@ namespace ml {
 
 	}; // class clock
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_time_clock_hpp

@@ -20,7 +20,7 @@ lx::lexer::lexer(void) noexcept
 // -- public methods ----------------------------------------------------------
 
 /* lex */
-auto lx::lexer::lex(const ml::byte_range& br, tk::token_list& tokens, an::diagnostic& diag) -> void {
+auto lx::lexer::lex(const mx::byte_range& br, tk::token_list& tokens, an::diagnostic& diag) -> void {
 
 	_head   = br.begin;
 	_limit  = br.end;
@@ -40,7 +40,7 @@ auto lx::lexer::lex(const ml::byte_range& br, tk::token_list& tokens, an::diagno
 template <bool parse, tk::id id>
 auto lx::lexer::push_token(void) -> void {
 
-	const ml::usz _size = (_head - _mark);
+	const mx::usz _size = (_head - _mark);
 	_cursor = _base + _size;
 
 	tk::token to{id, lx::lexeme{_mark, _size},
@@ -66,7 +66,7 @@ auto lx::lexer::push_byte_token(void) -> void {
 }
 
 /* push error */
-template <ml::literal E>
+template <mx::literal E>
 auto lx::lexer::push_error(void) -> void {
 
 	_diag->push_error(
@@ -78,7 +78,7 @@ auto lx::lexer::push_error(void) -> void {
 }
 
 /* push warning */
-template <ml::literal W>
+template <mx::literal W>
 auto lx::lexer::push_warning(void) -> void {
 	_diag->push_warning(
 		W.data,
@@ -96,8 +96,8 @@ auto lx::lexer::_lex(void) -> void {
 	while (_head < _limit) {
 
 		start:
-		//ml::u8 quote{'\''};
-		const ml::u8 c = *_head;
+		//mx::u8 quote{'\''};
+		const mx::u8 c = *_head;
 
 
 		// -- text ------------------------------------------------------------
@@ -121,8 +121,8 @@ auto lx::lexer::_lex(void) -> void {
 
 		if (cc::is_note(*_head)) {
 
-			constexpr ml::u8 SHARP = 0U;
-			constexpr ml::u8 FLAT  = 1U;
+			constexpr mx::u8 SHARP = 0U;
+			constexpr mx::u8 FLAT  = 1U;
 			constexpr bool alts[][2U] {
 				{true,  true}, {false, true},
 				{true, false}, {true,  true},

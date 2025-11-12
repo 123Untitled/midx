@@ -17,7 +17,7 @@ namespace mx {
 
 
 	/* entry */
-	template <typename T, T V, ml::literal... Ws>
+	template <typename T, T V, mx::literal... Ws>
 	struct entry final {
 		non_instantiable_class(entry);
 		static constexpr const char* words[sizeof...(Ws)] { Ws.data... };
@@ -30,7 +30,7 @@ namespace mx {
 	namespace impl {
 		template <typename...>
 		struct is_entry;
-		template <typename T, T V, ml::literal... Ws>
+		template <typename T, T V, mx::literal... Ws>
 		struct is_entry<entry<T, V, Ws...>> final {
 			static constexpr bool value = true;
 			non_instantiable_class(is_entry);

@@ -12,13 +12,13 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- F S  W A T C H E R --------------------------------------------------
 
-	class fs_watcher : public ml::watcher,
-					   public ml::unix_descriptor {
+	class fs_watcher : public mx::watcher,
+					   public mx::unix_descriptor {
 
 
 		private:
@@ -26,7 +26,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::fs_watcher;
+			using self = mx::fs_watcher;
 
 
 			// -- private members ---------------------------------------------
@@ -35,10 +35,10 @@ namespace ml {
 			std::string _path;
 
 			/* events */
-			ml::u32 _evs;
+			mx::u32 _evs;
 
 			/* accumulated events */
-			ml::u32 _acc;
+			mx::u32 _acc;
 
 
 		public:
@@ -48,8 +48,8 @@ namespace ml {
 			/* path constructor */
 			template <typename... Tp>
 			fs_watcher(const char* path, const Tp&... args)
-			: ml::watcher{},
-			  ml::unix_descriptor{ml::open(path, args...)},
+			: mx::watcher{},
+			  mx::unix_descriptor{mx::open(path, args...)},
 			  _path{path},
 			  _evs{0U}, _acc{0U} {
 			}
@@ -67,14 +67,19 @@ namespace ml {
 			// -- public overrides --------------------------------------------
 
 			/* on event */
-			auto on_event(ml::application&, const struct ::kevent& ev) -> void override final {
+			auto on_event(mx::application&, const struct ::kevent& ev) -> void override final {
 				_evs |= ev.fflags;
+			}
+
+			/* ident */
+			auto ident(void) const noexcept -> int override final {
+				return mx::unix_descriptor::operator int();
 			}
 
 			/* make add */
 			auto make_add(void) noexcept -> struct ::kevent override final {
 				return {
-					.ident  = static_cast<::uintptr_t>(ml::unix_descriptor::operator int()),
+					.ident  = static_cast<::uintptr_t>(mx::unix_descriptor::operator int()),
 					.filter = EVFILT_VNODE,
 					.flags  = EV_ADD | EV_ENABLE | EV_CLEAR,
 					.fflags = NOTE_WRITE | NOTE_EXTEND | NOTE_RENAME | NOTE_DELETE | NOTE_REVOKE,
@@ -86,7 +91,7 @@ namespace ml {
 			/* make del */
 			auto make_del(void) const noexcept -> struct ::kevent override final {
 				return {
-					.ident  = static_cast<::uintptr_t>(ml::unix_descriptor::operator int()),
+					.ident  = static_cast<::uintptr_t>(mx::unix_descriptor::operator int()),
 					.filter = EVFILT_VNODE,
 					.flags  = EV_DELETE,
 					.fflags = 0U,
@@ -104,7 +109,7 @@ namespace ml {
 			}
 
 			/* has accumulated events */
-			auto has_acc(const ml::u32& ev) const noexcept -> bool {
+			auto has_acc(const mx::u32& ev) const noexcept -> bool {
 				return (_acc & ev) != 0U;
 			}
 
@@ -130,6 +135,6 @@ namespace ml {
 
 	}; // class fs_watcher
 
-} // namespace ml
+} // namespace mx
 
 #endif // ml_monitoring_fs_watcher_hpp

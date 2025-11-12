@@ -1,5 +1,4 @@
 #include "monitoring/client.hpp"
-#include <iostream>
 #include "application.hpp"
 #include <sys/socket.h>
 
@@ -9,128 +8,139 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* monitor constructor */
-ml::client::client(const ml::monitor& monitor) noexcept
-: _monitor{&monitor}, _socket{}, _reader{} {
+mx::client::client(const mx::monitor& monitor) noexcept
+: _monitor{&monitor}, _socket{}, _reader{}, _queue{} {
 }
 
 
 // -- public methods ----------------------------------------------------------
 
 /* initialize */
-auto ml::client::initialize(ml::socket&& sck, const ml::monitor& monitor) -> void {
-	_socket = static_cast<ml::socket&&>(sck);
-	monitor.subscribe(*this);
+auto mx::client::initialize(mx::socket&& sck) -> void {
+
+	// store socket
+	_socket = static_cast<mx::socket&&>(sck);
+
+	// subscribe to monitor
+	_monitor->add_read(*this);
 }
 
 /* send */
-auto ml::client::send(std::string&& msg) -> void {
+auto mx::client::send(const std::string& msg) -> void {
 
-	_send_buffer = static_cast<std::string&&>(msg);
+	// enable write event
+	if (_queue.empty() == true)
+		_monitor->add_write(*this);
 
-	const struct ::kevent ev {
-		.ident  = static_cast<::uintptr_t>(_socket.operator int()),
-		.filter = EVFILT_WRITE,
-		.flags  = EV_ADD | EV_ENABLE,
-		.fflags = 0U,
-		.data   = 0,
-		.udata  = this
-	};
-
-	_monitor->record(ev);
+	// queue message
+	_queue.emplace_back(msg);
 }
 
-/* disconnect */
-auto ml::client::disconnect(const ml::monitor& monitor) -> void {
-	monitor.unsubscribe(*this);
-	_socket.close();
+/* is connected */
+auto mx::client::is_connected(void) const noexcept -> bool {
+	return _socket.is_open();
 }
+
 
 
 // -- public overrides --------------------------------------------------------
 
 /* on event */
-auto ml::client::on_event(ml::application& app, const struct ::kevent& ev) -> void {
+auto mx::client::on_event(mx::application& app, const struct ::kevent& ev) -> void {
 
 	// detect disconnection or errors
-	if ((ev.flags & EV_EOF) != 0U
+	if ((ev.flags & EV_EOF)   != 0U
 	 || (ev.flags & EV_ERROR) != 0U) {
-		self::disconnect(app.monitor());
+		self::_disconnect();
 		return;
 	}
 
-	if ((ev.filter == EVFILT_READ)) {
+	switch (ev.filter) {
 
-		// read socket
-		if (_reader.recv(_socket) == false)
-			return;
+		// handle read event
+		case EVFILT_READ:
+			self::_read(app);
+			break;
 
-		// handle disconnection
-		if (_reader.eof()) {
-			this->disconnect(app.monitor());
-			return;
-		}
-
-		// feed data to application
-		app.protocol().feed(_reader);
-	}
-
-	if ((ev.filter == EVFILT_WRITE)) {
-		std::cout << "client: write event\n";
-
-		// send data
-		const auto sent = ::send(
-			_socket,
-			_send_buffer.data(),
-			_send_buffer.size(),
-			0);
-
-		if (sent < 0)
-			throw ml::system_error{"send"};
-
-		std::cout << "client: sent " << sent << " bytes\n";
-
-		// erase sent data
-		_send_buffer.erase(0U, static_cast<mx::usz>(sent));
-
-		// if all data sent, remove write event
-		if (_send_buffer.empty()) {
-			const struct ::kevent dev {
-				.ident  = static_cast<::uintptr_t>(_socket.operator int()),
-				.filter = EVFILT_WRITE,
-				.flags  = EV_DELETE,
-				.fflags = 0U,
-				.data   = 0,
-				.udata  = nullptr
-			};
-			_monitor->record(dev);
-			std::cout << "client: all data sent, write event removed\n";
-		}
-
+		// handle write event
+		case EVFILT_WRITE:
+			self::_write(app);
+			break;
 	}
 }
 
-/* make add */
-auto ml::client::make_add(void) noexcept -> struct ::kevent {
-	const struct ::kevent ev {
-		.ident  = static_cast<::uintptr_t>(_socket.operator int()),
-		.filter = EVFILT_READ,
-		.flags  = EV_ADD | EV_ENABLE /* | EV_CLEAR, stay in level-triggered mode */,
-		.fflags = 0U,
-		.data   = 0,
-		.udata  = this
-	};
-	return ev;
+/* ident */
+auto mx::client::ident(void) const noexcept -> int {
+	return _socket.operator int();
 }
 
-/* make del */
-auto ml::client::make_del(void) const noexcept -> struct ::kevent {
-	const struct ::kevent ev {
-		.ident  = static_cast<::uintptr_t>(_socket.operator int()),
-		.filter = EVFILT_READ,
-		.flags  = EV_DELETE,
-		.fflags = 0U,
-		.data   = 0,
-		.udata  = nullptr
-	};
-	return ev;
+
+
+// -- private methods ---------------------------------------------------------
+
+/* disconnect */
+auto mx::client::_disconnect(void) -> void {
+
+	// unsubscribe write event
+	if (_queue.empty() == false)
+		_monitor->del_write(*this);
+
+	// unsubscribe read event
+	_monitor->del_read(*this);
+
+	// close socket
+	_socket.close();
+
+	// clear queue
+	_queue.clear();
+}
+
+/* read */
+auto mx::client::_read(mx::application& app) -> void {
+
+	// read socket
+	if (_reader.recv(_socket) == false)
+		return;
+
+	// handle disconnection
+	if (_reader.eof()) {
+		self::_disconnect();
+		return;
+	}
+
+	// feed data to application
+	app.protocol().feed(_reader, app);
+}
+
+/* write */
+auto mx::client::_write(mx::application& app) -> void {
+
+	// get next message to send
+	auto& msg = _queue.front();
+
+	// send data
+	const auto sent = ::send(_socket, msg.data(), msg.size(), 0);
+
+	// handle errors
+	if (sent < 0) {
+
+		if (errno == EAGAIN
+		 || errno == EWOULDBLOCK
+		 || errno == EINTR)
+			return;
+
+		// throw exception
+		throw mx::system_error{"send"};
+	}
+
+	// erase sent data
+	msg.advance(static_cast<mx::usz>(sent));
+
+	// if message fully sent, remove from queue
+	if (msg.is_sent() == true)
+		_queue.pop_front();
+
+	// if all data sent, remove write event
+	if (_queue.empty())
+		_monitor->del_write(*this);
 }

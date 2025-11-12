@@ -19,7 +19,7 @@ namespace mx {
 		void* ptr = ::malloc(size * sizeof(T));
 
 		if (ptr == nullptr)
-			throw ml::system_error{"malloc"};
+			throw mx::system_error{"malloc"};
 
 		return static_cast<T*>(ptr);
 	}
@@ -31,7 +31,7 @@ namespace mx {
 		void* ptr = ::calloc(size, sizeof(T));
 
 		if (ptr == nullptr)
-			throw ml::system_error{"calloc"};
+			throw mx::system_error{"calloc"};
 
 		return static_cast<T*>(ptr);
 	}
@@ -43,7 +43,7 @@ namespace mx {
 		void* new_ptr = ::realloc(old_ptr, size * sizeof(T));
 
 		if (new_ptr == nullptr)
-			throw ml::system_error{"realloc"};
+			throw mx::system_error{"realloc"};
 
 		return static_cast<T*>(new_ptr);
 	}

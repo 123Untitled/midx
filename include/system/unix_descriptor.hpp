@@ -9,7 +9,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- U N I X  D E S C R I P T O R ----------------------------------------
@@ -22,7 +22,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::unix_descriptor;
+			using self = mx::unix_descriptor;
 
 
 			// -- private constants -------------------------------------------
@@ -118,7 +118,7 @@ namespace ml {
 
 				// close file descriptor
 				if (::close(_fd) == -1)
-					throw ml::system_error{"close"};
+					throw mx::system_error{"close"};
 
 				// invalidate
 				_fd = INVALID_FD;
@@ -167,32 +167,32 @@ namespace ml {
 
 
 	template <typename... Tp>
-	auto open(const char* path, const Tp&... args) -> ml::unix_descriptor {
+	auto open(const char* path, const Tp&... args) -> mx::unix_descriptor {
 
 		const int fd = ::open(path, args...);
 
 		if (fd == -1)
-			throw ml::system_error{"open"};
+			throw mx::system_error{"open"};
 
-		return ml::unix_descriptor{fd};
+		return mx::unix_descriptor{fd};
 	}
 
 
 	template <typename... Tp>
-	auto try_open(const char* path, const Tp&... args) -> ml::unix_descriptor {
+	auto try_open(const char* path, const Tp&... args) -> mx::unix_descriptor {
 
 		const int fd = ::open(path, args...);
 
 		if (fd != -1)
-			return ml::unix_descriptor{fd};
+			return mx::unix_descriptor{fd};
 
 		if (errno == ENOENT)
-			return ml::unix_descriptor{};
+			return mx::unix_descriptor{};
 
-		throw ml::system_error{"open"};
+		throw mx::system_error{"open"};
 	}
 
 
-} // namespace ml
+} // namespace mx
 
 #endif // system_unix_descriptor_hpp

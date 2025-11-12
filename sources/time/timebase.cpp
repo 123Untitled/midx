@@ -9,14 +9,14 @@
 // -- private lifecycle -------------------------------------------------------
 
 /* default constructor */
-ml::timebase::timebase(void) {
+mx::timebase::timebase(void) {
 
 	// timebase info
 	::mach_timebase_info_data_t timebase;
 
 	// get timebase info
 	if (::mach_timebase_info(&timebase) != KERN_SUCCESS)
-		throw ml::system_error{"mach_timebase_info"}; // maybe errno not set
+		throw mx::system_error{"mach_timebase_info"}; // maybe errno not set
 
 	// nano per millisecond
 	constexpr unsigned nano_per_ms = 1'000'000;
@@ -38,7 +38,7 @@ ml::timebase::timebase(void) {
 // -- private static methods --------------------------------------------------
 
 /* shared */
-auto ml::timebase::_shared(void) -> self& {
+auto mx::timebase::_shared(void) -> self& {
 	static self instance;
 	return instance;
 }
@@ -47,16 +47,16 @@ auto ml::timebase::_shared(void) -> self& {
 // -- public accessors --------------------------------------------------------
 
 /* ms to absolute */
-auto ml::timebase::ms_to_absolute(void) noexcept -> double {
+auto mx::timebase::ms_to_absolute(void) noexcept -> double {
 	return self::_shared()._ms_to_absolute;
 }
 
 /* absolute to nano */
-auto ml::timebase::absolute_to_nano(void) noexcept -> double {
+auto mx::timebase::absolute_to_nano(void) noexcept -> double {
 	return self::_shared()._absolute_to_nano;
 }
 
 /* nano to absolute */
-auto ml::timebase::nano_to_absolute(void) noexcept -> double {
+auto mx::timebase::nano_to_absolute(void) noexcept -> double {
 	return self::_shared()._nano_to_absolute;
 }

@@ -82,7 +82,7 @@ namespace mx {
 				// [EINVAL] The value specified by cond or the value specified by mutex is invalid.
 
 				if (::pthread_cond_wait(&_cond, &mtx._mutex) != 0)
-					throw ml::system_error{"pthread_cond_wait"};
+					throw mx::system_error{"pthread_cond_wait"};
 			}
 
 	}; // class condition_variable

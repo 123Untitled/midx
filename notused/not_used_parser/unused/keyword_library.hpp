@@ -96,10 +96,10 @@ namespace kw {
 			// -- private constants -------------------------------------------
 
 			/* block not found */
-			static constexpr ml::u32 BLOCK_NOT_FOUND = sizeof...(Ns);
+			static constexpr mx::u32 BLOCK_NOT_FOUND = sizeof...(Ns);
 
 			/* param not found */
-			static constexpr ml::u32 PARAM_NOT_FOUND = (Ns + ... );
+			static constexpr mx::u32 PARAM_NOT_FOUND = (Ns + ... );
 
 
 
@@ -110,8 +110,8 @@ namespace kw {
 				public:
 					std::string_view name;
 					sd::action_type action;
-					ml::usz start;
-					ml::usz end;
+					mx::usz start;
+					mx::usz end;
 			};
 
 
@@ -128,14 +128,14 @@ namespace kw {
 
 
 			template <unsigned N>
-			consteval auto _fill(const kw::block_entry<N>& block, ml::u32& offset, ml::u32& bi) noexcept -> void {
+			consteval auto _fill(const kw::block_entry<N>& block, mx::u32& offset, mx::u32& bi) noexcept -> void {
 
 				_blocks[bi].name   = block.name;
 				_blocks[bi].action = block.action;
 				_blocks[bi].start  = offset;
 				_blocks[bi].end    = offset + N;
 
-				for (ml::u32 pi = 0U; pi < N; ++pi)
+				for (mx::u32 pi = 0U; pi < N; ++pi)
 					_params[offset + pi] = block.labels[pi];
 
 				offset += N;
@@ -150,8 +150,8 @@ namespace kw {
 			consteval keyword_library(const kw::block_entry<Ns>&... blocks) noexcept
 			/* uninitialized */ {
 
-				ml::u32 offset = 0U;
-				ml::u32 bi     = 0U;
+				mx::u32 offset = 0U;
+				mx::u32 bi     = 0U;
 
 				// fold on each block
 				((self::_fill<Ns>(blocks, offset, bi)), ...);
@@ -159,60 +159,60 @@ namespace kw {
 
 
 			/* block index */
-			constexpr auto block_index(const std::string_view& name) const noexcept -> ml::u32 {
-				for (ml::u32 i = 0U; i < sizeof...(Ns); ++i) {
+			constexpr auto block_index(const std::string_view& name) const noexcept -> mx::u32 {
+				for (mx::u32 i = 0U; i < sizeof...(Ns); ++i) {
 					if (_blocks[i].name == name)
 						return i;
 				} return BLOCK_NOT_FOUND;
 			}
 
 			/* param index */
-			constexpr auto param_index(const ml::u32 bi, const std::string_view& name) const noexcept -> ml::u32 {
+			constexpr auto param_index(const mx::u32 bi, const std::string_view& name) const noexcept -> mx::u32 {
 
 				const auto& block = _blocks[bi];
 
-				for (ml::usz i = block.start; i < block.end; ++i) {
+				for (mx::usz i = block.start; i < block.end; ++i) {
 					if (_params[i].name == name)
 						return i;
 				} return PARAM_NOT_FOUND;
 			}
 
 			/* block not found */
-			constexpr auto block_not_found(void) const noexcept -> ml::u32 {
+			constexpr auto block_not_found(void) const noexcept -> mx::u32 {
 				return BLOCK_NOT_FOUND;
 			}
 
 			/* param not found */
-			constexpr auto param_not_found(void) const noexcept -> ml::u32 {
+			constexpr auto param_not_found(void) const noexcept -> mx::u32 {
 				return PARAM_NOT_FOUND;
 			}
 
 			/* block action */
-			constexpr auto block_action(const ml::u32 bi) const noexcept -> sd::action_type {
+			constexpr auto block_action(const mx::u32 bi) const noexcept -> sd::action_type {
 				return _blocks[bi].action;
 			}
 
 			/* param action */
-			constexpr auto param_action(const ml::u32 pi) const noexcept -> sd::action_type {
+			constexpr auto param_action(const mx::u32 pi) const noexcept -> sd::action_type {
 				return _params[pi].action;
 			}
 
 			/* block action */
-			constexpr auto block_action(const ml::u32 bi, ml::state_driver& driver) const -> void {
+			constexpr auto block_action(const mx::u32 bi, mx::state_driver& driver) const -> void {
 				(driver.*_blocks[bi].action)();
 			}
 
 			/* param action */
-			constexpr auto param_action(const ml::u32 pi, ml::state_driver& driver) const -> void {
+			constexpr auto param_action(const mx::u32 pi, mx::state_driver& driver) const -> void {
 				(driver.*_params[pi].action)();
 			}
 			
 
 
 			auto debug(void) const -> void {
-				for (ml::usz i = 0U; i < sizeof...(Ns); ++i) {
+				for (mx::usz i = 0U; i < sizeof...(Ns); ++i) {
 					std::cout << " - " << _blocks[i].name << "\n";
-					for (ml::usz j = _blocks[i].start; j < _blocks[i].end; ++j) {
+					for (mx::usz j = _blocks[i].start; j < _blocks[i].end; ++j) {
 						std::cout << "   - " << _params[j].name << "\n";
 					}
 				}

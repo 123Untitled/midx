@@ -10,9 +10,9 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
-	enum token_type : ml::u8 {
+	enum token_type : mx::u8 {
 		TK_BLOCK = 0U,
 		TK_IDENTIFIER,
 		TK_LABEL,
@@ -22,9 +22,9 @@ namespace ml {
 
 	class highlight final {
 		public:
-			ml::u32 line;
-			ml::u32 start;
-			ml::u32 end;
+			mx::u32 line;
+			mx::u32 start;
+			mx::u32 end;
 	};
 
 
@@ -36,7 +36,7 @@ namespace ml {
 
 	// -- G L O B A L  M A C H I N E ------------------------------------------
 
-	class global_machine final /*: public ml::state_machine*/ {
+	class global_machine final /*: public mx::state_machine*/ {
 
 
 		private:
@@ -44,24 +44,24 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::global_machine;
+			using self = mx::global_machine;
 
 
-			friend class ml::transition<self>;
-			enum state_type : ml::u8;
-			enum action_type : ml::u8;
+			friend class mx::transition<self>;
+			enum state_type : mx::u8;
+			enum action_type : mx::u8;
 
 
 			// -- private members ---------------------------------------------
 
 			/* context */
-			ml::parser_context* _ctx;
+			mx::parser_context* _ctx;
 
 			/* transition */
-			const ml::transition<self>* _tr;
+			const mx::transition<self>* _tr;
 
 			/* current byte */
-			ml::u8 _byte;
+			mx::u8 _byte;
 
 			/* last state */
 			state_type _last;
@@ -71,7 +71,7 @@ namespace ml {
 			//std::string _buffer;
 			//
 			///* count */
-			//ml::usz _count;
+			//mx::usz _count;
 
 
 		public:
@@ -84,7 +84,7 @@ namespace ml {
 
 			// -- public methods ----------------------------------------------
 
-			auto parse(ml::parser_context& ctx) -> void /*override*/;
+			auto parse(mx::parser_context& ctx) -> void /*override*/;
 
 
 		private:
@@ -120,7 +120,7 @@ namespace ml {
 			auto _on_pattern_track(void) -> void{}
 
 
-			enum action_type : ml::u8 {
+			enum action_type : mx::u8 {
 				A_PUSH_ERROR,
 				A_PUSH_STATE,
 				A_POP_STATE,
@@ -161,7 +161,7 @@ namespace ml {
 
 			// -- private constants -------------------------------------------
 
-			enum char_type : ml::u8 {
+			enum char_type : mx::u8 {
 
 				// control characters
 				C_CONTROL = 0U,
@@ -212,7 +212,7 @@ namespace ml {
 				C_TYPE_MAX
 			};
 
-			enum state_type : ml::u8 {
+			enum state_type : mx::u8 {
 
 				// comment and whitespace states
 				S_IN_COMMENT,
@@ -242,7 +242,7 @@ namespace ml {
 
 
 			/* keywords */
-			static constexpr ml::keyword_library _keywords {
+			static constexpr mx::keyword_library _keywords {
 
 				kw::block_entry{"track",   &self::_on_pattern,
 					kw::param_entry{"note", &self::_on_pattern_track}
@@ -259,7 +259,7 @@ namespace ml {
 
 
 			/* state machine */
-			static constexpr ml::transition<self> _machine[S_TYPE_MAX][C_TYPE_MAX] {
+			static constexpr mx::transition<self> _machine[S_TYPE_MAX][C_TYPE_MAX] {
 
 
 				// -- S_IN_COMMENT --------------------------------------------
@@ -1437,6 +1437,6 @@ namespace ml {
 
 	}; // class global_machine
 
-} // namespace ml
+} // namespace mx
 
 #endif //ml_language_machines_global_machine_hpp

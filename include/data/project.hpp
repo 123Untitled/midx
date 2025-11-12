@@ -10,7 +10,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- P R O J E C T -------------------------------------------------------
@@ -23,16 +23,16 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::project;
+			using self = mx::project;
 
 
 			// -- private members ---------------------------------------------
 
 			/* analyzer */
-			ml::analyzer _analyzer;
+			mx::analyzer _analyzer;
 
 			/* patterns */
-			ml::pattern_pool _patterns;
+			mx::pattern_pool _patterns;
 
 
 		public:
@@ -42,7 +42,7 @@ namespace ml {
 			}
 
 
-			auto update(const ml::mapped_file& mf) -> void {
+			auto update(const mx::mapped_file& mf) -> void {
 
 				self::reset();
 				::write(STDOUT_FILENO, mf.begin(), mf.size());
@@ -65,6 +65,6 @@ namespace ml {
 
 	}; // class project
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_data_project_hpp

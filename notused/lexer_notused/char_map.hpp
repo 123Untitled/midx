@@ -1,7 +1,7 @@
 
 	// -- forward declarations ------------------------------------------------
 
-	template <ml::u8...>
+	template <mx::u8...>
 	struct char_class;
 
 
@@ -11,13 +11,13 @@
 		template <typename...>
 		struct char_concat;
 
-		template <ml::u8... A, ml::u8... B, typename... Tp>
+		template <mx::u8... A, mx::u8... B, typename... Tp>
 		struct char_concat<cc::char_class<A...>, cc::char_class<B...>, Tp...> final {
 			non_instantiable_class(char_concat);
 			using type = typename cc::impl::char_concat<char_class<A..., B...>, Tp...>::type;
 		};
 
-		template <ml::u8... A>
+		template <mx::u8... A>
 		struct char_concat<cc::char_class<A...>> final {
 			non_instantiable_class(char_concat);
 			using type = cc::char_class<A...>;
@@ -48,7 +48,7 @@
 		}; // struct is_char_class
 
 		/* is char class true specialization */
-		template <ml::u8... Is>
+		template <mx::u8... Is>
 		struct is_char_class<cc::char_class<Is...>> final {
 			static constexpr bool value = true;
 			non_instantiable_class(is_char_class);
@@ -70,7 +70,7 @@
 
 	/* generate char class */
 	#define GENERATE_CHAR_CLASS(class_name) \
-	using class_name = cc::char_class<static_cast<ml::u8>((__COUNTER__) - cc::impl::counter_start)>
+	using class_name = cc::char_class<static_cast<mx::u8>((__COUNTER__) - cc::impl::counter_start)>
 
 	GENERATE_CHAR_CLASS(control);
 
@@ -147,14 +147,14 @@
 			template <typename T>
 			struct first_char;
 
-			template <ml::u8 F, ml::u8... R>
+			template <mx::u8 F, mx::u8... R>
 			struct first_char<cc::char_class<F, R...>> {
 				non_instantiable_class(first_char);
-				static constexpr ml::u8 value = F;
+				static constexpr mx::u8 value = F;
 			};
 
 			template <typename T>
-			static constexpr ml::u8 id = first_char<T>::value;
+			static constexpr mx::u8 id = first_char<T>::value;
 
 
 		public:
@@ -162,10 +162,10 @@
 			// -- public static members ---------------------------------------
 
 			/* size */
-			static constexpr ml::u8 size = static_cast<ml::u8>((__COUNTER__) - cc::impl::counter_start);
+			static constexpr mx::u8 size = static_cast<mx::u8>((__COUNTER__) - cc::impl::counter_start);
 
 			/* table */
-			static constexpr ml::u8 table[256U] {
+			static constexpr mx::u8 table[256U] {
 
 				// 0x00 - 0x07 (invalid)
 				id<control>, id<control>, id<control>, id<control>, id<control>, id<control>, id<control>, id<control>,
@@ -359,14 +359,14 @@
 			};
 
 			/* eoc */
-			static constexpr ml::u8 eoc = id<cc::end_of_chunk>;
+			static constexpr mx::u8 eoc = id<cc::end_of_chunk>;
 
 			/* eof */
-			static constexpr ml::u8 eof = id<cc::end_of_file>;
+			static constexpr mx::u8 eof = id<cc::end_of_file>;
 
 	}; // class char_map
 
-	template <ml::u8... Is>
+	template <mx::u8... Is>
 	struct char_class final {
 		noexcept_default_class(char_class);
 		static_assert(((Is < cc::char_map::size) && ...), "char_class: character ID out of range");
@@ -469,19 +469,19 @@
 	template <typename>
 	struct table;
 
-	template <ml::u8... Is>
+	template <mx::u8... Is>
 	struct table<cc::char_class<Is...>> final {
 		private:
 			struct array final {
 				private:
-					ml::u8 data[cc::char_map::size];
+					mx::u8 data[cc::char_map::size];
 
 				public:
 					constexpr array(void) noexcept
 					: data{} {
 						((data[Is] = 1u), ...);
 					}
-					constexpr auto operator[](const ml::u8 i) const noexcept -> bool {
+					constexpr auto operator[](const mx::u8 i) const noexcept -> bool {
 						return static_cast<bool>(data[cc::char_map::table[i]]);
 					}
 			};
@@ -494,7 +494,7 @@
 
 	/* match */
 	template <typename C>
-	constexpr auto match(const ml::u8 c) noexcept -> bool {
+	constexpr auto match(const mx::u8 c) noexcept -> bool {
 		return cc::table<C>::is[c];
 	}
 

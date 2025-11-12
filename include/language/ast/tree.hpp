@@ -60,7 +60,7 @@ namespace as {
 
 
 			/* block order */
-			std::vector<ml::usz> _block_order;
+			std::vector<mx::usz> _block_order;
 
 
 		public:
@@ -111,14 +111,14 @@ namespace as {
 					  auto pi = b.ps;
 				const auto pe = b.pc + pi;
 
-				ml::usz vc = 0U;
+				mx::usz vc = 0U;
 				for (; pi < pe; ++pi) {
 					const auto& param = _params[pi];
 					vc += param.vc;
 				}
 
-				const ml::usz p_resize = _params.size() - b.pc;
-				const ml::usz v_resize = _values.size() - vc;
+				const mx::usz p_resize = _params.size() - b.pc;
+				const mx::usz v_resize = _values.size() - vc;
 
 				_blocks.pop_back();
 				_params.resize(p_resize);
@@ -138,15 +138,15 @@ namespace as {
 			auto sort(void) noexcept -> void {
 
 				_block_order.resize(_blocks.size());
-				for (ml::usz i = 0U; i < _blocks.size(); ++i)
+				for (mx::usz i = 0U; i < _blocks.size(); ++i)
 					_block_order[i] = i;
 
 				// insertion sort
-				for (ml::usz i = 1U; i < _blocks.size(); ++i) {
+				for (mx::usz i = 1U; i < _blocks.size(); ++i) {
 					const auto key = _block_order[i];
 					const auto key_spec = _blocks[key].spec_id();
 
-					ml::usz j = i;
+					mx::usz j = i;
 					while (j > 0U && _blocks[_block_order[j - 1U]].spec_id()
 									> key_spec) {
 						_block_order[j] = _block_order[j - 1U];
@@ -183,12 +183,12 @@ namespace as {
 			}
 
 			/* number of blocks */
-			auto num_blocks(void) const noexcept -> ml::usz {
+			auto num_blocks(void) const noexcept -> mx::usz {
 				return _blocks.size();
 			}
 
 			/* block at */
-			auto block_at(const ml::usz bi) noexcept -> as::block& {
+			auto block_at(const mx::usz bi) noexcept -> as::block& {
 				return _blocks[bi];
 			}
 

@@ -39,22 +39,22 @@ namespace lx {
 			// -- private members ---------------------------------------------
 
 			/* current iterator */
-			const ml::u8* _head;
+			const mx::u8* _head;
 
 			/* limit iterator */
-			const ml::u8* _limit;
+			const mx::u8* _limit;
 
 			/* mark iterator */
-			const ml::u8* _mark;
+			const mx::u8* _mark;
 
 			/* line */
-			ml::uint _line;
+			mx::uint _line;
 
 			/* column base */
-			ml::uint _base;
+			mx::uint _base;
 
 			/* culumn cursor */
-			ml::uint _cursor;
+			mx::uint _cursor;
 
 			/* tokens */
 			tk::token_list* _tokens;
@@ -80,11 +80,11 @@ namespace lx {
 			auto push_byte_token(void) -> void;
 
 			/* push error */
-			template <ml::literal>
+			template <mx::literal>
 			auto push_error(void) -> void;
 
 			/* push warning */
-			template <ml::literal>
+			template <mx::literal>
 			auto push_warning(void) -> void;
 
 
@@ -99,7 +99,7 @@ namespace lx {
 			// -- public methods ----------------------------------------------
 
 			/* lex */
-			auto lex(const ml::byte_range&, tk::token_list&, an::diagnostic&) -> void;
+			auto lex(const mx::byte_range&, tk::token_list&, an::diagnostic&) -> void;
 
 	}; // class lexer
 

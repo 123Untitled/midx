@@ -27,7 +27,7 @@ namespace sx {
 			// -- private members ---------------------------------------------
 
 			/* map */
-			std::unordered_map<sx::identifier_key, ml::usz,
+			std::unordered_map<sx::identifier_key, mx::usz,
 							   sx::identifier_key::hash> _map;
 
 		public:
@@ -36,7 +36,7 @@ namespace sx {
 			// -- public modifiers --------------------------------------------
 
 			/* insert */
-			auto insert(const as::block& b, const ml::usz index) -> bool {
+			auto insert(const as::block& b, const mx::usz index) -> bool {
 				const auto it = _map.try_emplace(sx::identifier_key{b}, index);
 				return it.second;
 			}
@@ -44,7 +44,7 @@ namespace sx {
 			/* insert */
 			auto insert(const sp::id spec_id,
 						const lx::lexeme& lex,
-						const ml::usz index) -> bool {
+						const mx::usz index) -> bool {
 				const auto it = _map.try_emplace(
 						sx::identifier_key{spec_id, lex}, index);
 				return it.second;

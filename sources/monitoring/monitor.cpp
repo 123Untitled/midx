@@ -9,54 +9,74 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* path constructor */
-ml::monitor::monitor(void)
+mx::monitor::monitor(void)
 : _kqueue{::kqueue()} /* uninitialized */ {
 
 	// check errors
 	if (_kqueue == -1)
-		throw ml::system_error{"kqueue"};
+		throw mx::system_error{"kqueue"};
 }
 
 
 // -- public methods ----------------------------------------------------------
 
-/* subscribe */
-auto ml::monitor::subscribe(ml::watcher& w) const -> void {
-
-	// make event
-	const struct ::kevent ev = w.make_add();
-
-	// record event
-	if (::kevent(_kqueue, &ev, 1, nullptr, 0, nullptr) == -1)
-		throw ml::system_error{"kevent"};
+/* add read */
+auto mx::monitor::add_read(mx::watcher& w) const -> void {
+	// record read event
+	// level-triggered mode
+	self::record<EVFILT_READ, EV_ADD | EV_ENABLE>(w.ident(), &w);
 }
 
-/* unsubscribe */
-auto ml::monitor::unsubscribe(ml::watcher& w) const -> void {
-
-	// make event
-	const struct ::kevent ev = w.make_del();
-
-	// record event
-	if (::kevent(_kqueue, &ev, 1, nullptr, 0, nullptr) == -1)
-		throw ml::system_error{"kevent"};
+/* add write */
+auto mx::monitor::add_write(mx::watcher& w) const -> void {
+	// record write event
+	// level-triggered mode
+	self::record<EVFILT_WRITE, EV_ADD | EV_ENABLE>(w.ident(), &w);
 }
 
-/* record */
-auto ml::monitor::record(const struct ::kevent& ev) const -> void {
+/* del read */
+auto mx::monitor::del_read(mx::watcher& w) const -> void {
+	// delete read event
+	self::record<EVFILT_READ, EV_DELETE>(w.ident());
+}
+
+/* del write */
+auto mx::monitor::del_write(mx::watcher& w) const -> void {
+	// delete write event
+	self::record<EVFILT_WRITE, EV_DELETE>(w.ident());
+}
+
+/* add user */
+auto mx::monitor::add_user(mx::watcher& w) const -> void {
+
+	// make user event
+	const struct kevent ev {
+		.ident  = static_cast<uintptr_t>(w.ident()),
+		.filter = EVFILT_USER,
+		.flags  = EV_ADD | EV_ENABLE | EV_CLEAR,
+		.fflags = 0U,
+		.data   = 0U,
+		.udata  = &w
+	};
+
 	// record event
 	if (::kevent(_kqueue, &ev, 1, nullptr, 0, nullptr) == -1)
-		throw ml::system_error{"kevent"};
+		throw mx::system_error{"kevent"};
 }
 
 /* wait */
-auto ml::monitor::wait(ml::application& app) -> void {
+auto mx::monitor::wait(mx::application& app) -> void {
+
+	// 200 ms timeout
+	constexpr struct timespec timeout {
+		.tv_sec  = 0,
+		.tv_nsec = 200 * 1000 * 1000
+	};
 
 	// wait events
 	const auto ret = ::kevent(_kqueue, nullptr, 0,
 							  _events, BUFFER_SIZE,
-							  nullptr);
-
+							  &timeout);
 
 	// check errors
 	if (ret < 0) {
@@ -66,12 +86,13 @@ auto ml::monitor::wait(ml::application& app) -> void {
 			return;
 
 		// throw
-		throw ml::system_error{"kevent"};
+		throw mx::system_error{"kevent"};
 	}
 
 	for (int i = 0; i < ret; ++i) {
 		// handle event
-		auto* watcher = static_cast<ml::watcher*>(_events[i].udata);
+		auto* watcher = static_cast<mx::watcher*>(_events[i].udata);
 		watcher->on_event(app, _events[i]);
 	}
 }
+

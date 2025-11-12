@@ -5,8 +5,7 @@
 #include "data/sequence.hpp"
 #include "data/track.hpp"
 
-#include "coremidi/eventlist.hpp"
-#include "midi/midi_tracker.hpp"
+#include "midi/midi_engine.hpp"
 
 #include <sstream>
 
@@ -32,16 +31,12 @@ namespace mx {
 
 			// -- private members ---------------------------------------------
 
-			/* tracker */
-			mx::midi_tracker _tracker;
-
-
 			/* sequences */
-			std::vector<ml::sequence> _seqs;
-
+			std::vector<mx::sequence> _seqs;
 
 			/* tracks */
 			std::vector<mx::track> _tracks;
+
 
 			/* patterns */
 			// ...
@@ -53,9 +48,7 @@ namespace mx {
 
 			/* default constructor */
 			model(void) noexcept
-			: _tracker{},
-			  _seqs{},
-			  _tracks{} {
+			: _seqs{}, _tracks{} {
 			}
 
 			/* copy constructor */
@@ -68,7 +61,7 @@ namespace mx {
 			~model(void) noexcept = default;
 
 
-			auto new_sequence(void) -> ml::usz {
+			auto new_sequence(void) -> mx::usz {
 				const mx::usz idx = _seqs.size();
 				static_cast<void>(_seqs.emplace_back());
 				return idx;
@@ -80,7 +73,7 @@ namespace mx {
 				return idx;
 			}
 
-			auto get_sequence(const mx::usz idx) noexcept -> ml::sequence& {
+			auto get_sequence(const mx::usz idx) noexcept -> mx::sequence& {
 				return _seqs[idx];
 			}
 
@@ -88,22 +81,15 @@ namespace mx {
 				return _tracks[idx];
 			}
 
-			auto note_off_all(cm::eventlist& evs) -> void {
-				_tracker.off_pass(evs);
-			}
-
 			auto clear(void) noexcept -> void {
 				  _tracks.clear();
 				    _seqs.clear();
 			}
 
-			auto play(std::stringstream& ss, cm::eventlist& evs, const ml::u64 timeline) -> void {
-
-				_tracker.off_pass(evs);
-				bool first = true;
+			auto play(std::stringstream& ss, mx::midi_engine& engine, const mx::u64 timeline) -> void {
 
 				for (auto& t : _tracks) {
-					t.play(ss, first, _tracker, evs, _seqs, timeline);
+					t.play(ss, engine, _seqs, timeline);
 				}
 			}
 
@@ -111,7 +97,7 @@ namespace mx {
 				std::cout << "MODEL DEBUG:\n";
 
 				std::cout << "  TRACKS: " << _tracks.size() << "\n";
-				for (ml::usz i = 0U; i < _tracks.size(); ++i) {
+				for (mx::usz i = 0U; i < _tracks.size(); ++i) {
 					std::cout << "  TRACK[" << i << "] DEBUG:\n";
 					_tracks[i].debug(_seqs);
 				}

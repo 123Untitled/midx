@@ -1,6 +1,6 @@
 
 
-	template <sd::action_type A, ml::literal... Ws>
+	template <sd::action_type A, mx::literal... Ws>
 	struct entry2 final {
 	};
 
@@ -9,7 +9,7 @@
 	namespace impl {
 		template <typename...>
 		struct is_entry;
-		template <sd::action_type A, ml::literal... Ws>
+		template <sd::action_type A, mx::literal... Ws>
 		struct is_entry<entry2<A, Ws...>> final {
 			static constexpr bool value = true;
 			non_instantiable_class(is_entry);
@@ -30,7 +30,7 @@
 
 
 
-			template <ml::literal... Ws>
+			template <mx::literal... Ws>
 			struct word_list final {
 
 			};
@@ -38,13 +38,13 @@
 			template <typename...>
 			struct concat;
 
-			template <sd::action_type A, ml::literal... Ws>
+			template <sd::action_type A, mx::literal... Ws>
 			struct concat<sx::entry2<A, Ws...>> {
 				using type = word_list<Ws...>;
 			};
 
-			template <sd::action_type A1, ml::literal... W1,
-					  sd::action_type A2, ml::literal... W2,
+			template <sd::action_type A1, mx::literal... W1,
+					  sd::action_type A2, mx::literal... W2,
 					  typename... Rest>
 			struct concat<sx::entry2<A1, W1...>,
 								sx::entry2<A2, W2...>,
@@ -60,7 +60,7 @@
 			using words_type = typename concat<Es...>::type;
 
 
-			template <ml::literal W>
+			template <mx::literal W>
 			static auto print_word(void) -> void {
 				std::cout << W.data << "\n";
 			}
@@ -103,7 +103,7 @@
 
 
 
-			template <sd::action_type A, ml::literal... Ws>
+			template <sd::action_type A, mx::literal... Ws>
 			struct dispatch<sx::entry2<A, Ws...>> {
 
 				static constexpr const char* words[] { Ws.data... };

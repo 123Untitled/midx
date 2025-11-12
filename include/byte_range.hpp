@@ -6,7 +6,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- B Y T E  R A N G E --------------------------------------------------
@@ -18,12 +18,12 @@ namespace ml {
 
 			// -- public members ----------------------------------------------
 
-			const ml::u8* begin;
+			const mx::u8* begin;
 
-			const ml::u8* end;
+			const mx::u8* end;
 
 	}; // class byte_range
 
-} // namespace ml
+} // namespace mx
 
 #endif // byte_range_hpp

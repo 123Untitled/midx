@@ -34,24 +34,24 @@ auto tk::token_list::end(void) noexcept -> tk::iterator {
 
 
 /* debug */
-auto tk::token_list::debug(const ml::byte_range& br) -> void {
+auto tk::token_list::debug(const mx::byte_range& br) -> void {
 
 
 
 
-	const ml::u8* buffer_start = br.begin;
+	const mx::u8* buffer_start = br.begin;
 	std::cout << "\x1b[36m--- TOKEN LIST DEBUG ---\x1b[0m\n";
 
-	ml::usz max_name = 0U;
-	for (ml::u8 i = 0U; i <= tk::parameter; ++i) {
+	mx::usz max_name = 0U;
+	for (mx::u8 i = 0U; i <= tk::parameter; ++i) {
 		const auto len = std::strlen(tk::token_names[i]);
 		max_name = (len > max_name) ? len : max_name;
 	}
 	// add escape sequence \x1b[36m and \x1b[0m length
 	max_name += std::strlen("\x1b[36m") + std::strlen("\x1b[0m");
 
-	ml::usz max_token = 0U;
-	for (ml::usz i = 0; i < _tokens.size(); ++i) {
+	mx::usz max_token = 0U;
+	for (mx::usz i = 0; i < _tokens.size(); ++i) {
 		const auto& t = _tokens[i];
 		const auto len = t.lexeme.size;
 		max_token = (len > max_token) ? len : max_token;
@@ -60,8 +60,8 @@ auto tk::token_list::debug(const ml::byte_range& br) -> void {
 
 
 
-	//for (ml::usz i = 0; i < _tokens.size(); ++i) {
-	ml::usz i = 0;
+	//for (mx::usz i = 0; i < _tokens.size(); ++i) {
+	mx::usz i = 0;
 	for (auto& t : *this) {
         //const auto& t = _tokens[i];
 

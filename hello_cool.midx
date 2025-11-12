@@ -1,5 +1,6 @@
 [tr] rsyn1 .seq  1 0 0 1 0
 
+
 [ga] gsyn1 .seq 50 30 80
 
 [oc] osyn1 .seq  -1 0 +1
@@ -89,6 +90,4 @@
 .vl &vls
 .tr &snry
 .ch &chsn
-
-
 

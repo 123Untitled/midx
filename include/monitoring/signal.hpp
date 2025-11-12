@@ -6,7 +6,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- forward declarations ------------------------------------------------
@@ -17,7 +17,7 @@ namespace ml {
 
 	// -- S I G N A L ---------------------------------------------------------
 
-	class signal final : public ml::watcher {
+	class signal final : public mx::watcher {
 
 
 		private:
@@ -25,7 +25,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::signal;
+			using self = mx::signal;
 
 
 			// -- private members ---------------------------------------------
@@ -54,24 +54,21 @@ namespace ml {
 			signal(void) = delete;
 
 			/* monitor constructor */
-			signal(const ml::monitor&);
+			signal(const mx::monitor&);
 
 
 
 			// -- public overrides --------------------------------------------
 
 			/* on event */
-			auto on_event(ml::application&, const struct ::kevent&) -> void override final;
+			auto on_event(mx::application&, const struct ::kevent&) -> void override final;
 
-			/* make add */
-			auto make_add(void) noexcept -> struct ::kevent override final;
-
-			/* make del */
-			auto make_del(void) const noexcept -> struct ::kevent override final;
+			/* ident */
+			auto ident(void) const noexcept -> int override final;
 
 	}; // class signal
 
 
-} // namespace ml
+} // namespace mx
 
 #endif // monitoring_signal_hpp

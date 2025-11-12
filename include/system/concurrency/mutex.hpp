@@ -69,7 +69,7 @@ namespace mx {
 			auto lock(void) -> void {
 
 				if (::pthread_mutex_lock(&_mutex) != 0)
-					throw ml::system_error{"pthread_mutex_lock"};
+					throw mx::system_error{"pthread_mutex_lock"};
 
 				// EINVAL The value specified by mutex is invalid.
 				// EDEADLK A deadlock would occur if the thread blocked waiting for mutex.
@@ -86,7 +86,7 @@ namespace mx {
 				if (result == EBUSY)
 					return false;
 
-				throw ml::system_error{"pthread_mutex_trylock"};
+				throw mx::system_error{"pthread_mutex_trylock"};
 
 				// EINVAL The value specified by mutex is invalid.
 				// EBUSY Mutex is already locked.
@@ -96,7 +96,7 @@ namespace mx {
 			auto unlock(void) -> void {
 
 				if (::pthread_mutex_unlock(&_mutex) != 0)
-					throw ml::system_error{"pthread_mutex_unlock"};
+					throw mx::system_error{"pthread_mutex_unlock"};
 
 				// EINVAL The value specified by mutex is invalid.
 				// EPERM The current thread does not hold a lock on mutex.

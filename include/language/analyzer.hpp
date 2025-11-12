@@ -12,7 +12,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// --  A N A L Y Z E R ----------------------------------------------------
@@ -25,7 +25,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::analyzer;
+			using self = mx::analyzer;
 
 
 			// -- private members ---------------------------------------------
@@ -65,11 +65,8 @@ namespace ml {
 
 			// -- public methods ----------------------------------------------
 
-			/* analyze */
-			auto analyze(void) -> void;
-
 			/* analyze from string */
-			auto analyze(std::string&) -> void;
+			auto analyze(std::string&&) -> void;
 
 			/* highlights */
 			auto highlights(void) noexcept -> std::string& {
@@ -88,7 +85,7 @@ namespace ml {
 
 	}; // class analyzer
 
-} // namespace ml
+} // namespace mx
 
 #endif // language_analyzer_hpp
 
@@ -102,7 +99,7 @@ namespace ml {
 	//for (; _it < _end && _error.empty(); ++_it) {
 	//
 	//	// get next transition
-	//	_tr = &ml::state_machine<self>[_tr->state][
+	//	_tr = &mx::state_machine<self>[_tr->state][
 	//		_ctable[static_cast<unsigned char>(*_it)]];
 	//
 	//	//if (_error.empty() == false) {
@@ -117,7 +114,7 @@ namespace ml {
 	//if (_error.empty()) {
 	//
 	//	// trigger end of buffer
-	//	_tr = &ml::state_machine<self>[_tr->state][C_EOB];
+	//	_tr = &mx::state_machine<self>[_tr->state][C_EOB];
 	//
 	//	// execute action
 	//	//_tr->execute(*this);
@@ -130,7 +127,7 @@ namespace ml {
 
 	// reset parser state
 
-	//	_tr = &ml::state_machine<self>[S_EX_BRACKET_OPEN][C_EOB];
+	//	_tr = &mx::state_machine<self>[S_EX_BRACKET_OPEN][C_EOB];
 	//  _last = _tr->state;
 	//
 	// _count = 0U; // maybe not needed
@@ -148,7 +145,7 @@ namespace ml {
 	//for (auto& key : _keywords)
 	//	key.occured = false;
 
- // _tr{&ml::state_machine<self>[S_EX_BRACKET_OPEN][C_EOB]},
+ // _tr{&mx::state_machine<self>[S_EX_BRACKET_OPEN][C_EOB]},
  // _last{_tr->state},
  // _keywords{
 	//{"channel",  &self::_push_channel,  &self::_signature_channel},
@@ -162,28 +159,28 @@ namespace ml {
  // _count{0U}, _buffer{}, _num{1U}, _den{16U}, _value{0U},
 
 
-//auto ml::parser::_skip(void) noexcept -> void {
+//auto mx::parser::_skip(void) noexcept -> void {
 //	++_column;
 //}
 //
 ///* newline */
-//auto ml::parser::_newline(void) noexcept -> void {
+//auto mx::parser::_newline(void) noexcept -> void {
 //	++_line;
 //	_column = 1U;
 //}
 //
-//auto ml::parser::_comment(void) noexcept -> void {
+//auto mx::parser::_comment(void) noexcept -> void {
 //	_last = _tr->state;
-//	_tr   = &ml::state_machine<self>[S_ON_COMMENT][C_EOB];
+//	_tr   = &mx::state_machine<self>[S_ON_COMMENT][C_EOB];
 //	++_column;
 //}
 //
-//auto ml::parser::_uncomment(void) noexcept -> void {
-//	_tr = &ml::state_machine<self>[_last][C_EOB];
+//auto mx::parser::_uncomment(void) noexcept -> void {
+//	_tr = &mx::state_machine<self>[_last][C_EOB];
 //	self::_newline();
 //}
 //
-//auto ml::parser::_set_error(void) noexcept -> void {
+//auto mx::parser::_set_error(void) noexcept -> void {
 //	_error = std::string{_tr->error}
 //		   + " at line "
 //		   + std::to_string(_line)
@@ -193,7 +190,7 @@ namespace ml {
 //	std::cout << _error << std::endl;
 //}
 //
-//auto ml::parser::_set_error(const char* msg) noexcept -> void {
+//auto mx::parser::_set_error(const char* msg) noexcept -> void {
 //	_error = std::string{msg}
 //		   + " at line "
 //		   + std::to_string(_line)
@@ -203,18 +200,18 @@ namespace ml {
 //	std::cout << _error << std::endl;
 //}
 //
-//auto ml::parser::_increment(void) noexcept -> void {
+//auto mx::parser::_increment(void) noexcept -> void {
 //	++_count;
 //	++_column;
 //}
 //
-//auto ml::parser::_append(void) -> void {
+//auto mx::parser::_append(void) -> void {
 //	_buffer.append(reinterpret_cast<const char*>(_it - _count), _count);
 //	_count = 0U;
 //	++_column;
 //}
 //
-//auto ml::parser::_search_keyword(void) -> void {
+//auto mx::parser::_search_keyword(void) -> void {
 //
 //
 //	for (auto& key : _keywords) {
@@ -235,7 +232,7 @@ namespace ml {
 //		_keyword = &key;
 //
 //		// set next transition
-//		_tr = &ml::state_machine<self>[S_EX_VALUE][C_EOB];
+//		_tr = &mx::state_machine<self>[S_EX_VALUE][C_EOB];
 //
 //		// set signature
 //		(this->*_keyword->signature)();
@@ -249,70 +246,70 @@ namespace ml {
 //	self::_set_error(er.data());
 //}
 //
-//auto ml::parser::_append_and_keyword(void) -> void {
+//auto mx::parser::_append_and_keyword(void) -> void {
 //	self::_append();
 //	self::_search_keyword();
 //}
 //
-//auto ml::parser::_push_trigger(void) -> void {
+//auto mx::parser::_push_trigger(void) -> void {
 //	_context.track()._triggers.push(_value);
 //}
 //
-//auto ml::parser::_push_channel(void) -> void {
+//auto mx::parser::_push_channel(void) -> void {
 //	_context.track()._channels.push(_value);
 //}
 //
-//auto ml::parser::_push_note(void) -> void {
+//auto mx::parser::_push_note(void) -> void {
 //	_context.track()._notes.push(_value);
 //}
 //
-//auto ml::parser::_push_gate(void) -> void {
+//auto mx::parser::_push_gate(void) -> void {
 //	_context.track()._gates.push(_value);
 //}
 //
-//auto ml::parser::_push_octave(void) -> void {
+//auto mx::parser::_push_octave(void) -> void {
 //	//_context.track()._octaves.push(_value);
 //}
 //
-//auto ml::parser::_push_velocity(void) -> void {
+//auto mx::parser::_push_velocity(void) -> void {
 //	_context.track()._velocities.push(_value);
 //}
 //
-//auto ml::parser::_signature_trigger(void) -> void {
+//auto mx::parser::_signature_trigger(void) -> void {
 //	_context.track()._triggers.signature().assign(_num, _den);
 //}
 //
-//auto ml::parser::_signature_channel(void) -> void {
+//auto mx::parser::_signature_channel(void) -> void {
 //	_context.track()._channels.signature().assign(_num, _den);
 //}
 //
-//auto ml::parser::_signature_note(void) -> void {
+//auto mx::parser::_signature_note(void) -> void {
 //	_context.track()._notes.signature().assign(_num, _den);
 //}
 //
-//auto ml::parser::_signature_gate(void) -> void {
+//auto mx::parser::_signature_gate(void) -> void {
 //	_context.track()._gates.signature().assign(_num, _den);
 //}
 //
-//auto ml::parser::_signature_octave(void) -> void {
+//auto mx::parser::_signature_octave(void) -> void {
 //	//_context.track()._octaves.signature().assign(_num, _den);
 //}
 //
-//auto ml::parser::_signature_velocity(void) -> void {
+//auto mx::parser::_signature_velocity(void) -> void {
 //	_context.track()._velocities.signature().assign(_num, _den);
 //}
 //
-//auto ml::parser::_init_signature(void) noexcept -> void {
+//auto mx::parser::_init_signature(void) noexcept -> void {
 //	_num = 0U;
 //	_den = 0U;
 //}
 //
 //
 //template <unsigned char offset, unsigned char base, typename T>
-//auto ml::parser::_new_digit(T& value) noexcept -> void {
+//auto mx::parser::_new_digit(T& value) noexcept -> void {
 //
 //	// check multiplication overflow
-//	//constexpr auto max = ml::limits<T>::max();
+//	//constexpr auto max = mx::limits<T>::max();
 //	constexpr auto max = std::numeric_limits<T>::max();
 //	constexpr auto mul_limit = max / base;
 //
@@ -335,18 +332,18 @@ namespace ml {
 //}
 //
 ///* numerator */
-//auto ml::parser::_numerator(void) -> void {
+//auto mx::parser::_numerator(void) -> void {
 //	self::_new_digit<0x30U, 10U>(_num);
 //}
 //
 ///* denominator */
-//auto ml::parser::_denominator(void) -> void {
+//auto mx::parser::_denominator(void) -> void {
 //	self::_new_digit<0x30U, 10U>(_den);
 //}
 //
 //
 ///* add value */
-//auto ml::parser::_add_value(void) noexcept -> void {
+//auto mx::parser::_add_value(void) noexcept -> void {
 //	// call push function
 //	(this->*_keyword->push)();
 //	_value = 0U;
@@ -354,7 +351,7 @@ namespace ml {
 //
 //
 ///* note */
-//auto ml::parser::_note(void) noexcept -> void {
+//auto mx::parser::_note(void) noexcept -> void {
 //
 //	constexpr unsigned char def = 60U;
 //
@@ -380,15 +377,15 @@ namespace ml {
 //}
 //
 //
-//auto ml::parser::_sharp(void) noexcept -> void {
+//auto mx::parser::_sharp(void) noexcept -> void {
 //	_value += 1U;
 //}
 //
-//auto ml::parser::_flat(void) noexcept -> void {
+//auto mx::parser::_flat(void) noexcept -> void {
 //	_value = (_value + 11U) % 12U;
 //}
 //
-//auto ml::parser::_octave(void) noexcept -> void {
+//auto mx::parser::_octave(void) noexcept -> void {
 //
 //	unsigned char digit = *_it - 0x30U;
 //	_value -= 60U;
@@ -397,32 +394,32 @@ namespace ml {
 //
 //
 ///* decimal */
-//auto ml::parser::_decimal(void) -> void {
+//auto mx::parser::_decimal(void) -> void {
 //	self::_new_digit<0x30U, 10U>(_value);
 //}
 //
 ///* lower hex */
-//auto ml::parser::_lower_hex(void) noexcept -> void {
+//auto mx::parser::_lower_hex(void) noexcept -> void {
 //	self::_new_digit<0x57U, 16U>(_value);
 //}
 //
 ///* upper hex */
-//auto ml::parser::_upper_hex(void) noexcept -> void {
+//auto mx::parser::_upper_hex(void) noexcept -> void {
 //	self::_new_digit<0x37U, 16U>(_value);
 //}
 //
 ///* digit hex */
-//auto ml::parser::_digit_hex(void) noexcept -> void {
+//auto mx::parser::_digit_hex(void) noexcept -> void {
 //	self::_new_digit<0x30U, 16U>(_value);
 //}
 //
 ///* binary */
-//auto ml::parser::_bin(void) noexcept -> void {
+//auto mx::parser::_bin(void) noexcept -> void {
 //	self::_new_digit<0x30U, 2U>(_value);
 //}
 //
 ///* octal */
-//auto ml::parser::_octal(void) noexcept -> void {
+//auto mx::parser::_octal(void) noexcept -> void {
 //	self::_new_digit<0x30U, 8U>(_value);
 //}
 
@@ -503,7 +500,7 @@ namespace ml {
 			//keyword_stuff* _keyword;
 
 			/* count */
-			//ml::usz _count;
+			//mx::usz _count;
 
 			/* buffer */
 			//std::string _buffer;
@@ -514,10 +511,10 @@ namespace ml {
 
 
 			/* num */
-			//ml::usz _num;
+			//mx::usz _num;
 
 			/* den */
-			//ml::usz _den;
+			//mx::usz _den;
 
 			/* value */
 			//unsigned char _value;

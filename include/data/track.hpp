@@ -2,8 +2,8 @@
 #define data_track_hpp
 
 #include "data/sequence.hpp"
-#include "coremidi/eventlist.hpp"
-#include "midi/midi_tracker.hpp"
+#include "midi/midi_engine.hpp"
+
 #include <sstream>
 
 #include <math.h>
@@ -36,16 +36,16 @@ namespace mx {
 			// -- private members ---------------------------------------------
 
 			/* indices to sequences */
-			ml::usz _indices[ml::seq_type::seq_count];
+			mx::usz _indices[mx::seq_type::seq_count];
 
 			/* has sequence */
-			bool _has_sequence[ml::seq_type::seq_count];
+			bool _has_sequence[mx::seq_type::seq_count];
 
 			/* values */
-			ml::i8 _values[ml::seq_type::seq_count];
+			mx::i8 _values[mx::seq_type::seq_count];
 
 			/* states */
-			const ml::seq_slot* _states[ml::seq_type::seq_count];
+			const mx::seq_slot* _states[mx::seq_type::seq_count];
 
 
 		public:
@@ -63,9 +63,9 @@ namespace mx {
 
 			/* reset */
 			auto reset(void) noexcept -> void {
-				for (ml::usz i = 0U; i < ml::seq_type::seq_count; ++i) {
+				for (mx::usz i = 0U; i < mx::seq_type::seq_count; ++i) {
 					_has_sequence[i] = false;
-					_values[i] = ml::seq_defs[i];
+					_values[i] = mx::seq_defs[i];
 					_states[i] = nullptr;
 				}
 			}
@@ -73,7 +73,7 @@ namespace mx {
 
 			// -- public methods ----------------------------------------------
 
-			auto set_index(const ml::seq_type stype, const ml::usz sindex) noexcept -> void {
+			auto set_index(const mx::seq_type stype, const mx::usz sindex) noexcept -> void {
 				_indices[stype]      = sindex;
 				_has_sequence[stype] = true;
 			}
@@ -82,17 +82,17 @@ namespace mx {
 			// -- public accessors --------------------------------------------
 
 			/* index */
-			template <ml::seq_type T>
-			auto index(void) const noexcept -> ml::usz {
-				static_assert(T < ml::seq_type::seq_count, "invalid sequence type");
+			template <mx::seq_type T>
+			auto index(void) const noexcept -> mx::usz {
+				static_assert(T < mx::seq_type::seq_count, "invalid sequence type");
 				return _indices[T];
 			}
 
 
 			/* play */
-			auto play(std::stringstream& ss, bool& first, mx::midi_tracker& tr, cm::eventlist& evs, std::vector<ml::sequence>& seqs, const ml::u64 timeline) noexcept -> void {
+			auto play(std::stringstream& ss, mx::midi_engine& engine, std::vector<mx::sequence>& seqs, const mx::u64 timeline) noexcept -> void {
 
-				for (mx::usz i = 0U; i < ml::seq_type::seq_count; ++i) {
+				for (mx::usz i = 0U; i < mx::seq_type::seq_count; ++i) {
 
 					if (_has_sequence[i] == false)
 						continue;
@@ -106,25 +106,24 @@ namespace mx {
 					_values[i] = _states[i]->value;
 
 					const auto* t     = _states[i]->token;
-					const char* group = "Underlined";
+					const char* group = "IncSearch";
 
-						if (!first)
-							ss << ",";
-						first = false;
-
-						ss << "{\"l\":" << t->line
-							<< ",\"s\":" << t->col_head
-							<< ",\"e\":" << t->col_tail
-							<< ",\"g\":\"" << group << "\"}";
+					ss << "{\"l\":" << t->line
+					   << ",\"s\":" << t->col_head
+					   << ",\"e\":" << t->col_tail
+					   << ",\"g\":\"" << group << "\"},";
 				}
 
-				if (_values[ml::seq_type::TR] == 0)
+				if (_values[mx::seq_type::TR] == 0)
 					return;
 
-				mx::i8 note = _values[ml::seq_type::NT];
+
+				const mx::i8 velo = _values[mx::seq_type::VL];
+				const mx::i8 chan = _values[mx::seq_type::CH];
+				mx::i8 note = _values[mx::seq_type::NT];
 
 
-				mx::usz oc = note + (_values[ml::seq_type::OC] * 12U);
+				mx::usz oc = note + (_values[mx::seq_type::OC] * 12U);
 
 				// clamp note to valid range
 				if (oc < 0U)
@@ -134,19 +133,12 @@ namespace mx {
 				else
 					note = static_cast<mx::i8>(oc);
 
-				note += _values[ml::seq_type::SE];
-
-
-				const mx::i8 velo = _values[ml::seq_type::VL];
-				const mx::i8 chan = _values[ml::seq_type::CH];
-				evs.note_on(static_cast<mx::u8>(chan),
-							static_cast<mx::u8>(note),
-							static_cast<mx::u8>(velo));
+				note += _values[mx::seq_type::SE];
 
 
 				// current gate
-				auto gate = _values[ml::seq_type::GA];
-				const auto& trigs = seqs[_indices[ml::seq_type::TR]];
+				auto gate = _values[mx::seq_type::GA];
+				const auto& trigs = seqs[_indices[mx::seq_type::TR]];
 				const auto& v = trigs.data();
 
 				mx::usz i = 1U;
@@ -161,15 +153,14 @@ namespace mx {
 				const float gate_pct = (float)gate / 100.f;
 				const mx::u32 when = static_cast<mx::u32>(std::round(gate_pct * static_cast<float>(i)));
 
-				tr.note_on(evs, static_cast<mx::u8>(chan),
-							static_cast<mx::u8>(note),
-							when);
+				// send note on event
+				engine.note_on(chan, note, velo, when);
 			}
 
 
-			auto debug(const std::vector<ml::sequence>& seqs) const -> void {
+			auto debug(const std::vector<mx::sequence>& seqs) const -> void {
 
-				for (ml::usz i = 0U; i < ml::seq_type::seq_count; ++i) {
+				for (mx::usz i = 0U; i < mx::seq_type::seq_count; ++i) {
 
 					if (_has_sequence[i] == false)
 						continue;
@@ -179,7 +170,7 @@ namespace mx {
 					const auto& data = seqs[_indices[i]].data();
 
 					for (mx::usz j = 0U; j < data.size(); ++j) {
-						std::cout << static_cast<ml::i32>(data[j].value);
+						std::cout << static_cast<mx::i32>(data[j].value);
 						if (j + 1U < data.size())
 							std::cout << ", ";
 					}
@@ -192,6 +183,6 @@ namespace mx {
 
 	}; // class track
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_data_track_hpp

@@ -7,12 +7,12 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- F I L E -------------------------------------------------------------
 
-	class file final : public ml::unix_descriptor {
+	class file final : public mx::unix_descriptor {
 
 
 		private:
@@ -20,7 +20,7 @@ namespace ml {
 			// -- private members ---------------------------------------------
 
 			/* self type */
-			using self = ml::file;
+			using self = mx::file;
 
 
 		public:
@@ -33,10 +33,10 @@ namespace ml {
 			/* path constructor */
 			template <typename... Tp>
 			file(const char* path, const Tp&... args)
-			: ml::unix_descriptor{::open(path, args...)} {
+			: mx::unix_descriptor{::open(path, args...)} {
 
-				if (ml::unix_descriptor::operator int() == -1)
-					throw ml::system_error{"open"};
+				if (mx::unix_descriptor::operator int() == -1)
+					throw mx::system_error{"open"};
 			}
 
 			/* deleted copy constructor */
@@ -65,6 +65,6 @@ namespace ml {
 
 	}; // class file
 
-} // namespace ml
+} // namespace mx
 
 #endif // ml_system_file_hpp

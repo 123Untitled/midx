@@ -2,15 +2,21 @@
 #include "time/realtime.hpp"
 #include "time/now.hpp"
 #include "time/time.hpp"
+#include "diagnostics/system_error.hpp"
 
+#include <iostream>
+#include <sys/event.h>
 
 // -- C L O C K ---------------------------------------------------------------
 
 // -- public lifecycle --------------------------------------------------------
 
 /* default constructor */
-ml::clock::clock(void) noexcept
-: _running{false},
+mx::clock::clock(const int efd, mx::watcher& w) noexcept
+: _thread{},
+  _efd{efd},
+  _watcher{&w},
+  _running{false},
   _bpm{0U},
   _nano_clock{0},
   _nano_target{0},
@@ -29,56 +35,35 @@ ml::clock::clock(void) noexcept
 
 
 
+
 // -- public methods ----------------------------------------------------------
 
-/* run */
-auto ml::clock::start(ml::clockable& obj) -> void {
+/* start */
+auto mx::clock::start(void) -> void {
 
-	// set realtime thread
-	if (ml::realtime(_nano_clock))
+	if (_running == true)
 		return;
 
-	self::bpm(130U);
+	// create thread
+	if (::pthread_create(&_thread, nullptr, _entrypoint, this) != 0)
+		throw mx::system_error{"pthread_create"};
 
-	self::_init_clock();
-
-
-	// start notification
-	obj.clock_start();
-
-	// loop while running
-	while (_running == true) {
-
-		//self::_begin();
-		_start = ml::now();
-		//self::_compute_timeline();
-		// accumulate elapsed time
-		_timeline += static_cast<double>(_elapsed)
-				   / static_cast<double>(ml::nano_per_sec);
-
-		// tick notification
-		obj.clock_tick(_count);
-
-		self::_compute_diff();
-		self::_sleep();
-
-		++_count;
-	}
-
-	// stop notification
-	obj.clock_stop();
+	_running = true;
 }
 
 /* stop */
-auto ml::clock::stop(void) noexcept -> void {
+auto mx::clock::stop(void) noexcept -> void {
+
+	if (_running == false)
+		return;
+
 	_running = false;
+
+	static_cast<void>(::pthread_join(_thread, nullptr));
 }
 
-
-// -- public modifiers --------------------------------------------------------
-
 /* bpm */
-auto ml::clock::bpm(const unsigned& bpm) noexcept -> void {
+auto mx::clock::bpm(const unsigned& bpm) noexcept -> void {
 	_bpm         = bpm;
 	_nano_clock  = _bpm.to_nano();
 	_nano_target = _nano_clock;
@@ -88,38 +73,96 @@ auto ml::clock::bpm(const unsigned& bpm) noexcept -> void {
 // -- public accessors --------------------------------------------------------
 
 /* bpm */
-auto ml::clock::bpm(void) const noexcept -> const ml::bpm& {
+auto mx::clock::bpm(void) const noexcept -> const mx::bpm& {
 	return _bpm;
 }
 
 /* count */
-auto ml::clock::count(void) const noexcept -> ml::u64 {
+auto mx::clock::count(void) const noexcept -> mx::u64 {
 	return _count;
 }
 
 /* timeline */
-auto ml::clock::timeline(void) const noexcept -> double {
+auto mx::clock::timeline(void) const noexcept -> double {
 	return _timeline;
 }
 
 /* is running */
-auto ml::clock::is_running(void) const noexcept -> bool {
+auto mx::clock::is_running(void) const noexcept -> bool {
 	return _running;
 }
 
 
 
+// -- private static methods --------------------------------------------------
+
+/* entrypoint */
+auto mx::clock::_entrypoint(void* arg) noexcept -> void* {
+	auto& clock = *static_cast<mx::clock*>(arg);
+	clock._loop();
+	return nullptr;
+}
+
+
+auto mx::clock::_loop(void) noexcept -> void {
+
+	// set realtime thread
+	if (mx::realtime(_nano_clock))
+		return;
+
+	self::bpm(130U);
+	self::_init_clock();
+
+	// tick notification
+	const struct ::kevent ev {
+		.ident  = 42U,
+		.filter = EVFILT_USER,
+		.flags  = 0U,
+		.fflags = NOTE_TRIGGER,
+		.data   = 0,
+		.udata  = _watcher
+	};
+
+	// loop while running
+	while (_running == true) {
+
+		// print message at modulo 24 ticks
+		//if ((_count % 24U) == 0U) {
+		//	std::cout << "clock tick: " << _count << std::endl;
+		//}
+
+		//self::_begin();
+		_start = mx::now();
+		//self::_compute_timeline();
+		// accumulate elapsed time
+		_timeline += static_cast<double>(_elapsed)
+				   / static_cast<double>(mx::nano_per_sec);
+
+		const auto ret = ::kevent(_efd, &ev, 1, nullptr, 0, nullptr);
+		if (ret == -1) {
+			perror("kevent clock tick");
+			return;
+		}
+
+		self::_compute_diff();
+		self::_sleep();
+
+		++_count;
+	}
+}
+
+
 // -- private methods ---------------------------------------------------------
 
 /* init clock */
-auto ml::clock::_init_clock(void) noexcept -> void {
+auto mx::clock::_init_clock(void) noexcept -> void {
 
 	_running    = true;
 
 	_count      = 0;
 
 	_start      = 0;
-	_last_start = ml::now();
+	_last_start = mx::now();
 	_end        = _last_start + _nano_clock;
 
 	_elapsed    = 0;
@@ -136,20 +179,20 @@ auto ml::clock::_init_clock(void) noexcept -> void {
 }
 
 /* begin */
-auto ml::clock::_begin(void) noexcept -> void {
-	_start = ml::now();
+auto mx::clock::_begin(void) noexcept -> void {
+	_start = mx::now();
 }
 
 /* compute timeline */
-auto ml::clock::_compute_timeline(void) noexcept -> void {
+auto mx::clock::_compute_timeline(void) noexcept -> void {
 
 	// accumulate elapsed time
 	_timeline += static_cast<double>(_elapsed)
-			   / static_cast<double>(ml::nano_per_sec);
+			   / static_cast<double>(mx::nano_per_sec);
 }
 
 /* compute diff */
-auto ml::clock::_compute_diff(void) noexcept -> void {
+auto mx::clock::_compute_diff(void) noexcept -> void {
 
 	_elapsed = _end - _last_start;
 
@@ -191,13 +234,13 @@ auto ml::clock::_compute_diff(void) noexcept -> void {
 }
 
 /* sleep */
-auto ml::clock::_sleep(void) noexcept -> void {
+auto mx::clock::_sleep(void) noexcept -> void {
 
 	// delay sleep
 	::nanosleep(&_request, nullptr);
-	_end = ml::now();
+	_end = mx::now();
 
 	// busy wait
 	while ((_end - _start) < _nano_target)
-		_end = ml::now();
+		_end = mx::now();
 }

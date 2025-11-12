@@ -34,7 +34,7 @@ namespace as {
 			const as::tree* _tree;
 
 			/* value index */
-			ml::usz _vi;
+			mx::usz _vi;
 
 
 		public:
@@ -42,7 +42,7 @@ namespace as {
 			// -- public lifecycle --------------------------------------------
 
 			/* constructor */
-			value_view(const as::tree&, const ml::usz) noexcept;
+			value_view(const as::tree&, const mx::usz) noexcept;
 
 
 			// -- public accessors --------------------------------------------

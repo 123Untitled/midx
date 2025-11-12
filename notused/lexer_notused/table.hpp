@@ -15,7 +15,7 @@ namespace lx {
 	template <typename, lx::action...>
 	struct rule;
 
-	template <ml::u8... Is, lx::action... As>
+	template <mx::u8... Is, lx::action... As>
 	struct rule<cc::char_class<Is...>, As...> final {
 		non_instantiable_class(rule);
 	};
@@ -63,7 +63,7 @@ namespace lx {
 			template <typename>
 			struct config;
 
-			template <ml::u8... Is, lx::action... As>
+			template <mx::u8... Is, lx::action... As>
 			struct config<lx::rule<cc::char_class<Is...>, As...>> final {
 				non_instantiable_class(config);
 				static consteval auto apply(self& tbl) noexcept -> void {
@@ -86,7 +86,7 @@ namespace lx {
 			}
 
 
-			auto execute(lx::lexer& lxr, const ml::u8 byte) const /* noexcept */-> void {
+			auto execute(lx::lexer& lxr, const mx::u8 byte) const /* noexcept */-> void {
 				(lxr.*_table[cc::char_map::table[byte]])();
 			}
 
@@ -135,7 +135,7 @@ namespace lx {
 	//template <typename, lx::action...>
 	//struct process;
 	//
-	//template <ml::u8... Is, lx::action... As>
+	//template <mx::u8... Is, lx::action... As>
 	//struct process<cc::char_class<Is...>, As...> final {
 	//	non_instantiable_class(process);
 	//}; // struct in_state
@@ -193,7 +193,7 @@ namespace lx {
 	//		}
 	//
 	//
-	//		auto execute(lx::lexer& driver, const ml::u8 byte) const /* noexcept */-> void {
+	//		auto execute(lx::lexer& driver, const mx::u8 byte) const /* noexcept */-> void {
 	//			(driver.*_table[cc::char_map::table[byte]])();
 	//		}
 	//
@@ -219,7 +219,7 @@ namespace lx {
 	//				template <typename...>
 	//				struct config_route;
 	//
-	//				template <ml::u8... Is, typename STATE>
+	//				template <mx::u8... Is, typename STATE>
 	//				struct config_route<lx::route<cc::char_class<Is...>, STATE>> final {
 	//
 	//
@@ -260,7 +260,7 @@ namespace lx {
 	//					}
 	//				};
 	//
-	//				template <ml::u8... Is, lx::action... As>
+	//				template <mx::u8... Is, lx::action... As>
 	//				struct config_process<lx::process<cc::char_class<Is...>, As...>> final {
 	//					static consteval auto fill(lx::action (&out)[cc::char_map::size]) noexcept -> void {
 	//						((out[Is] = &lx::lexer::call<As...>), ...);
@@ -290,7 +290,7 @@ namespace lx {
 
 
 
-	//template <ml::literal NAME,
+	//template <mx::literal NAME,
 	//		  typename BEGIN, typename END, typename PROCESS,
 	//		  typename... ROUTES>
 	//class state {

@@ -8,7 +8,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- forward declarations ------------------------------------------------
@@ -19,7 +19,7 @@ namespace ml {
 
 	// -- T I M E  W A T C H E R ----------------------------------------------
 
-	class time_watcher final : public ml::watcher {
+	class time_watcher final : public mx::watcher {
 
 
 		private:
@@ -27,7 +27,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::time_watcher;
+			using self = mx::time_watcher;
 
 
 			// -- private members ---------------------------------------------
@@ -77,7 +77,7 @@ namespace ml {
 			// -- public overrides --------------------------------------------
 
 			/* on event */
-			auto on_event(ml::application&, const struct ::kevent&) -> void override final {
+			auto on_event(mx::application&, const struct ::kevent&) -> void override final {
 				_triggered = true;
 			}
 
@@ -129,6 +129,6 @@ namespace ml {
 
 	}; // class time_watcher
 
-} // namespace ml
+} // namespace mx
 
 #endif // ml_monitoring_time_watcher_hpp

@@ -44,37 +44,65 @@ namespace sx {
 			tk::token* _current;
 
 			/* sequence reference */
-			ml::sequence* _seq;
+			mx::sequence* _seq;
 
 			/* diagnostic reference */
 			an::diagnostic* _diag;
 
+			/* signature */
+			mx::signature _sign;
+
+			/* numerator */
+			mx::u32 _num;
+
+			/* denominator */
+			mx::u32 _den;
 
 
 			// -- private methods ---------------------------------------------
 
-			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, ml::bin>)
+			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, mx::bin>)
 			auto convert(void) -> void {
-				mx::i8 v = ml::convert_bin<ID, neg>(*_current, *_diag);
-				_seq->push(v, *_current);
+				mx::i8 v = mx::convert_bin<ID, neg>(*_current, *_diag);
+
+				if constexpr (ID == sp::id::trig) {
+					_seq->push_trig(v, *_current, _sign);
+				}
+				else
+					_seq->push(v, *_current, _sign);
 			}
 
-			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, ml::dec>)
+			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, mx::dec>)
 			auto convert(void) -> void {
-				mx::i8 v = ml::convert_dec<ID, neg>(*_current, *_diag);
-				_seq->push(v, *_current);
+				mx::i8 v = mx::convert_dec<ID, neg>(*_current, *_diag);
+
+				if constexpr (ID == sp::id::trig) {
+					_seq->push_trig(v, *_current, _sign);
+				}
+				else
+					_seq->push(v, *_current, _sign);
 			}
 
-			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, ml::oct>)
+			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, mx::oct>)
 			auto convert(void) -> void {
-				mx::i8 v = ml::convert_oct<ID, neg>(*_current, *_diag);
-				_seq->push(v, *_current);
+				mx::i8 v = mx::convert_oct<ID, neg>(*_current, *_diag);
+
+				if constexpr (ID == sp::id::trig) {
+					_seq->push_trig(v, *_current, _sign);
+				}
+				else
+					_seq->push(v, *_current, _sign);
 			}
 
-			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, ml::hex>)
+			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, mx::hex>)
 			auto convert(void) -> void {
-				mx::i8 v = ml::convert_hex<ID, neg>(*_current, *_diag);
-				_seq->push(v, *_current);
+				mx::i8 v = mx::convert_hex<ID, neg>(*_current, *_diag);
+
+				if constexpr (ID == sp::id::trig) {
+					_seq->push_trig(v, *_current, _sign);
+				}
+				else
+					_seq->push(v, *_current, _sign);
 			}
 
 
@@ -82,7 +110,7 @@ namespace sx {
 			auto state_negative(void) -> void {
 
 				// only valid for specifiers that allow negative values
-				static_assert(ml::limits<ID>::neg == true,
+				static_assert(mx::overflow<ID>::neg == true,
 						"state_negative instantiated for specifier that does not allow negative values");
 
 
@@ -96,22 +124,22 @@ namespace sx {
 						return;
 
 					case tk::decimal:
-						convert<ID, true, ml::dec>();
+						convert<ID, true, mx::dec>();
 						_state = &self::state_default<ID>;
 						return;
 
 					case tk::hexadecimal:
-						convert<ID, true, ml::hex>();
+						convert<ID, true, mx::hex>();
 						_state = &self::state_default<ID>;
 						return;
 
 					case tk::octal:
-						convert<ID, true, ml::oct>();
+						convert<ID, true, mx::oct>();
 						_state = &self::state_default<ID>;
 						return;
 
 					case tk::binary: {
-						convert<ID, true, ml::bin>();
+						convert<ID, true, mx::bin>();
 						_state = &self::state_default<ID>;
 						return;
 					}
@@ -126,7 +154,78 @@ namespace sx {
 			}
 
 			template <sp::id ID>
+			auto expect_numerator(void) -> void {
+				std::cout << "EXPECT NUMERATOR\n";
+
+				switch (_current->id) {
+
+					case tk::decimal: {
+						mx::i8 v = mx::convert<mx::overflow<sp::id::prob>, mx::dec, false>(*_current, *_diag);
+						_num = static_cast<mx::u32>(v);
+						_state = &self::expect_slash<ID>;
+						_current->id = tk::signature;
+						return;
+					}
+
+					default: {
+						_diag->push_error("invalid numerator value", *_current);
+						_current->id = tk::invalid;
+						_state = &self::state_default<ID>;
+						break;
+					}
+				}
+			}
+
+			template <sp::id ID>
+			auto expect_slash(void) -> void {
+
+				std::cout << "EXPECT SLASH\n";
+
+				switch (_current->id) {
+
+					case tk::slash:
+						_state = &self::expect_denominator<ID>;
+						_current->id = tk::signature;
+						return;
+
+					default: {
+						_diag->push_error("expected '/' after denominator", *_current);
+						_current->id = tk::invalid;
+						_state = &self::state_default<ID>;
+						break;
+					}
+				}
+			}
+
+			template <sp::id ID>
+			auto expect_denominator(void) -> void {
+
+				std::cout << "EXPECT DENOMINATOR\n";
+
+				switch (_current->id) {
+
+					case tk::decimal: {
+						mx::i8 v = mx::convert<mx::overflow<sp::id::prob>, mx::dec, false>(*_current, *_diag);
+						_den = static_cast<mx::u32>(v);
+						_sign = mx::signature{_num, _den};
+						_state = &self::state_default<ID>;
+						_current->id = tk::signature;
+						return;
+					}
+
+					default: {
+						_diag->push_error("invalid denominator value", *_current);
+						_current->id = tk::invalid;
+						_state = &self::state_default<ID>;
+						break;
+					}
+				}
+			}
+
+			template <sp::id ID>
 			auto state_default(void) -> void {
+
+				std::cout << "STATE DEFAULT\n";
 
 				switch (_current->id) {
 
@@ -134,7 +233,7 @@ namespace sx {
 						return;
 
 					case tk::hyphen: {
-						if constexpr (ml::limits<ID>::neg == false) {
+						if constexpr (mx::overflow<ID>::neg == false) {
 							_diag->push_error("negative values not allowed", *_current);
 							_current->id = tk::invalid;
 							break;
@@ -146,25 +245,31 @@ namespace sx {
 					}
 
 					case tk::decimal:
-						convert<ID, false, ml::dec>();
+						convert<ID, false, mx::dec>();
 						return;
 
 					case tk::hexadecimal:
-						convert<ID, false, ml::hex>();
+						convert<ID, false, mx::hex>();
 						return;
 
 					case tk::octal:
-						convert<ID, false, ml::oct>();
+						convert<ID, false, mx::oct>();
 						return;
 
 					case tk::binary:
-						convert<ID, false, ml::bin>();
+						convert<ID, false, mx::bin>();
 						return;
 
 					case tk::note: {
 						// valid token, do nothing
 						return;
 					}
+
+					case tk::at_sign: {
+						_state = &self::expect_numerator<ID>;
+						return;
+					}
+
 
 					default: {
 						_diag->push_error("invalid value", *_current);
@@ -180,12 +285,13 @@ namespace sx {
 
 
 			template <sp::id ID>
-			auto parse(const as::param_view& pv, ml::sequence& seq, an::diagnostic& diag) -> void {
+			auto parse(const as::param_view& pv, mx::sequence& seq, an::diagnostic& diag) -> void {
 
 				// check valid specifier ID
 				static_assert(ID >= sp::id::trig && ID <= sp::id::prob,
 						"atomic_parser instantiated with invalid specifier id");
 
+				_sign  = mx::signature{};
 				_seq   = &seq;
 				_diag  = &diag;
 				_state = &self::state_default<ID>;

@@ -5,9 +5,9 @@
 #include "monitoring/client.hpp"
 
 
-// -- M L  N A M E S P A C E --------------------------------------------------
+// -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- forward declarations ------------------------------------------------
@@ -18,7 +18,7 @@ namespace ml {
 
 	// -- S E R V E R ---------------------------------------------------------
 
-	class server final : public ml::watcher {
+	class server final : public mx::watcher {
 
 
 		private:
@@ -26,16 +26,16 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::server;
+			using self = mx::server;
 
 
 			// -- private members ---------------------------------------------
 
 			/* socket */
-			ml::socket _socket;
+			mx::socket _socket;
 
 			/* client */
-			ml::client _client;
+			mx::client _client;
 
 
 		public:
@@ -46,28 +46,25 @@ namespace ml {
 			server(void) = delete;
 
 			/* monitor constructor */
-			server(const ml::monitor&);
+			server(const mx::monitor&);
 
 
 			// -- public methods ----------------------------------------------
 
 			/* broadcast */
-			auto broadcast(std::string&) -> void;
+			auto broadcast(const std::string&) -> void;
 
 
 			// -- public overrides --------------------------------------------
 
 			/* on event */
-			auto on_event(ml::application&, const struct ::kevent&) -> void override final;
+			auto on_event(mx::application&, const struct ::kevent&) -> void override final;
 
-			/* make add */
-			auto make_add(void) noexcept -> struct ::kevent override final;
-
-			/* make del */
-			auto make_del(void) const noexcept -> struct ::kevent override final;
+			/* ident */
+			auto ident(void) const noexcept -> int override final;
 
 	}; // class server
 
-} // namespace ml
+} // namespace mx
 
 #endif // monitoring_server_hpp

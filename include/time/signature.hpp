@@ -10,7 +10,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- S I G N A T U R E ---------------------------------------------------
@@ -22,7 +22,7 @@ namespace ml {
 			// -- public types ------------------------------------------------
 
 			/* value type */
-			using value_type = ml::u32;
+			using value_type = mx::u32;
 
 
 		private:
@@ -30,7 +30,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::signature;
+			using self = mx::signature;
 
 
 			// -- private members ---------------------------------------------
@@ -183,6 +183,6 @@ namespace ml {
 
 	}; // class signature
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_time_signature_hpp

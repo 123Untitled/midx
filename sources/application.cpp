@@ -1,65 +1,52 @@
 #include "application.hpp"
-#include "system/mapped_file.hpp"
 
 
 // -- A P P L I C A T I O N ---------------------------------------------------
 
 // -- private lifecycle -------------------------------------------------------
 
-/* path constructor */
-ml::application::application(const char* path)
+/* constructor */
+mx::application::application(void)
 : _running{true},
-  //_project{},
-  _player{},
   _monitor{},
   _signal{_monitor},
-  //_watcher{path, _monitor},
   _server{_monitor},
   _protocol{},
   _analyzers{},
-  _active{0U} {
-
-	_player.server(_server);
+  _active{0U},
+  _player{_monitor} {
 }
 
 
 // -- private methods ---------------------------------------------------------
 
-auto ml::application::reparse(void) -> void {
+auto mx::application::reparse(std::string&& data) -> void {
 
 	auto& analyzer = _analyzers[_active];
 
-	analyzer.analyze(_protocol.data());
+	analyzer.analyze(std::move(data));
 	_server.broadcast(analyzer.highlights());
-	std::cout << "\x1b[31mANALYZER: " << _active << "\x1b[0m\n";
 
-	if (analyzer.has_errors() == false) {
+	if (analyzer.has_errors() == true)
+		return;
 
+	// switch model
+	_player.switch_model(analyzer.model());
+	_active = (_active == 0U) ? 1U : 0U;
 
-		_player.model(analyzer.model());
-		_active = (_active + 1U) % 2U;
+	_player.start();
+}
 
-		if (_player.is_playing() == false)
-			_player.start();
-	}
+/* exit */
+auto mx::application::exit(void) noexcept -> void {
+	_running = false;
 }
 
 /* run */
-auto ml::application::_run(void) -> void {
+auto mx::application::_run(void) -> void {
 
-	//_player.start();
-
-	while (_running == true) {
+	while (_running == true)
 		_monitor.wait(*this);
-
-		if (_protocol.require_update()) {
-			reparse();
-			_protocol.reset();
-		}
-		//if (_watcher.has_changes(_monitor)) {
-		//	reparse();
-		//}
-	}
 
 	_player.stop();
 }
@@ -68,6 +55,6 @@ auto ml::application::_run(void) -> void {
 // -- public static methods ---------------------------------------------------
 
 /* run */
-auto ml::application::run(const char* path) -> void {
-	ml::application{path}._run();
+auto mx::application::run(void) -> void {
+	mx::application{}._run();
 }

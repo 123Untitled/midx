@@ -2,7 +2,7 @@
 #define ml_literal_hpp
 
 
-namespace ml {
+namespace mx {
 
 
 	template <unsigned N>
@@ -20,7 +20,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::literal<N>;
+			using self = mx::literal<N>;
 
 
 		public:
@@ -89,6 +89,6 @@ namespace ml {
 	template <unsigned N>
 	literal(const char (&)[N]) -> literal<N>;
 
-} // namespace ml
+} // namespace mx
 
 #endif // ml_literal_hpp

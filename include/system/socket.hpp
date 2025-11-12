@@ -10,7 +10,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- A D D R E S S -------------------------------------------------------
@@ -23,7 +23,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::address;
+			using self = mx::address;
 
 
 			// -- private members ---------------------------------------------
@@ -126,7 +126,7 @@ namespace ml {
 
 	// -- S O C K E T ---------------------------------------------------------
 
-	class socket final : public ml::unix_descriptor {
+	class socket final : public mx::unix_descriptor {
 
 
 		private:
@@ -134,14 +134,14 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::socket;
+			using self = mx::socket;
 
 
 			// -- private lifecycle -------------------------------------------
 
 			/* fd constructor */
 			explicit socket(const int fd) noexcept
-			: ml::unix_descriptor{fd} {
+			: mx::unix_descriptor{fd} {
 			}
 
 
@@ -154,10 +154,10 @@ namespace ml {
 
 			/* socket constructor */
 			socket(const int domain, const int type, const int protocol = 0)
-			: ml::unix_descriptor{::socket(domain, type, protocol)} {
+			: mx::unix_descriptor{::socket(domain, type, protocol)} {
 
 				if (_fd == -1)
-					throw ml::system_error{"socket"};
+					throw mx::system_error{"socket"};
 			}
 
 			/* deleted copy constructor */
@@ -191,8 +191,8 @@ namespace ml {
 					static_cast<void>(::shutdown(_fd, SHUT_RDWR));
 
 				// move file descriptor
-				ml::unix_descriptor::operator=(
-						static_cast<ml::unix_descriptor&&>(other)
+				mx::unix_descriptor::operator=(
+						static_cast<mx::unix_descriptor&&>(other)
 				);
 
 				return *this;
@@ -202,7 +202,7 @@ namespace ml {
 			// -- public methods ----------------------------------------------
 
 			/* bind */
-			auto bind(const ml::address& addr) -> void {
+			auto bind(const mx::address& addr) -> void {
 				const int res = ::bind(
 					_fd,
 					&addr.as_sockaddr(),
@@ -210,7 +210,7 @@ namespace ml {
 				);
 
 				if (res == -1)
-					throw ml::system_error{"bind"};
+					throw mx::system_error{"bind"};
 			}
 
 			/* listen */
@@ -218,18 +218,18 @@ namespace ml {
 				const int res = ::listen(_fd, backlog);
 
 				if (res == -1)
-					throw ml::system_error{"listen"};
+					throw mx::system_error{"listen"};
 			}
 
 			/* accept */
-			auto accept(void) -> ml::socket {
+			auto accept(void) -> mx::socket {
 
 				const int nfd = ::accept(_fd, nullptr, nullptr);
 
 				if (nfd == -1)
-					throw ml::system_error{"accept"};
+					throw mx::system_error{"accept"};
 
-				return ml::socket{nfd};
+				return mx::socket{nfd};
 			}
 
 			/* non-blocking */
@@ -237,16 +237,16 @@ namespace ml {
 
 				int flags = ::fcntl(_fd, F_GETFL, 0);
 				if (flags == -1)
-					throw ml::system_error{"fcntl"};
+					throw mx::system_error{"fcntl"};
 
 				flags |= O_NONBLOCK;
 
 				if (::fcntl(_fd, F_SETFL, flags) == -1)
-					throw ml::system_error{"fcntl"};
+					throw mx::system_error{"fcntl"};
 			}
 
 	}; // class socket
 
-} // namespace ml
+} // namespace mx
 
 #endif // system_socket_hpp

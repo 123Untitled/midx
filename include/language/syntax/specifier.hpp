@@ -12,7 +12,7 @@ namespace sp {
 
 
 	/* specifier ids */
-	enum class id : ml::usz {
+	enum class id : mx::usz {
 
 		// atomic specifiers
 		trig = 0U,
@@ -40,7 +40,7 @@ namespace sp {
 
 
 
-	template <sp::id I, ml::literal... Ws>
+	template <sp::id I, mx::literal... Ws>
 	using entry = mx::entry<sp::id, I, Ws...>;
 
 

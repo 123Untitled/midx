@@ -10,7 +10,7 @@ struct kevent;
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- forward declarations ------------------------------------------------
@@ -29,7 +29,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::watcher;
+			using self = mx::watcher;
 
 
 		public:
@@ -61,16 +61,19 @@ namespace ml {
 			// -- public interface --------------------------------------------
 
 			/* on event */
-			virtual auto on_event(ml::application&, const struct ::kevent&) -> void = 0;
+			virtual auto on_event(mx::application&, const struct ::kevent&) -> void = 0;
+
+			/* ident */
+			virtual auto ident(void) const noexcept -> int = 0;
 
 			/* make add */
-			virtual auto make_add(void) noexcept -> struct ::kevent = 0;
+			//virtual auto make_add(void) noexcept -> struct ::kevent = 0;
 
 			/* make del */
-			virtual auto make_del(void) const noexcept -> struct ::kevent = 0;
+			//virtual auto make_del(void) const noexcept -> struct ::kevent = 0;
 
 	}; // class watcher
 
-} // namespace ml
+} // namespace mx
 
 #endif // ml_monitoring_watcher_hpp

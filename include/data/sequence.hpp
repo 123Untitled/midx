@@ -9,7 +9,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- constants -----------------------------------------------------------
@@ -38,7 +38,7 @@ namespace ml {
 		100   // PR
 	}; 
 
-	constexpr ml::seq_type to_seq_type[static_cast<ml::usz>(sp::id::count)] {
+	constexpr mx::seq_type to_seq_type[static_cast<mx::usz>(sp::id::count)] {
 		seq_type::TR, // trig
 		seq_type::NT, // note
 		seq_type::GA, // gate
@@ -53,10 +53,10 @@ namespace ml {
 
 	struct seq_slot final {
 		public:
-			ml::i8 value;
-			ml::signature sign;
+			mx::i8 value;
+			mx::signature sign;
 			tk::token* token;
-			ml::usz depth;
+			mx::usz depth;
 	};
 
 
@@ -70,13 +70,13 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::sequence;
+			using self = mx::sequence;
 
 
 			// -- private members ---------------------------------------------
 
 			/* sequence */
-			std::vector<ml::seq_slot> _sequence;
+			std::vector<mx::seq_slot> _sequence;
 
 
 		public:
@@ -110,12 +110,12 @@ namespace ml {
 			// -- public accessors --------------------------------------------
 
 			/* data */
-			auto data(void) noexcept -> std::vector<ml::seq_slot>& {
+			auto data(void) noexcept -> std::vector<mx::seq_slot>& {
 				return _sequence;
 			}
 
 			/* const data */
-			auto data(void) const noexcept -> const std::vector<ml::seq_slot>& {
+			auto data(void) const noexcept -> const std::vector<mx::seq_slot>& {
 				return _sequence;
 			}
 
@@ -128,15 +128,48 @@ namespace ml {
 			// -- public modifiers --------------------------------------------
 
 			/* push */
-			auto push(const ml::i8 value, tk::token& tk) -> void {
+			auto push(const mx::i8 value, tk::token& tk, const mx::signature& sign) -> void {
+
+				const auto repeat = sign.modulus();
+
+				for (mx::usz i = 0U; i < repeat; ++i) {
+
+					_sequence.emplace_back(
+						mx::seq_slot{
+							.value = value,
+							.sign  = sign,
+							.token = &tk,
+							.depth = 0U
+						}
+					);
+				} 
+			}
+
+			/* push */
+			auto push_trig(const mx::i8 value, tk::token& tk, const mx::signature& sign) -> void {
+
+				const auto repeat = sign.modulus();
+
 				_sequence.emplace_back(
-					ml::seq_slot{
+						mx::seq_slot{
 						.value = value,
-						.sign  = ml::signature{},
+						.sign  = sign,
 						.token = &tk,
 						.depth = 0U
-					}
+						}
 				);
+
+				for (mx::usz i = 1U; i < repeat; ++i) {
+
+					_sequence.emplace_back(
+						mx::seq_slot{
+							.value = 0,
+							.sign  = sign,
+							.token = &tk,
+							.depth = 0U
+						}
+					);
+				} 
 			}
 
 
@@ -160,7 +193,7 @@ namespace ml {
 			// -- public methods ----------------------------------------------
 
 			/* next */
-			auto next(const ml::u64& timeline) const noexcept -> const ml::seq_slot& {
+			auto next(const mx::u64& timeline) const noexcept -> const mx::seq_slot& {
 
 				return _sequence[timeline % _sequence.size()];
 
@@ -180,6 +213,6 @@ namespace ml {
 
 	}; // class sequence
 
-} // namespace ml
+} // namespace mx
 
 #endif // data_sequence_hpp

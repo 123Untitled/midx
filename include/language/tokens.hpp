@@ -12,7 +12,7 @@ namespace tk {
 
 
 	/* token id */
-	using id = ml::u8;
+	using id = mx::u8;
 
 
 	/* token ids */
@@ -33,13 +33,15 @@ namespace tk {
 		decimal,
 		hexadecimal,
 		end_of_tokens,
+
 		comment,
 		whitespace,
 		invalid,
 		nested_block,
 		specifier,
 		param_dot,
-		parameter
+		parameter,
+		signature
 	};
 
 	constexpr const char* token_names[] {
@@ -65,7 +67,8 @@ namespace tk {
 		"nested_block",
 		"specifier",
 		"param_dot",
-		"parameter"
+		"parameter",
+		"signature"
 	};
 
 	constexpr const char* color_operator = "\x1b[33m";
@@ -102,7 +105,8 @@ namespace tk {
 		color_comment,
 		color_type,
 		color_keyword,
-		color_keyword
+		color_keyword,
+		color_type
 	};
 
 	// specifier rouge
@@ -138,7 +142,8 @@ namespace tk {
 		//"Keyword",
 		//"Keyword"
 		"Statement",
-		"Statement"
+		"Statement",
+		"Keyword"
 	};
 
 
@@ -159,9 +164,9 @@ namespace tk {
 
 			tk::id     id;
 			lx::lexeme lexeme;
-			ml::uint line;
-			ml::uint col_head;
-			ml::uint col_tail;
+			mx::uint line;
+			mx::uint col_head;
+			mx::uint col_tail;
 
 	}; // class token
 
@@ -179,7 +184,7 @@ inline auto operator<<(std::ostream& os, const tk::token& t) -> std::ostream& {
 		os << "nullptr]";
 		return os;
 	}
-	for (ml::usz i = 0U; i < t.lexeme.size; ++i)
+	for (mx::usz i = 0U; i < t.lexeme.size; ++i)
 		os << ptr[i];
 	os << "]";
 	return os;

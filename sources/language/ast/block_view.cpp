@@ -7,7 +7,7 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* constructor */
-as::block_view::block_view(as::tree& tree, const ml::usz bi) noexcept
+as::block_view::block_view(as::tree& tree, const mx::usz bi) noexcept
 : _tree{&tree}, _bi{bi} {
 }
 
@@ -44,11 +44,11 @@ auto as::block_view::block(void) noexcept -> as::block& {
 }
 
 /* block index */
-auto as::block_view::bi(void) const noexcept -> ml::usz {
+auto as::block_view::bi(void) const noexcept -> mx::usz {
 	return _bi;
 }
 
 /* num params */
-auto as::block_view::num_params(void) const noexcept -> ml::usz {
+auto as::block_view::num_params(void) const noexcept -> mx::usz {
 	return _tree->_blocks[_bi].pc;
 }

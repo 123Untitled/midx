@@ -51,7 +51,7 @@ auto pr::parser::switch_state(void) noexcept -> void {
 }
 
 /* push error */
-template <ml::literal E>
+template <mx::literal E>
 auto pr::parser::push_error(const tk::token* tk) -> void {
 
 	tk = (tk == nullptr) ? _current : tk;
@@ -65,7 +65,7 @@ auto pr::parser::push_error(const tk::token* tk) -> void {
 }
 
 /* push warning */
-template <ml::literal W>
+template <mx::literal W>
 auto pr::parser::push_warning(const tk::token* tk) -> void {
 
 	tk = (tk == nullptr) ? _current : tk;

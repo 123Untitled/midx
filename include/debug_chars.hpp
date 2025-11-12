@@ -5,16 +5,16 @@
 #include <iostream>
 
 
-namespace ml {
+namespace mx {
 	class dbc final {
 		private:
-			ml::u8 _c;
+			mx::u8 _c;
 
 		public:
 			dbc(const char c) noexcept
-			: _c{static_cast<ml::u8>(c)} {
+			: _c{static_cast<mx::u8>(c)} {
 			}
-			dbc(const ml::u8 c) noexcept
+			dbc(const mx::u8 c) noexcept
 			: _c{c} {
 			}
 			friend auto operator<<(std::ostream&, const dbc&) -> std::ostream&;

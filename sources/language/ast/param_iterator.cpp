@@ -6,7 +6,7 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* constructor */
-as::param_iterator::param_iterator(const as::tree& tree, const ml::usz pi) noexcept
+as::param_iterator::param_iterator(const as::tree& tree, const mx::usz pi) noexcept
 : _tree{&tree}, _pi{pi} {
 }
 

@@ -6,14 +6,14 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- R E A L T I M E -----------------------------------------------------
 
 	/* realtime */
-	auto realtime(const ml::i64&) noexcept -> bool;
+	auto realtime(const mx::i64&) noexcept -> bool;
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_time_realtime_hpp

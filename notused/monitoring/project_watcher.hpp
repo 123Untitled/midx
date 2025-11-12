@@ -8,7 +8,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- forward declarations ------------------------------------------------
@@ -23,32 +23,32 @@ namespace ml {
 
 		private:
 
-			ml::paths _paths;
+			mx::paths _paths;
 
-			ml::fs_watcher _target;
-			ml::fs_watcher _parent;
-			ml::time_watcher _timer;
+			mx::fs_watcher _target;
+			mx::fs_watcher _parent;
+			mx::time_watcher _timer;
 
 
 		public:
 
 			// -- public lifecycle --------------------------------------------
 
-			project_watcher(const char*, const ml::monitor&);
+			project_watcher(const char*, const mx::monitor&);
 
 
 			// -- public methods ----------------------------------------------
 
 			/* has_changes */
-			auto has_changes(ml::monitor&) -> bool;
+			auto has_changes(mx::monitor&) -> bool;
 
 			/* target path */
-			auto target_fd(void) const noexcept -> const ml::unix_descriptor& {
+			auto target_fd(void) const noexcept -> const mx::unix_descriptor& {
 				return _target;
 			}
 
 	}; // class file_watcher
 
-} // namespace ml
+} // namespace mx
 
 #endif // ml_monitoring_project_watcher_hpp

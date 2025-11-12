@@ -85,10 +85,13 @@ namespace mx {
 					_size = 0U; // need to differentiate between error and eof
 
 					// skip non-fatal errors
-					if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+					if (errno == EAGAIN
+					 || errno == EWOULDBLOCK
+					 || errno == EINTR)
 						return false;
 
-					throw ml::system_error{"recv"};
+					// throw exception
+					throw mx::system_error{"recv"};
 				}
 
 				// cast size
@@ -137,6 +140,6 @@ namespace mx {
 
 	}; // class reader
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_reader_hpp

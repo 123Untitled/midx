@@ -4,7 +4,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- T I M E B A S E -----------------------------------------------------
@@ -17,7 +17,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::timebase;
+			using self = mx::timebase;
 
 
 			// -- private members ---------------------------------------------
@@ -77,6 +77,6 @@ namespace ml {
 
 	}; // class timebase
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_time_timebase_hpp

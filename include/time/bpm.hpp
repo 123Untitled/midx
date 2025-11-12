@@ -8,7 +8,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 
@@ -22,7 +22,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::bpm;
+			using self = mx::bpm;
 
 
 			// -- private members ---------------------------------------------
@@ -34,7 +34,7 @@ namespace ml {
 			// -- private constants -------------------------------------------
 
 			/* constant */
-			enum : ml::u64 {
+			enum : mx::u64 {
 				NANO_PER_MIN = 60'000'000'000U
 			};
 
@@ -89,12 +89,12 @@ namespace ml {
 			// -- public methods ----------------------------------------------
 
 			/* to nanoseconds */
-			auto to_nano(void) const noexcept -> ml::u64 {
+			auto to_nano(void) const noexcept -> mx::u64 {
 				return NANO_PER_MIN / (_bpm * MIDI_PPQN);
 			}
 
 	}; // class bpm
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_time_bpm_hpp

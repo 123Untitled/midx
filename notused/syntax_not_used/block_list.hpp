@@ -13,7 +13,7 @@ namespace sx {
 
 
 	constexpr auto equal(const lx::lexeme& l, const char* a) noexcept -> bool {
-		ml::usz len = 0U;
+		mx::usz len = 0U;
 		while (a[len] != '\0')
 			++len;
 
@@ -21,7 +21,7 @@ namespace sx {
 			return false;
 		const char* p =  reinterpret_cast<const char*>(l.data);
 
-		for (ml::usz i = 0U; i < len; ++i) {
+		for (mx::usz i = 0U; i < len; ++i) {
 			if (p[i] != a[i])
 				return false;
 		}
@@ -258,7 +258,7 @@ namespace sx {
 			}
 
 			/* find block */
-			template <ml::literal L>
+			template <mx::literal L>
 			constexpr auto find_block(void) const noexcept -> sx::block_view<self> {
 
 				for (size_type bi = 0U; bi < NBLOCKS; ++bi) {

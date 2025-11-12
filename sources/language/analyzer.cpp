@@ -9,20 +9,20 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* default constructor */
-ml::analyzer::analyzer(void)
+mx::analyzer::analyzer(void)
 : _lexer{}, _parser{} {
 }
 
 
 // -- public modifiers --------------------------------------------------------
 
-auto ml::analyzer::analyze(std::string& data) -> void {
+auto mx::analyzer::analyze(std::string&& data) -> void {
 
 	_data = std::move(data);
 
-	const ml::byte_range br{
-		reinterpret_cast<const ml::u8*>(_data.data()),
-		reinterpret_cast<const ml::u8*>(_data.data() + _data.size())
+	const mx::byte_range br{
+		reinterpret_cast<const mx::u8*>(_data.data()),
+		reinterpret_cast<const mx::u8*>(_data.data() + _data.size())
 	};
 
 		_tokens.clear();

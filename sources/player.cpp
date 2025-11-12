@@ -1,37 +1,29 @@
 #include "player.hpp"
-#include "diagnostics/runtime_error.hpp"
-#include "diagnostics/system_error.hpp"
-#include "coremidi/coremidi.hpp"
 #include "data/model.hpp"
 #include "time/signature.hpp"
-#include "system/concurrency/lock_guard.hpp"
+
+#include "monitoring/monitor.hpp"
+#include "monitoring/server.hpp"
+#include "application.hpp"
+
 
 #include <iostream>
+
+#include <sys/event.h>
 
 // -- P L A Y E R -------------------------------------------------------------
 
 // -- public lifecycle --------------------------------------------------------
 
 /* default constructor */
-mx::player::player(void)
-: _mutex{},
-  _model{},
-  _clock{},
-  _srcs{cm::sources()},
-  _evs{},
-  _thread{},
-  _running{false} {
+mx::player::player(const mx::monitor& monitor)
+: mx::watcher{},
+  _clock{monitor.kqueue(), *this},
+  _model{nullptr},
+  _engine{} {
 
-	if (_srcs.empty())
-		throw ml::runtime_error("no midi sources");
-
-	for (const auto& src : _srcs)
-		std::cout << src.name() << std::endl;
-}
-
-/* destructor */
-mx::player::~player(void) noexcept {
-	self::stop();
+	// add user event to monitor
+	monitor.add_user(*this);
 }
 
 
@@ -40,104 +32,84 @@ mx::player::~player(void) noexcept {
 /* start */
 auto mx::player::start(void) -> void {
 
-	// check if clock is already running
 	if (_clock.is_running() == true)
 		return;
 
-	// launch thread
-	if (::pthread_create(&_thread, nullptr, _entrypoint, this) != 0)
-		throw ml::system_error("pthread_create");
+	// start clock
+	_clock.start();
 
-	_running = true;
+	// send start clock midi event
+	_engine.start();
 }
 
 /* stop */
-auto mx::player::stop(void) noexcept -> void {
+auto mx::player::stop(void) -> void {
+
+	if (_clock.is_running() == false)
+		return;
+
+	// stop clock
 	_clock.stop();
 
-	if (_running == false) {
-		std::cout << "clock is already stopped" << std::endl;
-		return;
-	}
+	// send stop clock midi event
+	_engine.stop();
+}
 
-	std::cout << "stopping player..." << std::endl;
-	static_cast<void>(::pthread_join(_thread, nullptr));
-
-	_running = false;
-	std::cout << "player stopped" << std::endl;
+/* model */
+auto mx::player::switch_model(mx::model& m) noexcept -> void {
+	_model = &m;
 }
 
 
 // -- public overrides --------------------------------------------------------
 
-/* start */
-auto mx::player::clock_start(void) -> void {
-	_evs.start();
-	_evs.send(_srcs[0U]);
-	_evs.clear();
-	std::cout << "clock started" << std::endl;
-}
+/* on event */
+auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> void {
 
-auto mx::player::model(mx::model& m) noexcept -> void {
-	const mx::lock_guard guard{_mutex};
-	_model = &m;
-}
+	static mx::u64 tick_count = 0U;
 
-/* tick */
-auto mx::player::clock_tick(const ml::u64& count) -> void {
 
-	// send tick
-	_evs.tick();
+	//const mx::signature ppqn_24{1, 16};
+	//
+	//if (_model && ppqn_24.is_time(tick_count) == false) {
+	//	++tick_count;
+	//	return;
+	//}
 
-	const ml::signature ppqn_24{1, 16};
-
-	//std::cout << "tick: " << count << std::endl;
-
-	if (_model && ppqn_24.is_time(count) == false)
+	if (_model == nullptr) {
+		++tick_count;
 		return;
+	}
 
 	std::stringstream ss;
 	ss << "{\"type\":\"animation\",\"highlights\":[";
 
-	{
-		const mx::lock_guard guard{_mutex};
-		_model->play(ss, _evs, ppqn_24.count(count));
-	}
-
-	ss << "]}\r\n";
-	auto str = ss.str();
-	std::cout << str << std::endl;
-	_server->broadcast(str);
-
-
+	_engine.off_pass();
+	//_model->play(ss, _engine, ppqn_24.count(tick_count));
+	_model->play(ss, _engine, tick_count);
 	// send and clear events
-	_evs.send(_srcs[0U]);
-	_evs.clear();
-}
+	_engine.flush();
 
-/* stop */
-auto mx::player::clock_stop(void) -> void {
+	auto str = ss.str();
 
-	std::cout << "clock stopped" << std::endl;
-	// note off all notes
-	for (ml::u8 ch = 0U; ch < 16U; ++ch) {
-		for (ml::u8 note = 0U; note < 128U; ++note) {
-			_evs.note_off(ch, note);
-		}
+	if (str.empty() == false) {
+
+		if (str.back() == ',')
+			str.pop_back();
+		str += "]}\r\n";
+
+		app.server().broadcast(str);
+	}
+	else {
+		std::cout << "EMPTY PLAYLOAD\n";
 	}
 
-	_evs.stop();
-	_evs.send(_srcs[0U]);
-	_evs.clear();
+
+	++tick_count;
 }
 
-
-
-// -- private static methods --------------------------------------------------
-
-/* entrypoint */
-auto mx::player::_entrypoint(void* arg) -> void* {
-	auto& player = *static_cast<mx::player*>(arg);
-	player._clock.start(player);
-	return nullptr;
+/* ident */
+auto mx::player::ident(void) const noexcept -> int {
+	// random ident
+	return 42;
 }

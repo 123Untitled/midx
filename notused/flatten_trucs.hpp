@@ -6,23 +6,23 @@
 
 
 
-	//template <ml::literal... Ns>
+	//template <mx::literal... Ns>
 	//struct aliases final {
 	//	non_instantiable_class(aliases);
-	//	static constexpr ml::usz count = sizeof...(Ns);
+	//	static constexpr mx::usz count = sizeof...(Ns);
 	//};
 	//
 	//template <sd::action_type, typename>
 	//struct entry;
 	//
-	//template <sd::action_type A, ml::literal... Ns>
+	//template <sd::action_type A, mx::literal... Ns>
 	//struct entry<A, kw::aliases<Ns...>> final {
 	//	using aliases = kw::aliases<Ns...>;
 	//	non_instantiable_class(entry);
-	//	static constexpr ml::usz alias_count = sizeof...(Ns);
+	//	static constexpr mx::usz alias_count = sizeof...(Ns);
 	//};
 	//
-	//template <sd::action_type A, ml::literal... Ns>
+	//template <sd::action_type A, mx::literal... Ns>
 	//using make_entry = kw::entry<A, kw::aliases<Ns...>>;
 	//
 	///* forward declaration */
@@ -34,8 +34,8 @@
 	//template <sd::action_type... As, typename... Ns>
 	//struct list<kw::entry<As, Ns>...> final {
 	//	non_instantiable_class(list);
-	//	static constexpr ml::usz entry_count = sizeof...(Ns);
-	//	static constexpr ml::usz alias_count = (kw::entry<As, Ns>::alias_count + ... );
+	//	static constexpr mx::usz entry_count = sizeof...(Ns);
+	//	static constexpr mx::usz alias_count = (kw::entry<As, Ns>::alias_count + ... );
 	//};
 	//
 	///* list specialization */
@@ -58,14 +58,14 @@
 	//	static_assert(false, "block must be specialized");
 	//};
 	//
-	//template <sd::action_type A, ml::literal... Ns, typename... P>
+	//template <sd::action_type A, mx::literal... Ns, typename... P>
 	//struct block<kw::entry<A, kw::aliases<Ns...>>, kw::list<P...>> final {
 	//	using specifier = kw::entry<A, kw::aliases<Ns...>>;
 	//	using params    = kw::list<P...>;
 	//	non_instantiable_class(block);
 	//
-	//	static constexpr ml::usz entry_count = params::entry_count + 1U;
-	//	static constexpr ml::usz alias_count = specifier::alias_count
+	//	static constexpr mx::usz entry_count = params::entry_count + 1U;
+	//	static constexpr mx::usz alias_count = specifier::alias_count
 	//										 +    params::alias_count;
 	//
 	//	static auto debug(void) -> void {
@@ -81,20 +81,20 @@
 	//class flatten<kw::block<S, P>...> final {
 	//
 	//	private:
-	//		static constexpr ml::usz block_count = sizeof...(S);
+	//		static constexpr mx::usz block_count = sizeof...(S);
 	//
 	//		struct block final {
-	//			ml::u16 ns;
-	//			ml::u16 ne;
-	//			ml::u16 ps;
-	//			ml::u16 pe;
-	//			ml::u16 ai;
+	//			mx::u16 ns;
+	//			mx::u16 ne;
+	//			mx::u16 ps;
+	//			mx::u16 pe;
+	//			mx::u16 ai;
 	//		};
 	//
 	//		struct param final {
-	//			ml::u16 ns;
-	//			ml::u16 ne;
-	//			ml::u16 ai;
+	//			mx::u16 ns;
+	//			mx::u16 ne;
+	//			mx::u16 ai;
 	//		};
 	//
 	//
@@ -103,7 +103,7 @@
 	//
 	//			template <typename T>
 	//			static constexpr auto dispatch(void) -> void {
-	//				for (ml::usz i = 0U; i < T::count; ++i) {
+	//				for (mx::usz i = 0U; i < T::count; ++i) {
 	//					std::cout << " - " << T::names[i] << "\n";
 	//				}
 	//			}
@@ -123,7 +123,7 @@
 	//			block_aliases::debug();
 	//			//std::cout << "block alias count: " << (S::alias_count + ... ) << "\n";
 	//			//constexpr block_aliases ba{};
-	//			//for (ml::usz i = 0U; i < (S::alias_count + ... ); ++i) {
+	//			//for (mx::usz i = 0U; i < (S::alias_count + ... ); ++i) {
 	//			//	std::cout << " - " << ba.aliases[i] << "\n";
 	//			//}
 	//			//((kw::block<S, P>::debug()), ...);
@@ -170,7 +170,7 @@
 
 
 
-	//template <sd::action_type A, ml::literal N>
+	//template <sd::action_type A, mx::literal N>
 	//struct entry final {
 	//	non_instantiable_class(entry);
 	//	static constexpr sd::action_type action = A;
@@ -185,10 +185,10 @@
 	//	struct list;
 	//
 	//	/* entry specialization */
-	//	template <sd::action_type... As, ml::literal... Ls>
+	//	template <sd::action_type... As, mx::literal... Ls>
 	//	struct list<kw::entry<As, Ls>...> final {
 	//		non_instantiable_class(list);
-	//		static constexpr ml::usz size = sizeof...(Ls);
+	//		static constexpr mx::usz size = sizeof...(Ls);
 	//		using type = kw::impl::list<kw::entry<As, Ls>...>;
 	//	};
 	//
@@ -208,7 +208,7 @@
 	//
 	//
 	//
-	//	template <sd::action_type A, ml::literal... Ns>
+	//	template <sd::action_type A, mx::literal... Ns>
 	//	struct add final {
 	//		non_instantiable_class(add);
 	//		using type = kw::impl::list<kw::entry<A, Ns>...>;
@@ -220,10 +220,10 @@
 	//using list = typename kw::impl::list<Tp...>::type;
 	//
 	//
-	//template <sd::action_type A, ml::literal... Ns>
+	//template <sd::action_type A, mx::literal... Ns>
 	//using add_param = typename kw::impl::add<A, Ns...>::type;
 	//
-	//template <sd::action_type A, ml::literal... Ns>
+	//template <sd::action_type A, mx::literal... Ns>
 	//using add_specifier = typename kw::impl::add<A, Ns...>::type;
 	//
 	//template <typename, typename>
@@ -235,9 +235,9 @@
 	//	using params    = kw::list<P...>;
 	//	//non_instantiable_class(block);
 	//
-	//	static constexpr ml::usz block_count = specifier::size;
-	//	static constexpr ml::usz param_count = params::size;
-	//	static constexpr ml::usz entry_count = block_count + param_count;
+	//	static constexpr mx::usz block_count = specifier::size;
+	//	static constexpr mx::usz param_count = params::size;
+	//	static constexpr mx::usz entry_count = block_count + param_count;
 	//
 	//};
 	//
@@ -254,23 +254,23 @@
 	//
 	//
 	//		struct block final {
-	//			ml::u16 ns;
-	//			ml::u16 ne;
-	//			ml::u16 ps;
-	//			ml::u16 pe;
-	//			ml::u16 ai;
+	//			mx::u16 ns;
+	//			mx::u16 ne;
+	//			mx::u16 ps;
+	//			mx::u16 pe;
+	//			mx::u16 ai;
 	//		};
 	//
 	//		struct param final {
-	//			ml::u16 ns;
-	//			ml::u16 ne;
-	//			ml::u16 ai;
+	//			mx::u16 ns;
+	//			mx::u16 ne;
+	//			mx::u16 ai;
 	//		};
 	//
 	//
-	//		static constexpr ml::usz entry_count = (kw::block<S, P>::entry_count + ...);
-	//		static constexpr ml::usz block_count = (kw::block<S, P>::block_count + ...);
-	//		static constexpr ml::usz param_count = (kw::block<S, P>::param_count + ...);
+	//		static constexpr mx::usz entry_count = (kw::block<S, P>::entry_count + ...);
+	//		static constexpr mx::usz block_count = (kw::block<S, P>::block_count + ...);
+	//		static constexpr mx::usz param_count = (kw::block<S, P>::param_count + ...);
 	//
 	//		static constexpr const char* _names[entry_count] = {
 	//		};

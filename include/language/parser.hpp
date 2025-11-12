@@ -87,11 +87,11 @@ namespace pr {
 			auto switch_state(void) noexcept -> void;
 
 			/* push error */
-			template <ml::literal>
+			template <mx::literal>
 			auto push_error(const tk::token* = nullptr) -> void;
 
 			/* push warning */
-			template <ml::literal>
+			template <mx::literal>
 			auto push_warning(const tk::token* = nullptr) -> void;
 
 

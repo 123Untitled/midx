@@ -9,7 +9,7 @@
 namespace sx {
 
 
-	using size_type = ml::u16;
+	using size_type = mx::u16;
 
 
 	// -- E N T R Y -----------------------------------------------------------

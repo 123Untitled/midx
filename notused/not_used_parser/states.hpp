@@ -11,7 +11,7 @@ namespace pr {
 
 	// -- S T A T E -----------------------------------------------------------
 
-	template <ml::literal N, pr::is_rule... Rs>
+	template <mx::literal N, pr::is_rule... Rs>
 	struct state {
 		non_instantiable_class(state);
 		static constexpr const char* name = N.data;

@@ -6,7 +6,7 @@
 
 // -- P R O J E C T  W A T C H E R --------------------------------------------
 
-ml::project_watcher::project_watcher(const char* path, const ml::monitor& monitor)
+mx::project_watcher::project_watcher(const char* path, const mx::monitor& monitor)
 : _paths{path},
   _target{_paths.file(),   O_RDONLY},
   _parent{_paths.folder(), O_EVTONLY},
@@ -21,7 +21,7 @@ ml::project_watcher::project_watcher(const char* path, const ml::monitor& monito
 // -- public methods ----------------------------------------------
 
 /* has_changes */
-auto ml::project_watcher::has_changes(ml::monitor& monitor) -> bool {
+auto mx::project_watcher::has_changes(mx::monitor& monitor) -> bool {
 
 	bool changed = false;
 
@@ -42,7 +42,7 @@ auto ml::project_watcher::has_changes(ml::monitor& monitor) -> bool {
 	// check for lost tracking
 	if (_target.has_acc(NOTE_REVOKE)
 	 || _parent.has_acc(NOTE_REVOKE | NOTE_DELETE | NOTE_RENAME))
-		throw ml::runtime_error{"losing file monitoring"};
+		throw mx::runtime_error{"losing file monitoring"};
 
 
 	if (_target.has_acc(NOTE_DELETE | NOTE_RENAME)) {
@@ -60,8 +60,8 @@ auto ml::project_watcher::has_changes(ml::monitor& monitor) -> bool {
 
 		if (_target.is_closed()) {
 
-			static_cast<ml::unix_descriptor&>(_target)
-				= ml::try_open(_paths.file(), O_RDONLY);
+			static_cast<mx::unix_descriptor&>(_target)
+				= mx::try_open(_paths.file(), O_RDONLY);
 
 			if (_target.is_open()) {
 				monitor.subscribe(_target);

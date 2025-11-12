@@ -7,7 +7,7 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* constructor */
-as::value_view::value_view(const as::tree& tree, const ml::usz vi) noexcept
+as::value_view::value_view(const as::tree& tree, const mx::usz vi) noexcept
 : _tree{&tree}, _vi{vi} {
 }
 

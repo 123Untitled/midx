@@ -14,7 +14,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- P A T H S -----------------------------------------------------------
@@ -27,7 +27,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::paths;
+			using self = mx::paths;
 
 
 			// -- private members ---------------------------------------------
@@ -48,12 +48,12 @@ namespace ml {
 			: _path{nullptr}, _parent{nullptr} {
 
 				if (path == nullptr)
-					throw ml::runtime_error{"path is null"};
+					throw mx::runtime_error{"path is null"};
 
 				::size_t path_len = ::strlen(path);
 
 				if (path_len == 0U)
-					throw ml::runtime_error{"path is empty"};
+					throw mx::runtime_error{"path is empty"};
 
 
 				::size_t len = 0U;
@@ -64,15 +64,15 @@ namespace ml {
 					_path = ::getcwd(nullptr, 0);
 
 					if (_path == nullptr)
-						throw ml::system_error{"getcwd"};
+						throw mx::system_error{"getcwd"};
 
 					const auto cwd_len = ::strlen(_path);
 
 					if (cwd_len == 0U)
-						throw ml::runtime_error{"getcwd: empty current working directory"};
+						throw mx::runtime_error{"getcwd: empty current working directory"};
 
 					if (*_path != '/')
-						throw ml::runtime_error{"getcwd: current working directory is not absolute"};
+						throw mx::runtime_error{"getcwd: current working directory is not absolute"};
 
 					len = cwd_len + 1U + path_len;
 
@@ -80,7 +80,7 @@ namespace ml {
 
 					if (ptr == nullptr) {
 						::free(_path);
-						throw ml::system_error{"realloc"};
+						throw mx::system_error{"realloc"};
 					}
 
 					_path = ptr;
@@ -94,7 +94,7 @@ namespace ml {
 
 					_path = static_cast<char*>(::malloc(path_len + 1U));
 					if (_path == nullptr)
-						throw ml::system_error{"malloc"};
+						throw mx::system_error{"malloc"};
 
 					::memcpy(_path, path, path_len + 1U);
 
@@ -169,19 +169,19 @@ namespace ml {
 				struct ::stat st;
 				if (::stat(_path, &st) == -1) {
 					::free(_path);
-					throw ml::system_error{"stat"};
+					throw mx::system_error{"stat"};
 				}
 
 				if ((st.st_mode & S_IFMT) != S_IFREG) {
 					::free(_path);
-					throw ml::runtime_error{"path is not a regular file"};
+					throw mx::runtime_error{"path is not a regular file"};
 				}
 
 
 				const char* ext = ::strrchr(_path, '.');
 				if (ext == nullptr || ::strcmp(ext, ".midx") != 0) {
 					::free(_path);
-					throw ml::runtime_error{"path must have .ml extension"};
+					throw mx::runtime_error{"path must have .ml extension"};
 				}
 
 
@@ -189,14 +189,14 @@ namespace ml {
 
 				if (slash == nullptr) {
 					::free(_path);
-					throw ml::runtime_error{"invalid path"};
+					throw mx::runtime_error{"invalid path"};
 				}
 
 				if (slash == _path) {
 					_parent = static_cast<char*>(::malloc(2U));
 					if (_parent == nullptr) {
 						::free(_path);
-						throw ml::system_error{"malloc"};
+						throw mx::system_error{"malloc"};
 					}
 					_parent[0U] = '/';
 					_parent[1U] = '\0';
@@ -207,7 +207,7 @@ namespace ml {
 					_parent = static_cast<char*>(::malloc(parent_len + 1U));
 					if (_parent == nullptr) {
 						::free(_path);
-						throw ml::system_error{"malloc"};
+						throw mx::system_error{"malloc"};
 					}
 
 					::memcpy(_parent, _path, parent_len);
@@ -277,6 +277,6 @@ namespace ml {
 
 	}; // class paths
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_paths_hpp

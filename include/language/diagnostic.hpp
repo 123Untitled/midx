@@ -13,7 +13,7 @@ namespace an {
 
 		public:
 
-			enum class level_type : ml::usz {
+			enum class level_type : mx::usz {
 				WARNING,
 				ERROR
 			};
@@ -21,9 +21,9 @@ namespace an {
 			struct entry final {
 				level_type  level;
 				const char*   msg;
-				ml::usz      line;
-				ml::usz col_start;
-				ml::usz   col_end;
+				mx::usz      line;
+				mx::usz col_start;
+				mx::usz   col_end;
 			};
 
 
@@ -31,9 +31,9 @@ namespace an {
 
 			template <level_type LEVEL>
 			auto push(const char* msg,
-					  const ml::usz line,
-					  const ml::usz col_start,
-					  const ml::usz col_end) -> void {
+					  const mx::usz line,
+					  const mx::usz col_start,
+					  const mx::usz col_end) -> void {
 				_entries.emplace_back(
 						an::diagnostic::entry{
 							LEVEL,
@@ -72,9 +72,9 @@ namespace an {
 			}
 
 			auto push_warning(const char* msg,
-							  const ml::usz line,
-							  const ml::usz col_start,
-							  const ml::usz col_end) -> void {
+							  const mx::usz line,
+							  const mx::usz col_start,
+							  const mx::usz col_end) -> void {
 				_entries.emplace_back(
 						an::diagnostic::entry{
 							level_type::WARNING,
@@ -87,9 +87,9 @@ namespace an {
 			}
 
 			auto push_error(const char* msg,
-							const ml::usz line,
-							const ml::usz col_start,
-							const ml::usz col_end) -> void {
+							const mx::usz line,
+							const mx::usz col_start,
+							const mx::usz col_end) -> void {
 				_entries.emplace_back(
 						an::diagnostic::entry{
 							level_type::ERROR,

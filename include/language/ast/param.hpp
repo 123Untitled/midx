@@ -35,10 +35,10 @@ namespace as {
 		public:
 
 			/* values start index */
-			ml::usz vs;
+			mx::usz vs;
 
 			/* values count */
-			ml::usz vc;
+			mx::usz vc;
 
 
 			// -- public lifecycle --------------------------------------------
@@ -51,12 +51,12 @@ namespace as {
 			}
 
 			/* specifier constructor */
-			param(const sp::id spec_id, tk::token& tk, const ml::usz vs) noexcept
+			param(const sp::id spec_id, tk::token& tk, const mx::usz vs) noexcept
 			: _param{&tk}, _param_id{pa::id::invalid},
 			  vs{vs}, vc{0U} {
 
 				// search param id
-				_param_id = pa::search_table[static_cast<ml::usz>(spec_id)]
+				_param_id = pa::search_table[static_cast<mx::usz>(spec_id)]
 					(tk.lexeme);
 
 				// set token id
@@ -80,7 +80,7 @@ namespace as {
 
 			/* param to spec id */
 			auto param_to_spec(void) const noexcept -> sp::id {
-				return pa::param_to_spec[static_cast<ml::usz>(_param_id)];
+				return pa::param_to_spec[static_cast<mx::usz>(_param_id)];
 			}
 
 

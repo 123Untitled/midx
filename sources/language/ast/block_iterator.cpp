@@ -8,7 +8,7 @@
 
 /* constructor */
 as::block_iterator::block_iterator(as::tree& tree,
-								   const ml::usz bi) noexcept
+								   const mx::usz bi) noexcept
 : _tree{&tree}, _bi{bi} {
 }
 

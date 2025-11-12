@@ -6,7 +6,7 @@
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
-namespace ml {
+namespace mx {
 
 
 	// -- R U N T I M E  E R R O R --------------------------------------------
@@ -19,7 +19,7 @@ namespace ml {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ml::runtime_error;
+			using self = mx::runtime_error;
 
 
 			// -- private members ---------------------------------------------
@@ -68,6 +68,6 @@ namespace ml {
 
 	}; // class runtime_error
 
-} // namespace ml
+} // namespace mx
 
 #endif // midilang_runtime_error_hpp

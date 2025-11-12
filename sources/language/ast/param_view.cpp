@@ -7,7 +7,7 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* constructor */
-as::param_view::param_view(const as::tree& tree, const ml::usz pi) noexcept
+as::param_view::param_view(const as::tree& tree, const mx::usz pi) noexcept
 : _tree{&tree}, _pi{pi} {
 }
 
@@ -43,7 +43,7 @@ auto as::param_view::param(void) const noexcept -> const as::param& {
 }
 
 /* num values */
-auto as::param_view::num_values(void) const noexcept -> ml::usz {
+auto as::param_view::num_values(void) const noexcept -> mx::usz {
 	const auto& p = _tree->_params[_pi];
 	return p.vc;
 }

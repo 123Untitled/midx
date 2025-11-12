@@ -34,7 +34,7 @@ namespace as {
 			as::tree* _tree;
 
 			/* block index */
-			ml::usz _bi;
+			mx::usz _bi;
 
 
 		public:
@@ -43,7 +43,7 @@ namespace as {
 
 			/* constructor */
 			block_iterator(as::tree& tree,
-						   const ml::usz bi = 0U) noexcept;
+						   const mx::usz bi = 0U) noexcept;
 
 
 			// -- public operators --------------------------------------------

@@ -31,15 +31,15 @@ namespace lx {
 			// -- private members ---------------------------------------------
 
 
-			const ml::u8* _it;
+			const mx::u8* _it;
 
-			const ml::u8* _end;
+			const mx::u8* _end;
 
-			const ml::u8* _checkpoint;
+			const mx::u8* _checkpoint;
 
-			ml::uint _line;
+			mx::uint _line;
 
-			ml::uint _column;
+			mx::uint _column;
 
 			/* state */
 			const lx::table* _state;
@@ -49,7 +49,7 @@ namespace lx {
 			std::vector<std::string> _errors;
 
 
-			auto _atoi(void) noexcept -> ml::i8;
+			auto _atoi(void) noexcept -> mx::i8;
 
 
 		public:
@@ -97,7 +97,7 @@ namespace lx {
 
 
 			/* push token */
-			template <tk::is_token_class, ml::uint = 0U>
+			template <tk::is_token_class, mx::uint = 0U>
 			auto push_token(void) -> void;
 
 			template <tk::is_token_class>
@@ -113,7 +113,7 @@ namespace lx {
 			auto push_byte_token(void) -> void;
 
 			/* push error */
-			template <ml::literal>
+			template <mx::literal>
 			auto push_error(void) -> void;
 
 
@@ -139,9 +139,9 @@ auto lx::lexer::lex(lx::context& ctx) -> void {
 
 	for (const auto& t : _tokens) {
 		std::cout << "token: " << (unsigned)t.type << " [" << t.line << "] -> ";
-		for (const ml::u8* p = t.begin; p < t.end; ++p) {
+		for (const mx::u8* p = t.begin; p < t.end; ++p) {
 			//std::cout << *p;
-			std::cout << ml::dbc{*p};
+			std::cout << mx::dbc{*p};
 		}
 		std::cout << "\n";
 	}
@@ -185,7 +185,7 @@ auto lx::lexer::switch_state(void) noexcept -> void {
 /* checkpoint */
 auto lx::lexer::checkpoint(void) noexcept -> void {
 	_checkpoint = _it;
-	//std::cout << "checkpoint at: " << ml::dbc{*_it} << "\n";
+	//std::cout << "checkpoint at: " << mx::dbc{*_it} << "\n";
 }
 
 /* newline */
@@ -197,7 +197,7 @@ auto lx::lexer::newline(void) noexcept -> void {
 
 
 /* push token */
-template <tk::is_token_class T, ml::uint SHIFT>
+template <tk::is_token_class T, mx::uint SHIFT>
 auto lx::lexer::push_token(void) -> void {
 
 	//std::cout << "push token: " << static_cast<unsigned>(T::id) << '\n';
@@ -244,7 +244,7 @@ auto lx::lexer::push_byte_token(void) -> void {
 }
 
 /* push error */
-template <ml::literal E>
+template <mx::literal E>
 auto lx::lexer::push_error(void) -> void {
 
 	std::string err;

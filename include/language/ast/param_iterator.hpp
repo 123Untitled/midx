@@ -34,7 +34,7 @@ namespace as {
 			const as::tree* _tree;
 
 			/* param index */
-			ml::usz _pi;
+			mx::usz _pi;
 
 
 		public:
@@ -42,7 +42,7 @@ namespace as {
 			// -- public lifecycle --------------------------------------------
 
 			/* constructor */
-			param_iterator(const as::tree&, const ml::usz = 0U) noexcept;
+			param_iterator(const as::tree&, const mx::usz = 0U) noexcept;
 
 
 			// -- public operators --------------------------------------------

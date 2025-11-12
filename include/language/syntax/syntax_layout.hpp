@@ -71,7 +71,7 @@ namespace sx {
 					}
 
 					// dispatch block builder
-					auto fnb = block_dispatch[static_cast<ml::usz>(b.spec_id())];
+					auto fnb = block_dispatch[static_cast<mx::usz>(b.spec_id())];
 					(this->*fnb)(bv);
 				}
 
@@ -80,7 +80,7 @@ namespace sx {
 			}
 
 
-			auto bool_parse(const as::param_view& pv, ml::sequence& seq) -> void {
+			auto bool_parse(const as::param_view& pv, mx::sequence& seq) -> void {
 			}
 
 
@@ -155,7 +155,7 @@ namespace sx {
 						continue;
 					}
 
-					auto stype = ml::to_seq_type[static_cast<ml::usz>(sid)];
+					auto stype = mx::to_seq_type[static_cast<mx::usz>(sid)];
 					track.set_index(stype, _remap[i]);
 				}
 
@@ -173,7 +173,7 @@ namespace sx {
 
 
 
-			static constexpr fn_block block_dispatch[static_cast<ml::usz>(sp::id::count)] {
+			static constexpr fn_block block_dispatch[static_cast<mx::usz>(sp::id::count)] {
 				&sx::builder::build_block_atomic<sp::id::trig>,
 				&sx::builder::build_block_atomic<sp::id::note>,
 				&sx::builder::build_block_atomic<sp::id::gate>,
@@ -188,7 +188,7 @@ namespace sx {
 				&sx::builder::build_block_invalid
 			};
 
-			static constexpr fn_param param_dispatch[static_cast<ml::usz>(pa::id::count)] {
+			static constexpr fn_param param_dispatch[static_cast<mx::usz>(pa::id::count)] {
 			};
 
 

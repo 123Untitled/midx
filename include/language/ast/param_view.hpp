@@ -35,7 +35,7 @@ namespace as {
 			const as::tree* _tree;
 
 			/* param index */
-			ml::usz _pi;
+			mx::usz _pi;
 
 
 		public:
@@ -43,7 +43,7 @@ namespace as {
 			// -- public lifecycle --------------------------------------------
 
 			/* constructor */
-			param_view(const as::tree&, const ml::usz) noexcept;
+			param_view(const as::tree&, const mx::usz) noexcept;
 
 
 			// -- public iterators --------------------------------------------
@@ -64,7 +64,7 @@ namespace as {
 			auto param(void) const noexcept -> const as::param&;
 
 			/* num values */
-			auto num_values(void) const noexcept -> ml::usz;
+			auto num_values(void) const noexcept -> mx::usz;
 
 	}; // class param_view
 

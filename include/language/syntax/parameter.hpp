@@ -9,7 +9,7 @@
 namespace pa {
 
 	/* parameter ids */
-	enum class id : ml::usz {
+	enum class id : mx::usz {
 
 		// atomic parameters
 		seq = 0U,
@@ -34,7 +34,7 @@ namespace pa {
 
 
 
-	template <pa::id I, ml::literal... Ws>
+	template <pa::id I, mx::literal... Ws>
 	using entry = mx::entry<pa::id, I, Ws...>;
 
 
@@ -87,7 +87,7 @@ namespace pa {
 
 
 	/* search table */
-	static search_fn_t search_table[static_cast<ml::usz>(sp::id::count)] {
+	static search_fn_t search_table[static_cast<mx::usz>(sp::id::count)] {
 
 		search_from_atomic, // trig
 		search_from_atomic, // note
@@ -107,7 +107,7 @@ namespace pa {
 
 
 	static sp::id param_to_spec[
-		static_cast<ml::usz>(pa::id::count)
+		static_cast<mx::usz>(pa::id::count)
 	] {
 		// seq
 		sp::id::invalid,

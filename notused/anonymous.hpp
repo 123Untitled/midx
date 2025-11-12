@@ -6,7 +6,7 @@
 #include <unordered_set>
 #include <string>
 
-namespace ml {
+namespace mx {
 
 
 	class anonymous final {
@@ -45,6 +45,6 @@ namespace ml {
 
 	}; // class anonymous
 
-} // namespace ml
+} // namespace mx
 
 #endif // anonymous_hpp

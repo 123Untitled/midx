@@ -7,7 +7,7 @@
 // -- public lifecycle --------------------------------------------------------
 
 /* constructor */
-as::value_iterator::value_iterator(const as::tree& tree, const ml::usz vi) noexcept
+as::value_iterator::value_iterator(const as::tree& tree, const mx::usz vi) noexcept
 : _tree{&tree}, _vi{vi} {
 }
 
@@ -15,7 +15,7 @@ as::value_iterator::value_iterator(const as::tree& tree, const ml::usz vi) noexc
 // -- public operators --------------------------------------------------------
 
 /* [] operator */
-auto as::value_iterator::operator[](const ml::isz index) const noexcept -> const as::value& {
+auto as::value_iterator::operator[](const mx::isz index) const noexcept -> const as::value& {
 	return _tree->_values[_vi + index];
 }
 

@@ -13,7 +13,7 @@ namespace lx {
 
 	// -- S T A T E -----------------------------------------------------------
 
-	template <ml::literal N, lx::is_rule... Rs>
+	template <mx::literal N, lx::is_rule... Rs>
 	class state {
 		public:
 			non_instantiable_class(state);
@@ -502,7 +502,7 @@ namespace lx {
 	//struct state_table {
 	//	lx::action table[cc::char_map::size];
 	//
-	//	auto execute(lx::lexer& lxr, const ml::u8 byte) const /* noexcept */-> void {
+	//	auto execute(lx::lexer& lxr, const mx::u8 byte) const /* noexcept */-> void {
 	//		(lxr.*table[cc::char_map::table[byte]])();
 	//	}
 	//
@@ -535,15 +535,15 @@ namespace lx {
 	//template <typename, lx::action...>
 	//struct stop;
 	//
-	//template <ml::u8... Is, lx::action... As>
+	//template <mx::u8... Is, lx::action... As>
 	//struct lead<cc::char_class<Is...>, As...> {
 	//	//non_instantiable_class(lead);
 	//};
-	//template <ml::u8... Is, lx::action... As>
+	//template <mx::u8... Is, lx::action... As>
 	//struct body<cc::char_class<Is...>, As...> {
 	//	//non_instantiable_class(body);
 	//};
-	//template <ml::u8... Is, lx::action... As>
+	//template <mx::u8... Is, lx::action... As>
 	//struct stop<cc::char_class<Is...>, As...> {
 	//	//non_instantiable_class(stop);
 	//};
@@ -551,7 +551,7 @@ namespace lx {
 	//template <typename...>
 	//struct add;
 	//
-	//template <ml::u8... L,      ml::u8... B,       ml::u8... S,
+	//template <mx::u8... L,      mx::u8... B,       mx::u8... S,
 	//		 lx::action... LAs, lx::action... BAs, lx::action... SAs>
 	//struct add<lead<cc::char_class<L...>, LAs...>,
 	//		   body<cc::char_class<B...>, BAs...>,
@@ -588,17 +588,17 @@ namespace lx {
 	//	template <typename, lx::action...>
 	//	struct config;
 	//
-	//	template <ml::u8... Ci, lx::action... As>
+	//	template <mx::u8... Ci, lx::action... As>
 	//	struct config<lx::body<cc::char_class<Ci...>, As...>> {
 	//
-	//		template <ml::uint Si>
+	//		template <mx::uint Si>
 	//		static constexpr auto test(table_type& tbl) -> void {
 	//			((tbl[Si][Ci] = &lx::lexer::call<As...>), ...);
 	//		}
 	//	};
 	//
-	//	template <ml::uint... Is>
-	//	constexpr auto configure(const std::integer_sequence<ml::uint, Is...>&) noexcept -> void {
+	//	template <mx::uint... Is>
+	//	constexpr auto configure(const std::integer_sequence<mx::uint, Is...>&) noexcept -> void {
 	//		(config<typename Rs::body>::template test<Is>(_table), ...);
 	//	}
 	//
@@ -606,7 +606,7 @@ namespace lx {
 	//
 	//	constexpr state_machine(void) noexcept
 	//	: _table{} {
-	//		configure(std::make_integer_sequence<ml::uint, sizeof...(Rs)>{});
+	//		configure(std::make_integer_sequence<mx::uint, sizeof...(Rs)>{});
 	//	}
 	//
 	//

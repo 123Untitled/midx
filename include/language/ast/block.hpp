@@ -35,10 +35,10 @@ namespace as {
 			// -- public members ----------------------------------------------
 
 			/* params start index */
-			ml::usz ps;
+			mx::usz ps;
 
 			/* params count */
-			ml::usz pc;
+			mx::usz pc;
 
 
 			// -- public lifecycle --------------------------------------------
@@ -47,7 +47,7 @@ namespace as {
 			block(void) = delete;
 
 			/* token constructor */
-			block(tk::token& tk, const ml::usz ps) noexcept
+			block(tk::token& tk, const mx::usz ps) noexcept
 			: _specifier{&tk},
 			  _spec_id{sp::to_id(tk.lexeme)},
 			  _identifier{nullptr},

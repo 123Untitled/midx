@@ -5,7 +5,7 @@
 
 
 /* now */
-auto ml::now(void) noexcept -> ml::u64 {
+auto mx::now(void) noexcept -> mx::u64 {
 	return ::mach_absolute_time()
-		* ml::timebase::absolute_to_nano();
+		* mx::timebase::absolute_to_nano();
 }

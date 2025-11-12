@@ -10,30 +10,30 @@
 // -- private static members --------------------------------------------------
 
 /* write end */
-int ml::signal::_wr = -1;
+int mx::signal::_wr = -1;
 
 
 // -- private static methods --------------------------------------------------
 
 /* signal handler */
-auto ml::signal::_handler(const int sig) noexcept -> void {
-	::write(self::_wr, &sig, sizeof(int));
+auto mx::signal::_handler(const int sig) noexcept -> void {
+	static_cast<void>(::write(self::_wr, &sig, sizeof(int)));
 }
 
 
 // -- public lifecycle --------------------------------------------------------
 
 /* monitor constructor */
-ml::signal::signal(const ml::monitor& monitor)
-: ml::watcher{}, _fds{-1, -1} {
+mx::signal::signal(const mx::monitor& monitor)
+: mx::watcher{}, _fds{-1, -1} {
 
 	if (::pipe(_fds) == -1)
-		throw ml::system_error{"pipe"};
+		throw mx::system_error{"pipe"};
 
 	self::_wr = _fds[1U];
 
 	// subscribe to monitor
-	monitor.subscribe(*this);
+	monitor.add_read(*this);
 
 	struct ::sigaction sa{};
 	sa.sa_handler = self::_handler;
@@ -43,7 +43,7 @@ ml::signal::signal(const ml::monitor& monitor)
 	for (int i = 1; i < NSIG; ++i) {
 
 		if (::sigaction(i, &sa, nullptr) == -1 && errno != EINVAL)
-			throw ml::system_error{"sigaction"};
+			throw mx::system_error{"sigaction"};
 	}
 }
 
@@ -92,7 +92,7 @@ static auto signal_str(const int sig) -> const char* {
 // -- public overrides --------------------------------------------------------
 
 /* on event */
-auto ml::signal::on_event(ml::application& app, const struct ::kevent& ev) -> void {
+auto mx::signal::on_event(mx::application& app, const struct ::kevent& ev) -> void {
 
 	if ((ev.filter != EVFILT_READ))
 		return;
@@ -102,7 +102,7 @@ auto ml::signal::on_event(ml::application& app, const struct ::kevent& ev) -> vo
 	const ::ssize_t res = ::read(_fds[0U], &sig, sizeof(int));
 
 	if (res == -1)
-		throw ml::system_error{"read"};
+		throw mx::system_error{"read"};
 
 	::write(STDOUT_FILENO, "signal: ", 8U);
 	const char* desc = signal_str(sig);
@@ -152,28 +152,7 @@ auto ml::signal::on_event(ml::application& app, const struct ::kevent& ev) -> vo
 		//case SIGIO:
 }
 
-/* make add */
-auto ml::signal::make_add(void) noexcept -> struct ::kevent {
-	const struct ::kevent ev {
-		.ident  = static_cast<::uintptr_t>(_fds[0U]),
-		.filter = EVFILT_READ,
-		.flags  = EV_ADD | EV_ENABLE,
-		.fflags = 0U,
-		.data   = 0,
-		.udata  = this
-	};
-	return ev;
-}
-
-/* make del */
-auto ml::signal::make_del(void) const noexcept -> struct ::kevent {
-	const struct ::kevent ev {
-		.ident  = static_cast<::uintptr_t>(_fds[0U]),
-		.filter = EVFILT_READ,
-		.flags  = EV_DELETE,
-		.fflags = 0U,
-		.data   = 0,
-		.udata  = nullptr
-	};
-	return ev;
+/* ident */
+auto mx::signal::ident(void) const noexcept -> int {
+	return _fds[0U];
 }

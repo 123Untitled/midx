@@ -62,14 +62,14 @@ namespace sx {
 					// -- public operators ------------------------------------
 
 					/* function operator */
-					auto operator()(const self& key) const noexcept -> ml::usz {
+					auto operator()(const self& key) const noexcept -> mx::usz {
 
 						// assume token is not anonymous
 						//auto&  tk = key._block->identifier();
 						//sp::id id = key._block->spec_id();
 						//
-						//ml::usz h = tk.lexeme.hash();
-						//return  h ^ static_cast<ml::usz>(id)
+						//mx::usz h = tk.lexeme.hash();
+						//return  h ^ static_cast<mx::usz>(id)
 						//		  + 0x9e3779b9 + (h << 6U)
 						//					   + (h >> 2U);
 
