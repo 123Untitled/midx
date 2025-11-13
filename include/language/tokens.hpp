@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+
+
 // -- T K  N A M E S P A C E --------------------------------------------------
 
 namespace tk {
@@ -17,26 +19,40 @@ namespace tk {
 
 	/* token ids */
 	enum : tk::id {
-		bracket_open,
-		bracket_close,
-		at_sign,
+
+		// () [] {}
+		round_open,
+		round_close,
+		square_open,
+		square_close,
+		curly_open,
+		curly_close,
+
+		// = + - * /
+		equal,
+		plus,
+		hyphen,
+		asterisk,
 		slash,
+
+		// @ . &
+		at_sign,
 		dot,
 		ampersand,
-		hyphen,
-		plus,
+
 		text,
-		string,
 		note,
 		binary,
 		octal,
 		decimal,
 		hexadecimal,
+		comment,
+		invalid,
 		end_of_tokens,
 
-		comment,
+
+		//string,
 		whitespace,
-		invalid,
 		nested_block,
 		specifier,
 		param_dot,
@@ -45,25 +61,39 @@ namespace tk {
 	};
 
 	constexpr const char* token_names[] {
-		"bracket_open",
-		"bracket_close",
-		"at_sign",
+
+		// () [] {}
+		"round_open",
+		"round_close",
+		"square_open",
+		"square_close",
+		"curly_open",
+		"curly_close",
+
+		// = + - * /
+		"equal",
+		"plus",
+		"hyphen",
+		"asterisk",
 		"slash",
+
+		// @ . &
+		"at_sign",
 		"dot",
 		"ampersand",
-		"hyphen",
-		"plus",
+
+
 		"text",
-		"string",
 		"note",
 		"binary",
 		"octal",
 		"decimal",
 		"hexadecimal",
+		"invalid",
 		"end_of_tokens",
+
 		"comment",
 		"whitespace",
-		"invalid",
 		"nested_block",
 		"specifier",
 		"param_dot",

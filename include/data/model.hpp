@@ -5,6 +5,7 @@
 #include "data/sequence.hpp"
 #include "data/track.hpp"
 
+#include "data/node.hpp"
 #include "midi/midi_engine.hpp"
 
 #include <sstream>
@@ -13,6 +14,7 @@
 // -- M X  N A M E S P A C E --------------------------------------------------
 
 namespace mx {
+
 
 
 	// -- M O D E L -----------------------------------------------------------
@@ -32,7 +34,8 @@ namespace mx {
 			// -- private members ---------------------------------------------
 
 			/* sequences */
-			std::vector<mx::sequence> _seqs;
+			//std::vector<mx::sequence> _seqs;
+			std::vector<mx::atomic_type> _seqs;
 
 			/* tracks */
 			std::vector<mx::track> _tracks;
@@ -73,7 +76,8 @@ namespace mx {
 				return idx;
 			}
 
-			auto get_sequence(const mx::usz idx) noexcept -> mx::sequence& {
+			auto get_sequence(const mx::usz idx) noexcept -> mx::atomic_type& {
+			//auto get_sequence(const mx::usz idx) noexcept -> mx::sequence& {
 				return _seqs[idx];
 			}
 
@@ -94,13 +98,13 @@ namespace mx {
 			}
 
 			auto debug(void) const -> void {
-				std::cout << "MODEL DEBUG:\n";
-
-				std::cout << "  TRACKS: " << _tracks.size() << "\n";
-				for (mx::usz i = 0U; i < _tracks.size(); ++i) {
-					std::cout << "  TRACK[" << i << "] DEBUG:\n";
-					_tracks[i].debug(_seqs);
-				}
+				//std::cout << "MODEL DEBUG:\n";
+				//
+				//std::cout << "  TRACKS: " << _tracks.size() << "\n";
+				//for (mx::usz i = 0U; i < _tracks.size(); ++i) {
+				//	std::cout << "  TRACK[" << i << "] DEBUG:\n";
+				//	_tracks[i].debug(_seqs);
+				//}
 			}
 
 	};

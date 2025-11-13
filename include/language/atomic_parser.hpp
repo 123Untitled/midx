@@ -5,6 +5,7 @@
 #include "language/ast/param_view.hpp"
 #include "language/ast/value.hpp"
 #include "language/diagnostic.hpp"
+#include "data/node.hpp"
 #include "atoi.hpp"
 
 
@@ -44,7 +45,10 @@ namespace sx {
 			tk::token* _current;
 
 			/* sequence reference */
-			mx::sequence* _seq;
+			//mx::sequence* _seq;
+			mx::atomic_type* _seq;
+
+			std::vector<mx::node*> _stack;
 
 			/* diagnostic reference */
 			an::diagnostic* _diag;
@@ -65,44 +69,44 @@ namespace sx {
 			auto convert(void) -> void {
 				mx::i8 v = mx::convert_bin<ID, neg>(*_current, *_diag);
 
-				if constexpr (ID == sp::id::trig) {
-					_seq->push_trig(v, *_current, _sign);
-				}
-				else
-					_seq->push(v, *_current, _sign);
+				//if constexpr (ID == sp::id::trig) {
+				//	_seq->push_trig(v, *_current, _sign);
+				//}
+				//else
+				//	_seq->push(v, *_current, _sign);
 			}
 
 			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, mx::dec>)
 			auto convert(void) -> void {
 				mx::i8 v = mx::convert_dec<ID, neg>(*_current, *_diag);
 
-				if constexpr (ID == sp::id::trig) {
-					_seq->push_trig(v, *_current, _sign);
-				}
-				else
-					_seq->push(v, *_current, _sign);
+				//if constexpr (ID == sp::id::trig) {
+				//	_seq->push_trig(v, *_current, _sign);
+				//}
+				//else
+				//	_seq->push(v, *_current, _sign);
 			}
 
 			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, mx::oct>)
 			auto convert(void) -> void {
 				mx::i8 v = mx::convert_oct<ID, neg>(*_current, *_diag);
 
-				if constexpr (ID == sp::id::trig) {
-					_seq->push_trig(v, *_current, _sign);
-				}
-				else
-					_seq->push(v, *_current, _sign);
+				//if constexpr (ID == sp::id::trig) {
+				//	_seq->push_trig(v, *_current, _sign);
+				//}
+				//else
+				//	_seq->push(v, *_current, _sign);
 			}
 
 			template <sp::id ID, bool neg, typename B> requires (std::same_as<B, mx::hex>)
 			auto convert(void) -> void {
 				mx::i8 v = mx::convert_hex<ID, neg>(*_current, *_diag);
 
-				if constexpr (ID == sp::id::trig) {
-					_seq->push_trig(v, *_current, _sign);
-				}
-				else
-					_seq->push(v, *_current, _sign);
+				//if constexpr (ID == sp::id::trig) {
+				//	_seq->push_trig(v, *_current, _sign);
+				//}
+				//else
+				//	_seq->push(v, *_current, _sign);
 			}
 
 
@@ -276,7 +280,30 @@ namespace sx {
 						_current->id = tk::invalid;
 					}
 				}
+			}
 
+			auto state_begin(void) -> void {
+
+				switch (_current->id) {
+
+					case tk::plus:
+					case tk::hyphen:
+					case tk::decimal:
+					case tk::hexadecimal:
+					case tk::octal:
+					case tk::binary:
+					case tk::note: {
+						// create node
+						auto value = std::make_unique<mx::value>(0);
+						auto& node = *value;
+						break;
+					}
+
+					default: {
+						_diag->push_error("invalid value", *_current);
+						_current->id = tk::invalid;
+					}
+				}
 			}
 
 
@@ -285,7 +312,8 @@ namespace sx {
 
 
 			template <sp::id ID>
-			auto parse(const as::param_view& pv, mx::sequence& seq, an::diagnostic& diag) -> void {
+			auto parse(const as::param_view& pv, mx::atomic_type& seq, an::diagnostic& diag) -> void {
+			//auto parse(const as::param_view& pv, mx::sequence& seq, an::diagnostic& diag) -> void {
 
 				// check valid specifier ID
 				static_assert(ID >= sp::id::trig && ID <= sp::id::prob,
@@ -294,7 +322,11 @@ namespace sx {
 				_sign  = mx::signature{};
 				_seq   = &seq;
 				_diag  = &diag;
-				_state = &self::state_default<ID>;
+				//_state = &self::state_default<ID>;
+				_state = &self::state_begin;
+
+				_stack.clear();
+				_stack.push_back(_seq->root_node());
 
 				// loop over values
 				for (const auto& v : pv.values()) {

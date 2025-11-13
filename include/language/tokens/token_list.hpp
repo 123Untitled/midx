@@ -104,7 +104,7 @@ namespace tk {
 			}
 
 			/* debug */
-			auto debug(const mx::byte_range&) -> void;
+			auto debug(void) -> void;
 
 
 			// -- public operators --------------------------------------------

@@ -34,12 +34,12 @@ auto tk::token_list::end(void) noexcept -> tk::iterator {
 
 
 /* debug */
-auto tk::token_list::debug(const mx::byte_range& br) -> void {
+auto tk::token_list::debug(void) -> void {
 
 
 
 
-	const mx::u8* buffer_start = br.begin;
+	//const mx::u8* buffer_start = br.begin;
 	std::cout << "\x1b[36m--- TOKEN LIST DEBUG ---\x1b[0m\n";
 
 	mx::usz max_name = 0U;
@@ -62,7 +62,7 @@ auto tk::token_list::debug(const mx::byte_range& br) -> void {
 
 	//for (mx::usz i = 0; i < _tokens.size(); ++i) {
 	mx::usz i = 0;
-	for (auto& t : *this) {
+	for (auto t : *this) {
         //const auto& t = _tokens[i];
 
         // Extraire le texte du token

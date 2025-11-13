@@ -106,10 +106,10 @@ namespace sx {
 							_atom_parser.template parse<ID>(pv, seq, *_diag);
 							break;
 						case pa::id::rpt:
-							bool_parse(pv, seq);
+							//bool_parse(pv, seq);
 							break;
 						case pa::id::lnk:
-							bool_parse(pv, seq);
+							//bool_parse(pv, seq);
 							break;
 						default:
 							break;

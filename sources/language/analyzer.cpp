@@ -34,10 +34,12 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 	// lex
 	_lexer.lex(br, _tokens, _diagnostic);
 
-	// parse
-	_parser.parse(_tokens, _diagnostic, _tree);
+	_tokens.debug();
 
-	_builder.build(_tree, _model, _diagnostic);
+	// parse
+	//_parser.parse(_tokens, _diagnostic, _tree);
+
+	//_builder.build(_tree, _model, _diagnostic);
 
 	//_tree.debug();
 	//_tokens.debug(br);

@@ -272,29 +272,52 @@ auto lx::lexer::_lex(void) -> void {
 				continue;
 			}
 
+			// () [] {}
+			case '(':
+				self::push_byte_token<tk::round_open>();
+				break;
+			case ')':
+				self::push_byte_token<tk::round_close>();;
+				break;
 			case '[':
-				self::push_byte_token<tk::bracket_open>();
+				self::push_byte_token<tk::square_open>();
 				break;
 			case ']':
-				self::push_byte_token<tk::bracket_close>();
+				self::push_byte_token<tk::square_close>();
 				break;
-			case '@':
-				self::push_byte_token<tk::at_sign>();
+			case '{':
+				self::push_byte_token<tk::curly_open>();
+				break;
+			case '}':
+				self::push_byte_token<tk::curly_close>();;
+				break;
+
+			// = + - * /
+			case '=':
+				self::push_byte_token<tk::equal>();
+				break;
+			case '+':
+				self::push_byte_token<tk::plus>();
+				break;
+			case '-':
+				self::push_byte_token<tk::hyphen>();
+				break;
+			case '*':
+				self::push_byte_token<tk::asterisk>();
 				break;
 			case '/':
 				self::push_byte_token<tk::slash>();
+				break;
+
+			// @ . &
+			case '@':
+				self::push_byte_token<tk::at_sign>();
 				break;
 			case '.':
 				self::push_byte_token<tk::dot>();
 				break;
 			case '&':
 				self::push_byte_token<tk::ampersand>();
-				break;
-			case '-':
-				self::push_byte_token<tk::hyphen>();
-				break;
-			case '+':
-				self::push_byte_token<tk::plus>();
 				break;
 
 			default:

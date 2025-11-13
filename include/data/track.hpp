@@ -3,6 +3,7 @@
 
 #include "data/sequence.hpp"
 #include "midi/midi_engine.hpp"
+#include "data/node.hpp"
 
 #include <sstream>
 
@@ -90,7 +91,9 @@ namespace mx {
 
 
 			/* play */
-			auto play(std::stringstream& ss, mx::midi_engine& engine, std::vector<mx::sequence>& seqs, const mx::u64 timeline) noexcept -> void {
+			//auto play(std::stringstream& ss, mx::midi_engine& engine, std::vector<mx::sequence>& seqs, const mx::u64 timeline) noexcept -> void {
+			auto play(std::stringstream& ss, mx::midi_engine& engine,
+					  std::vector<mx::atomic_type>& seqs, const mx::u64 timeline) noexcept -> void {
 
 				for (mx::usz i = 0U; i < mx::seq_type::seq_count; ++i) {
 
@@ -99,6 +102,10 @@ namespace mx {
 
 					const auto& seq = seqs[_indices[i]];
 
+					const mx::i8 n = seq.evaluate(timeline, mx::seq_defs[i]);
+					std::cout << (mx::u32)n << " ";
+
+					/*
 					if (seq.empty() == true)
 						continue;
 
@@ -112,8 +119,10 @@ namespace mx {
 					   << ",\"s\":" << t->col_head
 					   << ",\"e\":" << t->col_tail
 					   << ",\"g\":\"" << group << "\"},";
+					   */
 				}
 
+				/*
 				if (_values[mx::seq_type::TR] == 0)
 					return;
 
@@ -155,6 +164,7 @@ namespace mx {
 
 				// send note on event
 				engine.note_on(chan, note, velo, when);
+				*/
 			}
 
 
