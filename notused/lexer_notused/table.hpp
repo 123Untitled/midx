@@ -205,7 +205,7 @@ namespace lx {
 	//
 	//	  // lx::on_enter<&lx::lexer::checkpoint>,
 	//	  // lx::in_state<cc::lower>,
-	//	  // lx::on_leave<&lx::lexer::push_token<tk::identifier>>,
+	//	  // lx::on_leave<&lx::lexer::push_token<tk::raw::identifier>>,
 	//	  // lx::route<cc::digit,   lx::digits_state>,
 	//	  // lx::route<cc::control, lx::initial_state>
 	//
@@ -341,7 +341,7 @@ namespace lx {
 	//
 	//class identifier_state final : public lx::state<"indentifier",
 	//	lx::begin<&lxr::checkpoint>,
-	//	lx::end<&lxr::push_token<tk::identifier>>,
+	//	lx::end<&lxr::push_token<tk::raw::identifier>>,
 	//	lx::process_list<>,
 	//	lx::route<cc::line_feed, lx::initial_state /* newline*/>,
 	//	lx::route<cc::carriage_return, lx::return_state>
@@ -389,7 +389,7 @@ namespace lx {
 	//using identifier_state = lx::state<"identifier",
 	//	lx::on_enter<&lx::lexer::checkpoint>,
 	//	lx::in_state<&lx::count>,
-	//	lx::on_leave<&lx::lexer::push_token<tk::identifier>>,
+	//	lx::on_leave<&lx::lexer::push_token<tk::raw::identifier>>,
 	//	lx::routes<
 	//		lx::route<cc::digit, lx::lexer::switch_state<lx::in_digit>,
 	//		lx::route<cc::other, lx::lexer::switch_state<lx::initial>
@@ -509,20 +509,20 @@ namespace lx {
 	//	lx::add<
 	//		cc::control,
 	//		&lx::lexer::push_error<"invalid character">,
-	//		&lx::lexer::push_token<tk::identifier>
+	//		&lx::lexer::push_token<tk::raw::identifier>
 	//	>,
 	//
 	//	// line feed
 	//	lx::add<
 	//		cc::line_feed,
-	//		&lx::lexer::push_token<tk::identifier>,
+	//		&lx::lexer::push_token<tk::raw::identifier>,
 	//		&lx::lexer::newline
 	//	>,
 	//
 	//	// carriage return
 	//	lx::add<
 	//		cc::carriage_return,
-	//		&lx::lexer::push_token<tk::identifier>,
+	//		&lx::lexer::push_token<tk::raw::identifier>,
 	//		&lx::lexer::newline,
 	//		&lx::lexer::switch_state<lx::on_return>
 	//	>,
@@ -536,7 +536,7 @@ namespace lx {
 	//					 cc::digit,
 	//					 cc::upper,
 	//					 cc::extended>,
-	//		&lx::lexer::push_token<tk::identifier>,
+	//		&lx::lexer::push_token<tk::raw::identifier>,
 	//		&lx::lexer::switch_state<lx::initial>
 	//	>
 	//

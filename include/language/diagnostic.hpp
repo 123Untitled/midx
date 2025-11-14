@@ -13,90 +13,46 @@ namespace an {
 
 		public:
 
-			enum class level_type : mx::usz {
-				WARNING,
-				ERROR
-			};
-
 			struct entry final {
-				level_type  level;
 				const char*   msg;
-				mx::usz      line;
-				mx::usz col_start;
-				mx::usz   col_end;
+				tk::raw::range   range;
 			};
 
 
 			std::vector<entry> _entries;
 
-			template <level_type LEVEL>
 			auto push(const char* msg,
-					  const mx::usz line,
-					  const mx::usz col_start,
-					  const mx::usz col_end) -> void {
+					  const tk::raw::range& range) -> void {
 				_entries.emplace_back(
 						an::diagnostic::entry{
-							LEVEL,
 							msg,
-							line,
-							col_start,
-							col_end
+							range
 						}
 				);
 			}
 
-			auto push_warning(const char* msg,
-							  const tk::token& tk) -> void {
+			auto push(const char* msg,
+					  const tk::raw::token& tk) -> void {
 				_entries.emplace_back(
 						an::diagnostic::entry{
-							level_type::WARNING,
 							msg,
-							tk.line,
-							tk.col_head,
-							tk.col_tail
+							tk.range
 						}
 				);
 			}
 
-			auto push_error(const char* msg,
-							const tk::token& tk) -> void {
+			auto push(const char* msg,
+					  const mx::usz ln,
+					  const mx::usz cs,
+					  const mx::usz ce) -> void {
 				_entries.emplace_back(
 						an::diagnostic::entry{
-							level_type::ERROR,
 							msg,
-							tk.line,
-							tk.col_head,
-							tk.col_tail
-						}
-				);
-			}
-
-			auto push_warning(const char* msg,
-							  const mx::usz line,
-							  const mx::usz col_start,
-							  const mx::usz col_end) -> void {
-				_entries.emplace_back(
-						an::diagnostic::entry{
-							level_type::WARNING,
-							msg,
-							line,
-							col_start,
-							col_end
-						}
-				);
-			}
-
-			auto push_error(const char* msg,
-							const mx::usz line,
-							const mx::usz col_start,
-							const mx::usz col_end) -> void {
-				_entries.emplace_back(
-						an::diagnostic::entry{
-							level_type::ERROR,
-							msg,
-							line,
-							col_start,
-							col_end
+							tk::raw::range{
+								ln,
+								cs,
+								ce
+							}
 						}
 				);
 			}

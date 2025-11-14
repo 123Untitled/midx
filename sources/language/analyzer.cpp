@@ -20,11 +20,6 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 
 	_data = std::move(data);
 
-	const mx::byte_range br{
-		reinterpret_cast<const mx::u8*>(_data.data()),
-		reinterpret_cast<const mx::u8*>(_data.data() + _data.size())
-	};
-
 		_tokens.clear();
 		  _tree.clear();
 	_diagnostic.clear();
@@ -32,12 +27,14 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 	   _builder.clear();
 
 	// lex
-	_lexer.lex(br, _tokens, _diagnostic);
+	_lexer.lex(_data, _tokens, _diagnostic);
 
-	_tokens.debug();
+	//_tokens.debug();
 
 	// parse
-	//_parser.parse(_tokens, _diagnostic, _tree);
+	_parser.parse(_tokens, _diagnostic, _tree);
+
+	_tokens.debug_syn();
 
 	//_builder.build(_tree, _model, _diagnostic);
 
@@ -50,24 +47,53 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 	std::stringstream ss;
 
 	// --- premier objet : highlights ---
+	//ss << "{\"type\":\"highlight\",\"highlights\":[";
+
+	//bool first = true;
+	//for (mx::usz i = 0U; i < _tokens.raw_size(); ++i) {
+	//	const auto& t           = _tokens[i];
+	//	const char* group       = tk::raw::vim_highlight[t.id];
+	//
+	//	if (!first)
+	//		ss << ",";
+	//	first = false;
+	//
+	//	ss << "{\"l\":" << t.range.ln
+	//	   << ",\"s\":" << t.range.cs
+	//	   << ",\"e\":" << t.range.ce
+	//	   << ",\"g\":\"" << group << "\"}";
+	//}
+	//
+	//ss << "]}\r\n";
+
+
 	ss << "{\"type\":\"highlight\",\"highlights\":[";
-
 	bool first = true;
-	for (mx::usz i = 0U; i < _tokens.size(); ++i) {
-		const auto& t           = _tokens[i];
-		const char* group       = tk::token_to_highlight[t.id];
+	for (const auto& sv : _tokens.syn_tokens()) {
 
-		if (!first)
-			ss << ",";
-		first = false;
+		const auto& t           = sv.token();
+		const char* group       = tk::syn::vim_highlight[t.id];
 
-		ss << "{\"l\":" << t.line
-		   << ",\"s\":" << t.col_head
-		   << ",\"e\":" << t.col_tail
-		   << ",\"g\":\"" << group << "\"}";
+
+		for (const auto& mt : sv) {
+			if (!first)
+				ss << ",";
+			else
+				first = false;
+			ss << "{\"l\":" << mt.range.ln
+			   << ",\"s\":" << mt.range.cs
+			   << ",\"e\":" << mt.range.ce
+			   << ",\"g\":\"" << group << "\"}";
+
+		}
 	}
 
 	ss << "]}\r\n";
+
+	int i = 0;
+
+	i += 3;
+
 
 	// --- deuxième objet : diagnostics ---
 	ss << "{\"type\":\"diagnostic\",\"diagnostics\":[";
@@ -80,9 +106,9 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 		first = false;
 
 		ss << "{\"m\":\"" << e.msg
-		   << "\",\"l\":" << e.line
-			<< ",\"s\":" << e.col_start
-			<< ",\"e\":" << e.col_end
+		   << "\",\"l\":" << e.range.ln
+			<< ",\"s\":" << e.range.cs
+			<< ",\"e\":" << e.range.ce
 			<< "}";
 	}
 

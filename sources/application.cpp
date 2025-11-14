@@ -21,6 +21,8 @@ mx::application::application(void)
 // -- private methods ---------------------------------------------------------
 
 auto mx::application::reparse(std::string&& data) -> void {
+	// clear screen
+	::write(STDOUT_FILENO, "\x1b[H\x1b[0J", 7);
 
 	auto& analyzer = _analyzers[_active];
 

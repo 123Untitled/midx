@@ -1,7 +1,12 @@
 #ifndef language_tokens_list_hpp
 #define language_tokens_list_hpp
 
-#include "byte_range.hpp"
+#include "language/tokens/raw_iterator.hpp"
+#include "language/tokens/map_iterator.hpp"
+#include "language/tokens/syn_iterator.hpp"
+
+#include "language/tokens/token_view.hpp"
+
 #include "language/tokens.hpp"
 #include <vector>
 
@@ -13,31 +18,72 @@ namespace tk {
 
 	// -- forward declarations ------------------------------------------------
 
-	/* iterator */
-	class iterator;
+	class tokens;
 
 
-	// -- L I S T -------------------------------------------------------------
+	// -- T O K E N S ---------------------------------------------------------
 
-	class token_list final {
+	class tokens final {
 
 
 		// -- friends ---------------------------------------------------------
 
-		/* iterator as friend */
-		friend class tk::iterator;
+		/* raw_iterator as friend */
+		friend class raw_iterator;
+
+		/* map_iterator as friend */
+		friend class map_iterator;
+
+		/* syn_iterator as friend */
+		friend class syn_iterator;
+
+		/* const_raw_iterator as friend */
+		friend class const_raw_iterator;
+
+		/* const_map_iterator as friend */
+		friend class const_map_iterator;
+
+		/* const_syn_iterator as friend */
+		friend class const_syn_iterator;
+
+
+		/* syn_view as friend */
+		friend class syn_view;
+
+		/* const_syn_view as friend */
+		friend class const_syn_view;
 
 
 		private:
 
+			// -- private types -----------------------------------------------
+
+			/* self type */
+			using self = tk::tokens;
+
 
 			// -- private members ---------------------------------------------
 
-			/* tokens */
-			std::vector<tk::token> _tokens;
+			/* ranges */
+			std::vector<tk::range> _ranges;
 
-			/* parse indices */
-			std::vector<mx::usz> _parse_indices;
+
+
+
+
+			/* map tokens */
+			std::vector<mx::usz> _map;
+
+			/* raw tokens */
+			std::vector<tk::raw::token> _raw;
+
+			/* syn tokens */
+			std::vector<tk::syn::token> _syn;
+
+
+			std::vector<tk::chunk> _chunks;
+			std::vector<tk::token> _tokens;
+			std::vector<mx::usz> _filtered;
 
 
 		public:
@@ -45,135 +91,118 @@ namespace tk {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			token_list(void) noexcept = default;
+			tokens(void) noexcept = default;
 
 
 			// -- public methods ----------------------------------------------
 
-			/* begin */
-			auto begin(void) noexcept -> tk::iterator;
 
-			/* end */
-			auto end(void) noexcept -> tk::iterator;
+			/* raw tokens */
+			auto raw_tokens(void) noexcept
+				-> tk::raw_iterator;
 
-			/* for each */
-			template <typename F, typename... Tp>
-			auto for_each(F&& f, Tp&&... args) const -> void {
-				for (mx::usz i = 0U; i < _tokens.size(); ++i)
-					f(_tokens[i], std::forward<Tp>(args)...);
-			}
+			/* const raw tokens */
+			auto raw_tokens(void) const noexcept
+				-> tk::const_raw_iterator;
 
-			/* for each parse */
-			template <typename F, typename... Tp>
-			auto for_each_parse(F&& f, Tp&&... args) const -> void {
-				for (mx::usz i = 0U; i < _parse_indices.size(); ++i)
-					f(_tokens[_parse_indices[i]], std::forward<Tp>(args)...);
-			}
+			/* map tokens */
+			auto map_tokens(void) noexcept
+				-> tk::map_iterator;
+
+			/* const map tokens */
+			auto map_tokens(void) const noexcept
+				-> tk::const_map_iterator;
+
+			/* syn tokens iterator */
+			auto syn_tokens(void) noexcept
+				-> tk::syn_iterator;
+
+			/* const syn tokens iterator */
+			auto syn_tokens(void) const noexcept
+				-> tk::const_syn_iterator;
+
 
 
 			// -- public modifiers --------------------------------------------
 
-			/* push token */
-			auto push_token(const tk::token&) -> void;
+			/* push raw token */
+			auto push_raw_token(const tk::raw::token&) -> void;
 
-			/* push parse token */
-			auto push_parse_token(const tk::token&) -> void;
+			/* push map token */
+			auto push_map_token(const tk::raw::token&) -> void;
+
+			/* push syn token */
+			auto push_syn_token(const tk::syn::token&) -> void;
+
+			/* push syn token */
+			auto push_syn_token(const tk::id,
+								const tk::const_map_iterator&,
+								const mx::usz = 1U) -> void;
 
 			/* clear */
 			auto clear(void) noexcept -> void {
-				_tokens.clear();
-				_parse_indices.clear();
+				_map.clear();
+				_raw.clear();
+				_syn.clear();
 			}
 
 
 			// -- public accessors --------------------------------------------
 
-			/* size */
-			auto size(void) const noexcept -> mx::usz {
-				return _tokens.size();
+			/* raw size */
+			auto raw_size(void) const noexcept -> mx::usz {
+				return _raw.size();
 			}
 
-			/* parsable size */
-			auto parsable_size(void) const noexcept -> mx::usz {
-				return _parse_indices.size();
+			/* map size */
+			auto map_size(void) const noexcept -> mx::usz {
+				return _map.size();
 			}
 
-			/* tokens */
-			auto tokens(void) noexcept -> const std::vector<tk::token>& {
-				return _tokens;
+			/* syn size */
+			auto syn_size(void) const noexcept -> mx::usz {
+				return _syn.size();
+			}
+
+
+			// -- public methods ----------------------------------------------
+
+			template <typename F, typename... Tp>
+			inline auto for_each_filtered(F&& fn, Tp&&... args) const -> void {
+
+				tk::token_view tv{_chunks.data()};
+
+				for (const auto& i : _filtered) {
+					tv._token = _tokens.data() + i;
+					fn(tv, std::forward<Tp>(args)...);
+				}
 			}
 
 			/* debug */
-			auto debug(void) -> void;
+			auto debug(void) const -> void;
+			auto debug_syn(void) const -> void;
 
 
 			// -- public operators --------------------------------------------
 
 			/* index operator */
-			auto operator[](const mx::usz index) noexcept -> tk::token& {
-				return _tokens[index];
+			auto operator[](const mx::usz index) noexcept -> const tk::raw::token& {
+				return _raw[index];
 			}
 
-	}; // class token_list
+	}; // class tokens
 
-
-	// -- I T E R A T O R -----------------------------------------------------
-
-	class iterator final {
-
-
-		private:
-
-			// -- private members ---------------------------------------------
-
-			/* list */
-			tk::token_list* _list;
-
-			/* index */
-			mx::usz _index;
-
-
-		public:
-
-			// -- public lifecycle --------------------------------------------
-
-			/* constructor */
-			iterator(tk::token_list& list, const mx::usz index = 0U) noexcept
-			: _list{&list}, _index{index} {
+	inline auto test(void) -> void {
+		tk::tokens tks;
+		tks.for_each_filtered(
+			[](const tk::token_view& tv) static -> void {
+				tv.for_each_chunk(
+					[](const tk::chunk& c) static -> void {
+					}
+				);
 			}
-
-
-			// -- public operators --------------------------------------------
-
-			/* pre-increment operator */
-			auto operator++(void) noexcept -> tk::iterator& {
-				++_index;
-				return *this;
-			}
-
-			/* post-increment operator */
-			auto operator++(int) noexcept -> tk::iterator {
-				tk::iterator temp{*this};
-				++_index;
-				return temp;
-			}
-
-			/* dereference operator */
-			auto operator*(void) const noexcept -> tk::token& {
-				return _list->_tokens[_list->_parse_indices[_index]];
-			}
-
-			/* equality operator */
-			auto operator==(const tk::iterator& other) const noexcept -> bool {
-				return _index == other._index;
-			}
-
-			/* inequality operator */
-			auto operator!=(const tk::iterator& other) const noexcept -> bool {
-				return _index != other._index;
-			}
-
-	}; // class iterator
+		);
+	}
 
 } // namespace tk
 

@@ -21,13 +21,13 @@ namespace as {
 			// -- private members ---------------------------------------------
 
 			/* specifier */
-			tk::token* _specifier;
+			tk::raw::token* _specifier;
 
 			/* spec id */
 			sp::id _spec_id;
 
 			/* identifier */
-			tk::token* _identifier;
+			tk::raw::token* _identifier;
 
 
 		public:
@@ -47,23 +47,23 @@ namespace as {
 			block(void) = delete;
 
 			/* token constructor */
-			block(tk::token& tk, const mx::usz ps) noexcept
+			block(tk::raw::token& tk, const mx::usz ps) noexcept
 			: _specifier{&tk},
 			  _spec_id{sp::to_id(tk.lexeme)},
 			  _identifier{nullptr},
 			  ps{ps}, pc{0U} {
 
 				// invalidate token if spec id is invalid
-				_specifier->id = (_spec_id == sp::id::invalid)
-							   ? tk::invalid
-							   : tk::specifier;
+				//_specifier->id = (_spec_id == sp::id::invalid)
+				//			   ? tk::raw::invalid
+				//			   : tk::specifier;
 			}
 
 
 			// -- public modifiers --------------------------------------------
 
 			/* identifier */
-			auto identifier(tk::token* tk) noexcept -> void {
+			auto identifier(tk::raw::token* tk) noexcept -> void {
 				_identifier = tk;
 			}
 
@@ -71,12 +71,12 @@ namespace as {
 			// -- public accessors --------------------------------------------
 
 			/* specifier */
-			auto specifier(void) const noexcept -> tk::token& {
+			auto specifier(void) const noexcept -> tk::raw::token& {
 				return *_specifier;
 			}
 
 			/* const specifier */
-			auto specifier(void) noexcept -> const tk::token& {
+			auto specifier(void) noexcept -> const tk::raw::token& {
 				return *_specifier;
 			}
 
@@ -88,12 +88,12 @@ namespace as {
 
 
 			/* identifier */
-			auto identifier(void) noexcept -> tk::token& {
+			auto identifier(void) noexcept -> tk::raw::token& {
 				return *_identifier;
 			}
 
 			/* const identifier */
-			auto identifier(void) const noexcept -> const tk::token& {
+			auto identifier(void) const noexcept -> const tk::raw::token& {
 				return *_identifier;
 			}
 

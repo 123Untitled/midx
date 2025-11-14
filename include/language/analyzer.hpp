@@ -38,8 +38,8 @@ namespace mx {
 			/* parser */
 			pr::parser _parser;
 
-			/* token list */
-			tk::token_list _tokens;
+			/* tokens */
+			tk::tokens _tokens;
 
 			/* ast */
 			as::tree _tree;

@@ -42,7 +42,7 @@ namespace sx {
 			action_type _state;
 
 			/* current */
-			tk::token* _current;
+			tk::raw::token* _current;
 
 			/* sequence reference */
 			//mx::sequence* _seq;
@@ -120,39 +120,39 @@ namespace sx {
 
 				switch (_current->id) {
 
-					case tk::plus:
-						return;
+					//case tk::plus:
+					//	return;
+					//
+					//case tk::hyphen:
+					//	_state = &self::state_default<ID>;
+					//	return;
+					//
+					//case tk::decimal:
+					//	convert<ID, true, mx::dec>();
+					//	_state = &self::state_default<ID>;
+					//	return;
+					//
+					//case tk::hexadecimal:
+					//	convert<ID, true, mx::hex>();
+					//	_state = &self::state_default<ID>;
+					//	return;
+					//
+					//case tk::octal:
+					//	convert<ID, true, mx::oct>();
+					//	_state = &self::state_default<ID>;
+					//	return;
+					//
+					//case tk::binary: {
+					//	convert<ID, true, mx::bin>();
+					//	_state = &self::state_default<ID>;
+					//	return;
+					//}
 
-					case tk::hyphen:
-						_state = &self::state_default<ID>;
-						return;
-
-					case tk::decimal:
-						convert<ID, true, mx::dec>();
-						_state = &self::state_default<ID>;
-						return;
-
-					case tk::hexadecimal:
-						convert<ID, true, mx::hex>();
-						_state = &self::state_default<ID>;
-						return;
-
-					case tk::octal:
-						convert<ID, true, mx::oct>();
-						_state = &self::state_default<ID>;
-						return;
-
-					case tk::binary: {
-						convert<ID, true, mx::bin>();
-						_state = &self::state_default<ID>;
-						return;
-					}
-
-					default: {
-						_diag->push_error("invalid value", *_current);
-						_current->id = tk::invalid;
-						break;
-					}
+					//default: {
+					//	_diag->push("invalid value", *_current);
+					//	_current->id = tk::raw::invalid;
+					//	break;
+					//}
 				}
 
 			}
@@ -163,20 +163,20 @@ namespace sx {
 
 				switch (_current->id) {
 
-					case tk::decimal: {
-						mx::i8 v = mx::convert<mx::overflow<sp::id::prob>, mx::dec, false>(*_current, *_diag);
-						_num = static_cast<mx::u32>(v);
-						_state = &self::expect_slash<ID>;
-						_current->id = tk::signature;
-						return;
-					}
-
-					default: {
-						_diag->push_error("invalid numerator value", *_current);
-						_current->id = tk::invalid;
-						_state = &self::state_default<ID>;
-						break;
-					}
+					//case tk::decimal: {
+					//	mx::i8 v = mx::convert<mx::overflow<sp::id::prob>, mx::dec, false>(*_current, *_diag);
+					//	_num = static_cast<mx::u32>(v);
+					//	_state = &self::expect_slash<ID>;
+					//	//_current->id = tk::signature;
+					//	return;
+					//}
+					//
+					//default: {
+					//	_diag->push("invalid numerator value", *_current);
+					//	_current->id = tk::raw::invalid;
+					//	_state = &self::state_default<ID>;
+					//	break;
+					//}
 				}
 			}
 
@@ -187,17 +187,17 @@ namespace sx {
 
 				switch (_current->id) {
 
-					case tk::slash:
-						_state = &self::expect_denominator<ID>;
-						_current->id = tk::signature;
-						return;
-
-					default: {
-						_diag->push_error("expected '/' after denominator", *_current);
-						_current->id = tk::invalid;
-						_state = &self::state_default<ID>;
-						break;
-					}
+					//case tk::slash:
+					//	_state = &self::expect_denominator<ID>;
+					//	//_current->id = tk::signature;
+					//	return;
+					//
+					//default: {
+					//	_diag->push("expected '/' after denominator", *_current);
+					//	_current->id = tk::raw::invalid;
+					//	_state = &self::state_default<ID>;
+					//	break;
+					//}
 				}
 			}
 
@@ -208,21 +208,21 @@ namespace sx {
 
 				switch (_current->id) {
 
-					case tk::decimal: {
-						mx::i8 v = mx::convert<mx::overflow<sp::id::prob>, mx::dec, false>(*_current, *_diag);
-						_den = static_cast<mx::u32>(v);
-						_sign = mx::signature{_num, _den};
-						_state = &self::state_default<ID>;
-						_current->id = tk::signature;
-						return;
-					}
-
-					default: {
-						_diag->push_error("invalid denominator value", *_current);
-						_current->id = tk::invalid;
-						_state = &self::state_default<ID>;
-						break;
-					}
+					//case tk::decimal: {
+					//	mx::i8 v = mx::convert<mx::overflow<sp::id::prob>, mx::dec, false>(*_current, *_diag);
+					//	_den = static_cast<mx::u32>(v);
+					//	_sign = mx::signature{_num, _den};
+					//	_state = &self::state_default<ID>;
+					//	//_current->id = tk::signature;
+					//	return;
+					//}
+					//
+					//default: {
+					//	_diag->push("invalid denominator value", *_current);
+					//	_current->id = tk::raw::invalid;
+					//	_state = &self::state_default<ID>;
+					//	break;
+					//}
 				}
 			}
 
@@ -233,52 +233,52 @@ namespace sx {
 
 				switch (_current->id) {
 
-					case tk::plus:
-						return;
-
-					case tk::hyphen: {
-						if constexpr (mx::overflow<ID>::neg == false) {
-							_diag->push_error("negative values not allowed", *_current);
-							_current->id = tk::invalid;
-							break;
-						}
-						else {
-							_state = &self::state_negative<ID>;
-							break;
-						}
-					}
-
-					case tk::decimal:
-						convert<ID, false, mx::dec>();
-						return;
-
-					case tk::hexadecimal:
-						convert<ID, false, mx::hex>();
-						return;
-
-					case tk::octal:
-						convert<ID, false, mx::oct>();
-						return;
-
-					case tk::binary:
-						convert<ID, false, mx::bin>();
-						return;
-
-					case tk::note: {
-						// valid token, do nothing
-						return;
-					}
-
-					case tk::at_sign: {
-						_state = &self::expect_numerator<ID>;
-						return;
-					}
-
-
-					default: {
-						_diag->push_error("invalid value", *_current);
-						_current->id = tk::invalid;
-					}
+					//case tk::plus:
+					//	return;
+					//
+					//case tk::hyphen: {
+					//	if constexpr (mx::overflow<ID>::neg == false) {
+					//		_diag->push("negative values not allowed", *_current);
+					//		_current->id = tk::raw::invalid;
+					//		break;
+					//	}
+					//	else {
+					//		_state = &self::state_negative<ID>;
+					//		break;
+					//	}
+					//}
+					//
+					//case tk::decimal:
+					//	convert<ID, false, mx::dec>();
+					//	return;
+					//
+					//case tk::hexadecimal:
+					//	convert<ID, false, mx::hex>();
+					//	return;
+					//
+					//case tk::octal:
+					//	convert<ID, false, mx::oct>();
+					//	return;
+					//
+					//case tk::binary:
+					//	convert<ID, false, mx::bin>();
+					//	return;
+					//
+					//case tk::note: {
+					//	// valid token, do nothing
+					//	return;
+					//}
+					//
+					//case tk::at_sign: {
+					//	_state = &self::expect_numerator<ID>;
+					//	return;
+					//}
+					//
+					//
+					//default: {
+					//	_diag->push("invalid value", *_current);
+					//	_current->id = tk::raw::invalid;
+					//}
 				}
 			}
 
@@ -286,23 +286,23 @@ namespace sx {
 
 				switch (_current->id) {
 
-					case tk::plus:
-					case tk::hyphen:
-					case tk::decimal:
-					case tk::hexadecimal:
-					case tk::octal:
-					case tk::binary:
-					case tk::note: {
-						// create node
-						auto value = std::make_unique<mx::value>(0);
-						auto& node = *value;
-						break;
-					}
-
-					default: {
-						_diag->push_error("invalid value", *_current);
-						_current->id = tk::invalid;
-					}
+					//case tk::plus:
+					//case tk::hyphen:
+					//case tk::decimal:
+					//case tk::hexadecimal:
+					//case tk::octal:
+					//case tk::binary:
+					//case tk::note: {
+					//	// create node
+					//	auto value = std::make_unique<mx::value>(0);
+					//	auto& node = *value;
+					//	break;
+					//}
+					//
+					//default: {
+					//	_diag->push("invalid value", *_current);
+					//	_current->id = tk::raw::invalid;
+					//}
 				}
 			}
 

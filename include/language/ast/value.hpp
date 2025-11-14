@@ -19,7 +19,7 @@ namespace as {
 			// -- private members ---------------------------------------------
 
 			/* value */
-			tk::token* _value;
+			tk::raw::token* _value;
 
 
 		public:
@@ -32,7 +32,7 @@ namespace as {
 			}
 
 			/* token constructor */
-			explicit value(tk::token& tk) noexcept
+			explicit value(tk::raw::token& tk) noexcept
 			: _value{&tk} {
 			}
 
@@ -40,7 +40,7 @@ namespace as {
 			// -- public accessors --------------------------------------------
 
 			/* token */
-			auto token(void) const noexcept -> tk::token& {
+			auto token(void) const noexcept -> tk::raw::token& {
 				return *_value;
 			}
 

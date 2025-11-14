@@ -65,8 +65,8 @@ namespace sx {
 
 						// insert block identifiers
 						if (_id_map.insert(b, bv.bi()) == false) {
-							diag.push_error("duplicate identifier", b.identifier());
-							b.identifier().id = tk::invalid;
+							diag.push("duplicate identifier", b.identifier());
+							b.identifier().id = tk::raw::invalid;
 						}
 					}
 
@@ -133,15 +133,15 @@ namespace sx {
 						continue;
 
 					if (pv.num_values() != 2U) {
-						_diag->push_error("expected reference", p.token());
+						_diag->push("expected reference", p.token());
 						continue;
 					}
 
 					auto it = pv.begin();
 
-					if (it[0U].token().id != tk::ampersand
-					 || it[1U].token().id != tk::text) {
-						_diag->push_error("expected reference", it[0U].token());
+					if (it[0U].token().id != tk::raw::ampersand
+					 || it[1U].token().id != tk::raw::text) {
+						_diag->push("expected reference", it[0U].token());
 						continue;
 					}
 
@@ -150,8 +150,8 @@ namespace sx {
 					const sp::id sid = _id_map.find(p, it[1U], i);
 
 					if (sid == sp::id::invalid) {
-						_diag->push_error("unknown identifier", it[1U].token());
-						it[1U].token().id = tk::invalid;
+						_diag->push("unknown identifier", it[1U].token());
+						it[1U].token().id = tk::raw::invalid;
 						continue;
 					}
 

@@ -20,10 +20,10 @@ lx::lexer::lexer(void) noexcept
 // -- public methods ----------------------------------------------------------
 
 /* lex */
-auto lx::lexer::lex(const mx::byte_range& br, tk::token_list& tokens, an::diagnostic& diag) -> void {
+auto lx::lexer::lex(const std::string& data, tk::tokens& tokens, an::diagnostic& diag) -> void {
 
-	_head   = br.begin;
-	_limit  = br.end;
+	_head   = reinterpret_cast<const mx::u8*>(data.data());
+	_limit  = _head + data.size();
 	_line   = 0U;
 	_base   = 0U;
 	_tokens = &tokens;
@@ -43,14 +43,16 @@ auto lx::lexer::push_token(void) -> void {
 	const mx::usz _size = (_head - _mark);
 	_cursor = _base + _size;
 
-	tk::token to{id, lx::lexeme{_mark, _size},
-				 _line, _base, _cursor
+	tk::raw::token to{
+		id,
+		tk::raw::range{_line, _base, _cursor},
+		lx::lexeme{_mark, _size}
 	};
 
 	if constexpr (parse)
-		_tokens->push_parse_token(to);
+		_tokens->push_map_token(to);
 	else
-		_tokens->push_token(to);
+		_tokens->push_raw_token(to);
 	_base = _cursor;
 }
 
@@ -58,9 +60,11 @@ auto lx::lexer::push_token(void) -> void {
 //template <tk::is_token_class T>
 template <tk::id id>
 auto lx::lexer::push_byte_token(void) -> void {
-	_tokens->push_parse_token(
-		tk::token{id, lx::lexeme{_head, 1U},
-				  _line, _base, _base + 1U
+	_tokens->push_map_token(
+		tk::raw::token{
+			id,
+			tk::raw::range{_line, _base, _base + 1U},
+			lx::lexeme{_head, 1U}
 		}
 	);
 }
@@ -69,19 +73,8 @@ auto lx::lexer::push_byte_token(void) -> void {
 template <mx::literal E>
 auto lx::lexer::push_error(void) -> void {
 
-	_diag->push_error(
+	_diag->push(
 		E.data,
-		_line,
-		_base,
-		_base + 1U // will be changed after
-	);
-}
-
-/* push warning */
-template <mx::literal W>
-auto lx::lexer::push_warning(void) -> void {
-	_diag->push_warning(
-		W.data,
 		_line,
 		_base,
 		_base + 1U // will be changed after
@@ -112,7 +105,7 @@ auto lx::lexer::_lex(void) -> void {
 			} while (_head < _limit
 				&& (cc::is_alnum(*_head) || *_head == '_'));
 
-			self::push_token<true, tk::text>();
+			self::push_token<true, tk::raw::text>();
 			continue;
 		}
 
@@ -138,7 +131,7 @@ auto lx::lexer::_lex(void) -> void {
 					if (alts[c - 'A'][SHARP] == false) {
 						_cursor = _base + 1U;
 						// it's a comment, not an alteration
-						self::push_token<true, tk::note>();
+						self::push_token<true, tk::raw::note>();
 						goto comment;
 					}
 					++_head;
@@ -147,7 +140,7 @@ auto lx::lexer::_lex(void) -> void {
 					if (alts[c - 'A'][FLAT] == false) {
 						_cursor = _base + 1U;
 						// it's an identifier, not an alteration
-						self::push_token<true, tk::note>();
+						self::push_token<true, tk::raw::note>();
 						goto identifier;
 					}
 
@@ -158,7 +151,7 @@ auto lx::lexer::_lex(void) -> void {
 			while (_head < _limit && cc::is_digit(*_head))
 				++_head;
 
-			self::push_token<true, tk::note>();
+			self::push_token<true, tk::raw::note>();
 			continue;
 		}
 
@@ -177,7 +170,7 @@ auto lx::lexer::_lex(void) -> void {
 							++_head;
 						} while (_head < _limit && cc::is_binary(*_head));
 
-						self::push_token<true, tk::binary>();
+						self::push_token<true, tk::raw::binary>();
 						continue;
 
 					case 'x':
@@ -185,7 +178,7 @@ auto lx::lexer::_lex(void) -> void {
 							++_head;
 						} while (_head < _limit && cc::is_hex(*_head));
 
-						self::push_token<true, tk::hexadecimal>();
+						self::push_token<true, tk::raw::hexadecimal>();
 						continue;
 
 					case 'o':
@@ -193,7 +186,7 @@ auto lx::lexer::_lex(void) -> void {
 							++_head;
 						} while (_head < _limit && cc::is_octal(*_head));
 
-						self::push_token<true, tk::octal>();
+						self::push_token<true, tk::raw::octal>();
 						continue;
 
 					default:
@@ -204,7 +197,7 @@ auto lx::lexer::_lex(void) -> void {
 			while (_head < _limit && cc::is_digit(*_head))
 				++_head;
 
-			self::push_token<true, tk::decimal>();
+			self::push_token<true, tk::raw::decimal>();
 			continue;
 		}
 
@@ -268,56 +261,62 @@ auto lx::lexer::_lex(void) -> void {
 					 && *_head != '\n'
 					 && *_head != '\r');
 
-				self::push_token<false, tk::comment>();
+				self::push_token<false, tk::raw::comment>();
 				continue;
 			}
 
 			// () [] {}
 			case '(':
-				self::push_byte_token<tk::round_open>();
+				self::push_byte_token<tk::raw::round_open>();
 				break;
 			case ')':
-				self::push_byte_token<tk::round_close>();;
+				self::push_byte_token<tk::raw::round_close>();;
 				break;
 			case '[':
-				self::push_byte_token<tk::square_open>();
+				self::push_byte_token<tk::raw::square_open>();
 				break;
 			case ']':
-				self::push_byte_token<tk::square_close>();
+				self::push_byte_token<tk::raw::square_close>();
 				break;
 			case '{':
-				self::push_byte_token<tk::curly_open>();
+				self::push_byte_token<tk::raw::curly_open>();
 				break;
 			case '}':
-				self::push_byte_token<tk::curly_close>();;
+				self::push_byte_token<tk::raw::curly_close>();;
 				break;
 
 			// = + - * /
 			case '=':
-				self::push_byte_token<tk::equal>();
+				self::push_byte_token<tk::raw::equal>();
 				break;
 			case '+':
-				self::push_byte_token<tk::plus>();
+				self::push_byte_token<tk::raw::plus>();
 				break;
 			case '-':
-				self::push_byte_token<tk::hyphen>();
+				self::push_byte_token<tk::raw::hyphen>();
 				break;
 			case '*':
-				self::push_byte_token<tk::asterisk>();
+				self::push_byte_token<tk::raw::asterisk>();
 				break;
 			case '/':
-				self::push_byte_token<tk::slash>();
+				self::push_byte_token<tk::raw::slash>();
 				break;
 
-			// @ . &
-			case '@':
-				self::push_byte_token<tk::at_sign>();
-				break;
+			/* . & : ^ \ */
 			case '.':
-				self::push_byte_token<tk::dot>();
+				self::push_byte_token<tk::raw::dot>();
 				break;
 			case '&':
-				self::push_byte_token<tk::ampersand>();
+				self::push_byte_token<tk::raw::ampersand>();
+				break;
+			case ':':
+				self::push_byte_token<tk::raw::colon>();
+				break;
+			case '^':
+				self::push_byte_token<tk::raw::caret>();
+				break;
+			case '\\':
+				self::push_byte_token<tk::raw::backslash>();
 				break;
 
 			default:
@@ -328,13 +327,11 @@ auto lx::lexer::_lex(void) -> void {
 	}
 
 	// push end of tokens
-	_tokens->push_parse_token(
-		tk::token{
-			tk::end_of_tokens,
-			lx::lexeme{_head, 0U},
-			_line,
-			_base,
-			_base
+	_tokens->push_map_token(
+		tk::raw::token{
+			tk::raw::end_of_tokens,
+			tk::raw::range{_line, _base, _base},
+			lx::lexeme{_head, 0U}
 		}
 	);
 }

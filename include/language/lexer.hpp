@@ -1,7 +1,6 @@
 #ifndef language_lexer_hpp
 #define language_lexer_hpp
 
-#include "byte_range.hpp"
 #include "literal.hpp"
 #include "language/tokens.hpp"
 
@@ -9,8 +8,9 @@
 // -- forward declarations ----------------------------------------------------
 
 namespace tk {
-	class token_list;
+	class tokens;
 } // namespace tk
+
 namespace an {
 	class diagnostic;
 } // namespace an
@@ -57,7 +57,7 @@ namespace lx {
 			mx::uint _cursor;
 
 			/* tokens */
-			tk::token_list* _tokens;
+			tk::tokens* _tokens;
 
 			/* diagnostic */
 			an::diagnostic* _diag;
@@ -70,7 +70,6 @@ namespace lx {
 			auto _lex(void) -> void;
 
 			/* push token */
-			//template <bool, tk::is_token_class>
 			template <bool, tk::id>
 			auto push_token(void) -> void;
 
@@ -82,10 +81,6 @@ namespace lx {
 			/* push error */
 			template <mx::literal>
 			auto push_error(void) -> void;
-
-			/* push warning */
-			template <mx::literal>
-			auto push_warning(void) -> void;
 
 
 		public:
@@ -99,7 +94,7 @@ namespace lx {
 			// -- public methods ----------------------------------------------
 
 			/* lex */
-			auto lex(const mx::byte_range&, tk::token_list&, an::diagnostic&) -> void;
+			auto lex(const std::string&, tk::tokens&, an::diagnostic&) -> void;
 
 	}; // class lexer
 

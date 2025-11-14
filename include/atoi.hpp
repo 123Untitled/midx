@@ -114,7 +114,7 @@ namespace mx {
 
 	/* convert integer */
 	template <typename L, typename B, bool neg>
-	auto convert(const tk::token& tk,
+	auto convert(const tk::raw::token& tk,
 				 an::diagnostic& diag) noexcept -> mx::i8 {
 
 		const mx::u8* it  = tk.lexeme.data;
@@ -142,7 +142,7 @@ namespace mx {
 				if (num < mul_limit) {
 					// push error
 					num = min;
-					diag.push_error("value overflow", tk);
+					diag.push("value overflow", tk);
 					break;
 				}
 			}
@@ -150,7 +150,7 @@ namespace mx {
 				if (num > mul_limit) {
 					// push error
 					num = max;
-					diag.push_error("value overflow", tk);
+					diag.push("value overflow", tk);
 					break;
 				}
 			}
@@ -163,7 +163,7 @@ namespace mx {
 				if (num < (min + digit)) {
 					// push error
 					num = neg ? min : max;
-					diag.push_error("value overflow", tk);
+					diag.push("value overflow", tk);
 					break;
 				}
 				num -= digit;
@@ -172,7 +172,7 @@ namespace mx {
 				if (num > (max - digit)) {
 					// push error
 					num = max;
-					diag.push_error("value overflow", tk);
+					diag.push("value overflow", tk);
 					break;
 				}
 				num += digit;
@@ -203,7 +203,7 @@ namespace mx {
 
 
 	//template <sp::id I, bool neg = false>
-	//auto to_integer(tk::token& tk,
+	//auto to_integer(tk::raw::token& tk,
 	//				mx::sequence& seq,
 	//				an::diagnostic& diag) noexcept -> mx::i8 {
 	//
@@ -233,7 +233,7 @@ namespace mx {
 	//
 	//		default:
 	//			diag.push_error("invalid value", tk);
-	//			tk.id = tk::invalid;
+	//			tk.id = tk::raw::invalid;
 	//			break;
 	//	}
 	//

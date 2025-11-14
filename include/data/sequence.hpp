@@ -55,7 +55,7 @@ namespace mx {
 		public:
 			mx::i8 value;
 			mx::signature sign;
-			tk::token* token;
+			tk::raw::token* token;
 			mx::usz depth;
 	};
 
@@ -128,7 +128,7 @@ namespace mx {
 			// -- public modifiers --------------------------------------------
 
 			/* push */
-			auto push(const mx::i8 value, tk::token& tk, const mx::signature& sign) -> void {
+			auto push(const mx::i8 value, tk::raw::token& tk, const mx::signature& sign) -> void {
 
 				const auto repeat = sign.modulus();
 
@@ -146,7 +146,7 @@ namespace mx {
 			}
 
 			/* push */
-			auto push_trig(const mx::i8 value, tk::token& tk, const mx::signature& sign) -> void {
+			auto push_trig(const mx::i8 value, tk::raw::token& tk, const mx::signature& sign) -> void {
 
 				const auto repeat = sign.modulus();
 

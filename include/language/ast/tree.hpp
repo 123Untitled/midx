@@ -86,12 +86,12 @@ namespace as {
 			// -- public modifiers --------------------------------------------
 
 			/* new block */
-			auto new_block(tk::token& tk) -> void {
+			auto new_block(tk::raw::token& tk) -> void {
 				_blocks.emplace_back(tk, _params.size());
 			}
 
 			/* new param */
-			auto new_param(tk::token& tk) -> void {
+			auto new_param(tk::raw::token& tk) -> void {
 				const sp::id spec_id = _blocks.back().spec_id();
 				_params.emplace_back(spec_id, tk,
 									_values.size());
@@ -99,7 +99,7 @@ namespace as {
 			}
 
 			/* new value */
-			auto new_value(tk::token& tk) -> void {
+			auto new_value(tk::raw::token& tk) -> void {
 				_values.emplace_back(tk);
 				++(_params.back().vc);
 			}

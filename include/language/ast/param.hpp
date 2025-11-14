@@ -26,7 +26,7 @@ namespace as {
 			// -- private members ---------------------------------------------
 
 			/* parameter */
-			tk::token* _param;
+			tk::raw::token* _param;
 
 			/* param id */
 			pa::id _param_id;
@@ -51,7 +51,7 @@ namespace as {
 			}
 
 			/* specifier constructor */
-			param(const sp::id spec_id, tk::token& tk, const mx::usz vs) noexcept
+			param(const sp::id spec_id, tk::raw::token& tk, const mx::usz vs) noexcept
 			: _param{&tk}, _param_id{pa::id::invalid},
 			  vs{vs}, vc{0U} {
 
@@ -60,16 +60,16 @@ namespace as {
 					(tk.lexeme);
 
 				// set token id
-				_param->id = (_param_id == pa::id::invalid)
-						   ? tk::invalid
-						   : tk::parameter;
+				//_param->id = (_param_id == pa::id::invalid)
+				//		   ? tk::raw::invalid
+				//		   : tk::parameter;
 			}
 
 
 			// -- public accessors --------------------------------------------
 
 			/* token */
-			auto token(void) const noexcept -> tk::token& {
+			auto token(void) const noexcept -> tk::raw::token& {
 				return *_param;
 			}
 

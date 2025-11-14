@@ -36,7 +36,7 @@ namespace mx {
 	class ast_node final {
 		public:
 			mx::node_type type;
-			tk::token* token;
+			tk::raw::token* token;
 			std::vector<mx::ast_node> childs;
 	};
 
