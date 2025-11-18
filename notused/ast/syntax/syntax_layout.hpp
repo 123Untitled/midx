@@ -2,7 +2,7 @@
 #define language_syntax_layout_hpp
 
 #include "language/ast/tree.hpp"
-#include "language/tokens.hpp"
+#include "language/tokens/def.hpp"
 #include "language/identifier_map.hpp"
 #include "language/diagnostic.hpp"
 #include "data/model.hpp"
@@ -66,7 +66,7 @@ namespace sx {
 						// insert block identifiers
 						if (_id_map.insert(b, bv.bi()) == false) {
 							diag.push("duplicate identifier", b.identifier());
-							b.identifier().id = tk::raw::invalid;
+							b.identifier().id = tk::invalid;
 						}
 					}
 
@@ -139,8 +139,8 @@ namespace sx {
 
 					auto it = pv.begin();
 
-					if (it[0U].token().id != tk::raw::ampersand
-					 || it[1U].token().id != tk::raw::text) {
+					if (it[0U].token().id != tk::ampersand
+					 || it[1U].token().id != tk::text) {
 						_diag->push("expected reference", it[0U].token());
 						continue;
 					}
@@ -151,7 +151,7 @@ namespace sx {
 
 					if (sid == sp::id::invalid) {
 						_diag->push("unknown identifier", it[1U].token());
-						it[1U].token().id = tk::raw::invalid;
+						it[1U].token().id = tk::invalid;
 						continue;
 					}
 

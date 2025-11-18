@@ -42,7 +42,7 @@ namespace sx {
 			action_type _state;
 
 			/* current */
-			tk::raw::token* _current;
+			tk::token* _current;
 
 			/* sequence reference */
 			//mx::sequence* _seq;
@@ -150,7 +150,7 @@ namespace sx {
 
 					//default: {
 					//	_diag->push("invalid value", *_current);
-					//	_current->id = tk::raw::invalid;
+					//	_current->id = tk::invalid;
 					//	break;
 					//}
 				}
@@ -173,7 +173,7 @@ namespace sx {
 					//
 					//default: {
 					//	_diag->push("invalid numerator value", *_current);
-					//	_current->id = tk::raw::invalid;
+					//	_current->id = tk::invalid;
 					//	_state = &self::state_default<ID>;
 					//	break;
 					//}
@@ -194,7 +194,7 @@ namespace sx {
 					//
 					//default: {
 					//	_diag->push("expected '/' after denominator", *_current);
-					//	_current->id = tk::raw::invalid;
+					//	_current->id = tk::invalid;
 					//	_state = &self::state_default<ID>;
 					//	break;
 					//}
@@ -219,7 +219,7 @@ namespace sx {
 					//
 					//default: {
 					//	_diag->push("invalid denominator value", *_current);
-					//	_current->id = tk::raw::invalid;
+					//	_current->id = tk::invalid;
 					//	_state = &self::state_default<ID>;
 					//	break;
 					//}
@@ -239,7 +239,7 @@ namespace sx {
 					//case tk::hyphen: {
 					//	if constexpr (mx::overflow<ID>::neg == false) {
 					//		_diag->push("negative values not allowed", *_current);
-					//		_current->id = tk::raw::invalid;
+					//		_current->id = tk::invalid;
 					//		break;
 					//	}
 					//	else {
@@ -277,7 +277,7 @@ namespace sx {
 					//
 					//default: {
 					//	_diag->push("invalid value", *_current);
-					//	_current->id = tk::raw::invalid;
+					//	_current->id = tk::invalid;
 					//}
 				}
 			}
@@ -301,7 +301,7 @@ namespace sx {
 					//
 					//default: {
 					//	_diag->push("invalid value", *_current);
-					//	_current->id = tk::raw::invalid;
+					//	_current->id = tk::invalid;
 					//}
 				}
 			}

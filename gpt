@@ -1,0 +1,43 @@
+
+
+(:tr 1 0 (1 0 | 0 1) 0 | :tr 0 1 0 1) :tr  0 0 0 1 [&bass :tr 0 0 1]
+
+'('
+	':tr'
+		'1 0' '(' '1 0' '|' '0 1' ')' '0'
+	'|'
+	':tr'
+		'0 1 0 1'
+')'
+
+':tr'
+	'0 0 0 1'
+
+'['
+	'&bass'
+	':tr'
+		'0 0 1'
+']'
+
+La ca donnerai:
+
+GROUP_OPEN_TRACK_LEVEL('(')
+PARAM(':tr')
+VALUES('1 0')
+GROUP_OPEN_SEQ_LEVEL('(')
+VALUES('1 0')
+PARALLEL_SEQ_LEVEL('|')
+VALUES('0 1')
+GROUP_CLOSE_SEQ_LEVEL('(')
+VALUES('0')
+PARALLEL_TRACK_LEVEL('|')
+PARAM(':tr')
+VALUES('0 1 0 1')
+GROUP_CLOSE_TRACK_LEVEL(')')
+PARAM(':tr')
+VALUES('0 0 0 1')
+PERMUT_OPEN_TRACK_LEVEL('[')
+TRACK_REF('&bass')
+PARAM(':tr')
+VALUES('0 0 1')
+PERMUT_CLOSE_TRACK_LEVEL(']')

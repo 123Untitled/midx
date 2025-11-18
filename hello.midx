@@ -1,174 +1,24 @@
 
-#&
-#()[]{}
-#+-*/=
-#.
-#:
-#| <>
-#
-#~
-#`
-#!
-#@
-##
-#$
-#%
-#^
-#\
-#"'
-#;?,
-#_
+
+~:tr 1 0 | :tr
+&bass 1 :&heavy  :tr
 
 
 
 
-octave = :oc *3 +1 +2 -1
-
-^8 \2
-
-bass = ^5 :
-tr 1 0 0 1 0 0 1 0 >< 0 1 0 0 1 0 1 0
-		\1 :nt A#3 B4 G#3 [E4 E5]
-		&octave
-	.cond {
-		if &bass:nt > 60
-			:oc = +2
-	}
-
-bass = .nt /1.2
 
 
-#bass = .tr /3.2 [10010010
-#	(&rythm &rythm2)
-#	<>
-#	&rythm3]
-#	><
-#	/2 1 0 0 1 0 0 0 0
-
-#.nt /1 36 36 36 36 | 25 46 >< 2 65 | 2
-
-
-
-#track bass {
-#
-#
-#	.nt @1/1 36 36 36 36
-#	   | 25 46 >< 2 65
-#	   | 2
-#
-#	.ch {1 3}
-#	.oc @1/4 -1 0 0 0
-#	.cond {
-#		if &bass::tr == 1
-#		and &bass::ch == 3
-#			.nt = &bass::nt + 12
-#	}
-#}
-#
-#[track synth
-#	.tr &bass::tr
-#	.nt @1/2 60 62 63 65 67 65 63 62
-#]
-#
-#[pattern intro
-#	.tracks
-#		&bass &synth ><
-#	.length @4/4
-#]
-#
-#[song mysong
-#	.bpm 120
-#	.loop 2
-#	.timeline
-#		&intro * 2
-#]
-#
-#
-#[tr] trig2 .seq @3/16 1 0 0
-#
-#[tr] trig1 .seq @1/3 1 @1/16 1 0 1 0 0 1
-#
-#
-#[nt] melo1 .seq @1/1 60 63 65 65
-#[se] sem1 .seq @1/2 0 3 0 4 0 3 0 3
-#
-#
-#[oc] oc1 .seq @1/4 0 -1 -1
-#
-#[ga] gate1 .seq @1/8 10 80 20
-#
-#[ch] chan1
-#.seq @1/4 1 1 1
-#
-#[track] synth1
-#.tr &trig1
-#.se &sem1
-#.ga &gate1
-#.nt &melo1
-#.oc &oc1
-#.ch &chan1
-#
-#
-#
-#[oc] oc2 .seq @1/4 -2
-#
-#[ch] chan2
-#.seq @1/4 1 1 1
-#[ga] gate2 .seq @1/4 50
-#
-#[track] synth2
-#.tr &trig2
-#.ch &chan2
-#.ga &gate2
-#.oc &oc2
-#.nt &melo1
-
-#[tr] trig2 .seq
-#
-#@1/8 1 0 1 1 0 0 0
-#
-#[ch] chan2
-#.seq @1/4 1 2
-#
-#[nt] melo2
-#.seq
-#@1/1 63 62 60 @1/4 60 58 56 55
-#
-#[oc] oc2 .seq @1/4 -0 1 0 1
-#
-#[ga] gate2 .seq @1/4 80 30 60 20 90 30
-#
-#
-#[track] synth2
-#.tr &trig2
-#.ga &gate2
-#.nt &melo2
-#.oc &oc2
-#.ch &chan2
-#
-#
-#[tr] trbass
-#.seq @1/8 1 0 0 1 0 0
-#
-#[ch] chanbass
-#.seq @1/4 0
-#
-#[oc] ocbass .seq @1/4 -1
-#
-#
-#[track] bass
-#.tr &trbass
-#.ch &chanbass
-#.nt &melo1
-#.oc &ocbass
-#
-#
-#
-#[tr] kick
-#.seq @1/4 1
-#[ch] chan3
-#.seq 3
-#
-#[track] beat
-#.tr &kick
-#.ch &chan3
+~:tr (1 0 | :tr)
+~:tr (1 0 :tr)
+~:tr (| 0 1 0 :&bass :tr)
+~:tr 0 1 0 :tr
+~:tr ><
+~
+~:tr (1 0 | :tr)
+~
+~:tr 10 01 10 10
+~
+~:tr (&bass | &flute)
+~:tr | &bass
+~:tr :: (&bass | &flute)
+~:tr :: | &bass

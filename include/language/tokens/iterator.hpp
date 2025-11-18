@@ -1,8 +1,8 @@
-#ifndef language_tokens_syn_iterator_hpp
-#define language_tokens_syn_iterator_hpp
+#ifndef language_tokens_iterator_hpp
+#define language_tokens_iterator_hpp
 
 #include "core/types.hpp"
-#include "language/tokens/syn_view.hpp"
+#include "language/tokens/token_view.hpp"
 
 
 // -- T K  N A M E S P A C E --------------------------------------------------
@@ -12,19 +12,18 @@ namespace tk {
 
 	// -- forward declarations ------------------------------------------------
 
-	/* tokens */
 	class tokens;
 
 
-	// -- S Y N  I T E R A T O R  ---------------------------------------------
+	// -- I T E R A T O R -----------------------------------------------------
 
-	class syn_iterator final {
+	class iterator final {
 
 
 		// -- friends ---------------------------------------------------------
 
 		/* tokens as friend */
-		friend class tk::tokens;
+		friend class tokens;
 
 
 		private:
@@ -32,7 +31,7 @@ namespace tk {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = tk::syn_iterator;
+			using self = tk::iterator;
 
 
 			// -- private members ---------------------------------------------
@@ -40,17 +39,17 @@ namespace tk {
 			/* tokens pointer */
 			tk::tokens* _tokens;
 
-			/* index */
+			/* current index */
 			mx::usz _index;
 
 
 			// -- private lifecycle -------------------------------------------
 
-			/* base constructor */
-			syn_iterator(tk::tokens&) noexcept;
+			/* tokens constructor */
+			explicit iterator(tk::tokens*) noexcept;
 
-			/* constructor */
-			syn_iterator(tk::tokens&, const mx::usz) noexcept;
+			/* end constructor */
+			iterator(tk::tokens*, const mx::usz) noexcept;
 
 
 		public:
@@ -58,10 +57,14 @@ namespace tk {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			syn_iterator(void) noexcept;
+			iterator(void) noexcept;
 
 
 			// -- public operators --------------------------------------------
+
+			/* dereference operator */
+			auto operator*(void) const noexcept -> tk::token_view;
+
 
 			/* pre-increment operator */
 			auto operator++(void) noexcept -> self&;
@@ -69,9 +72,11 @@ namespace tk {
 			/* post-increment operator */
 			auto operator++(int) noexcept -> self;
 
-
-			/* const dereference operator */
-			auto operator*(void) const noexcept -> tk::syn_view;
+			auto operator-(const mx::isz offset) const noexcept -> self {
+				self it = *this;
+				it._index -= offset;
+				return it;
+			}
 
 
 			/* equality operator */
@@ -81,30 +86,44 @@ namespace tk {
 			auto operator!=(const self&) const noexcept -> bool;
 
 
-			/* const [] operator */
-			auto operator[](const mx::isz) const noexcept -> tk::syn_view;
-
-
 			// -- public iterators --------------------------------------------
 
-			/* const begin */
+			/* begin */
 			auto begin(void) const noexcept -> self;
 
-			/* const end */
+			/* end */
 			auto end(void) const noexcept -> self;
 
-	}; // class syn_iterator
+
+			// -- public accessors --------------------------------------------
+
+			/* token */
+			auto token(void) const noexcept -> tk::token&;
+
+			/* token at */
+			auto token_at(const mx::isz) const noexcept -> tk::token&;
+
+			/* view */
+			auto view(void) const noexcept -> tk::token_view;
+
+			/* is end */
+			auto is_end(void) const noexcept -> bool;
+
+			/* index */
+			auto index(void) const noexcept -> mx::usz;
+
+	}; // class iterator
 
 
-	// -- C O N S T  S Y N  I T E R A T O R  ----------------------------------
+	// -- C O N S T  I T E R A T O R ------------------------------------------
 
-	class const_syn_iterator final {
+	class const_iterator final {
 
 
 		// -- friends ---------------------------------------------------------
 
 		/* tokens as friend */
-		friend class tk::tokens;
+		friend class tokens;
 
 
 		private:
@@ -112,7 +131,7 @@ namespace tk {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = tk::const_syn_iterator;
+			using self = tk::const_iterator;
 
 
 			// -- private members ---------------------------------------------
@@ -120,17 +139,17 @@ namespace tk {
 			/* tokens pointer */
 			const tk::tokens* _tokens;
 
-			/* index */
+			/* current index */
 			mx::usz _index;
 
 
 			// -- private lifecycle -------------------------------------------
 
-			/* base constructor */
-			const_syn_iterator(const tk::tokens&) noexcept;
+			/* tokens constructor */
+			explicit const_iterator(const tk::tokens*) noexcept;
 
-			/* constructor */
-			const_syn_iterator(const tk::tokens&, const mx::usz) noexcept;
+			/* end constructor */
+			const_iterator(const tk::tokens*, const mx::usz) noexcept;
 
 
 		public:
@@ -138,20 +157,20 @@ namespace tk {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			const_syn_iterator(void) noexcept;
+			const_iterator(void) noexcept;
 
 
 			// -- public operators --------------------------------------------
+
+			/* dereference operator */
+			auto operator*(void) const noexcept -> tk::const_token_view;
+
 
 			/* pre-increment operator */
 			auto operator++(void) noexcept -> self&;
 
 			/* post-increment operator */
 			auto operator++(int) noexcept -> self;
-
-
-			/* const dereference operator */
-			auto operator*(void) const noexcept -> tk::const_syn_view;
 
 
 			/* equality operator */
@@ -161,20 +180,34 @@ namespace tk {
 			auto operator!=(const self&) const noexcept -> bool;
 
 
-			/* const [] operator */
-			auto operator[](const mx::isz) const noexcept -> tk::const_syn_view;
-
-
 			// -- public iterators --------------------------------------------
 
-			/* const begin */
+			/* begin */
 			auto begin(void) const noexcept -> self;
 
-			/* const end */
+			/* end */
 			auto end(void) const noexcept -> self;
 
-	}; // class const_syn_iterator
+
+			// -- public accessors --------------------------------------------
+
+			/* token */
+			auto token(void) const noexcept -> const tk::token&;
+
+			/* token at */
+			auto token_at(const mx::isz) const noexcept -> const tk::token&;
+
+			/* view */
+			auto view(void) const noexcept -> tk::const_token_view;
+
+			/* is end */
+			auto is_end(void) const noexcept -> bool;
+
+			/* index */
+			auto index(void) const noexcept -> mx::usz;
+
+	}; // class iterator
 
 } // namespace tk
 
-#endif // language_tokens_syn_iterator_hpp
+#endif // language_tokens_iterator_hpp

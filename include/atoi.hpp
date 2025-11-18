@@ -2,7 +2,7 @@
 #define language_to_integer_hpp
 
 #include "types.hpp"
-#include "language/tokens.hpp"
+#include "language/tokens/def.hpp"
 #include "language/diagnostic.hpp"
 #include "data/sequence.hpp"
 #include "language/syntax/specifier.hpp"
@@ -114,7 +114,7 @@ namespace mx {
 
 	/* convert integer */
 	template <typename L, typename B, bool neg>
-	auto convert(const tk::raw::token& tk,
+	auto convert(const tk::token& tk,
 				 an::diagnostic& diag) noexcept -> mx::i8 {
 
 		const mx::u8* it  = tk.lexeme.data;
@@ -203,7 +203,7 @@ namespace mx {
 
 
 	//template <sp::id I, bool neg = false>
-	//auto to_integer(tk::raw::token& tk,
+	//auto to_integer(tk::token& tk,
 	//				mx::sequence& seq,
 	//				an::diagnostic& diag) noexcept -> mx::i8 {
 	//
@@ -233,7 +233,7 @@ namespace mx {
 	//
 	//		default:
 	//			diag.push_error("invalid value", tk);
-	//			tk.id = tk::raw::invalid;
+	//			tk.id = tk::invalid;
 	//			break;
 	//	}
 	//

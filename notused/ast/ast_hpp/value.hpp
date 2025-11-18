@@ -1,7 +1,7 @@
 #ifndef language_ast_value_hpp
 #define language_ast_value_hpp
 
-#include "language/tokens.hpp"
+#include "language/tokens/def.hpp"
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
@@ -19,7 +19,7 @@ namespace as {
 			// -- private members ---------------------------------------------
 
 			/* value */
-			tk::raw::token* _value;
+			tk::token* _value;
 
 
 		public:
@@ -32,7 +32,7 @@ namespace as {
 			}
 
 			/* token constructor */
-			explicit value(tk::raw::token& tk) noexcept
+			explicit value(tk::token& tk) noexcept
 			: _value{&tk} {
 			}
 
@@ -40,7 +40,7 @@ namespace as {
 			// -- public accessors --------------------------------------------
 
 			/* token */
-			auto token(void) const noexcept -> tk::raw::token& {
+			auto token(void) const noexcept -> tk::token& {
 				return *_value;
 			}
 

@@ -1,8 +1,7 @@
 #ifndef language_lexer_hpp
 #define language_lexer_hpp
 
-#include "literal.hpp"
-#include "language/tokens.hpp"
+#include "language/tokens/def.hpp"
 
 
 // -- forward declarations ----------------------------------------------------
@@ -38,23 +37,17 @@ namespace lx {
 
 			// -- private members ---------------------------------------------
 
-			/* current iterator */
-			const mx::u8* _head;
+			/* iterator */
+			const mx::u8* _it;
 
-			/* limit iterator */
-			const mx::u8* _limit;
-
-			/* mark iterator */
-			const mx::u8* _mark;
+			/* end iterator */
+			const mx::u8* _end;
 
 			/* line */
 			mx::uint _line;
 
-			/* column base */
-			mx::uint _base;
-
-			/* culumn cursor */
-			mx::uint _cursor;
+			/* column */
+			mx::uint _column;
 
 			/* tokens */
 			tk::tokens* _tokens;
@@ -69,18 +62,45 @@ namespace lx {
 			/* lex */
 			auto _lex(void) -> void;
 
-			/* push token */
-			template <bool, tk::id>
-			auto push_token(void) -> void;
+			/* push error */
+			auto error(const char*) -> void;
+			auto error(const char*, const tk::chunk&) -> void;
+
+			/* byte chunk */
+			auto byte_chunk(void) noexcept -> tk::chunk;
+
+			/* new chunk */
+			auto new_chunk(const mx::u8*) noexcept -> tk::chunk;
 
 			/* push byte token */
-			//template <tk::is_token_class>
-			template <tk::id>
-			auto push_byte_token(void) -> void;
+			auto push_byte_token(const tk::id) -> void;
 
-			/* push error */
-			template <mx::literal>
-			auto push_error(void) -> void;
+
+			/* skip ignored */
+			auto skip_ignored(void) -> void;
+
+
+			/* lex identifier */
+			auto lex_identifier(void) -> void;
+
+			/* lex note */
+			auto lex_note(void) -> void;
+
+			/* lex number */
+			auto lex_number(void) -> void;
+
+			/* lex tempo */
+			auto lex_tempo(const tk::id) -> void;
+
+			/* lex parameter */
+			auto lex_parameter(void) -> void;
+
+			/* lex reference */
+			auto lex_reference(void) -> void;
+
+
+			/* invalid token */
+			auto invalid_token(const tk::chunk&) -> void;
 
 
 		public:

@@ -3,10 +3,9 @@
 
 #include "language/lexer.hpp"
 #include "language/parser.hpp"
-#include "language/tokens/token_list.hpp"
-#include "language/ast/tree.hpp"
+#include "language/tokens/tokens.hpp"
 #include "language/diagnostic.hpp"
-#include "language/syntax/syntax_layout.hpp"
+#include "language/ast/tree.hpp"
 #include "data/model.hpp"
 
 
@@ -32,25 +31,26 @@ namespace mx {
 
 			std::string _data;
 
+
 			/* lexer */
 			lx::lexer _lexer;
 
 			/* parser */
 			pr::parser _parser;
 
+
 			/* tokens */
 			tk::tokens _tokens;
 
-			/* ast */
+			/* tree */
 			as::tree _tree;
 
 			/* diagnostic */
 			an::diagnostic _diagnostic;
 
-			sx::builder _builder;
-
 			/* model */
 			mx::model _model;
+
 
 			std::string _highlights;
 

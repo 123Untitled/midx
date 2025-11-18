@@ -3,7 +3,7 @@
 
 #include "core/types.hpp"
 #include "time/signature.hpp"
-#include "language/tokens.hpp"
+#include "language/tokens/def.hpp"
 #include <vector>
 #include <iostream>
 
@@ -36,7 +36,7 @@ namespace mx {
 	class ast_node final {
 		public:
 			mx::node_type type;
-			tk::raw::token* token;
+			tk::token* token;
 			std::vector<mx::ast_node> childs;
 	};
 
@@ -56,6 +56,54 @@ namespace mx {
 			mx::u64 _duration;
 
 	}; // class node
+
+	class binary : public mx::node {
+			mx::node::unique _left;
+			mx::node::unique _right;
+		public:
+			binary(mx::node::unique&& l, mx::node::unique&& r) noexcept
+			: _left{std::move(l)}, _right{std::move(r)} {
+			}
+
+
+			auto duration(void) const noexcept -> mx::u64 override {
+				return 0;
+			}
+
+			auto evaluate(mx::u64 time, const mx::i8 def) const noexcept -> mx::i8 override {
+				return def;
+			}
+			auto debug(const mx::u64 indent = 0U) const noexcept -> void override {
+			}
+	};
+
+	class identifier : public mx::node {
+			std::string _name;
+		public:
+			identifier(const std::string& n) noexcept
+			: _name{n} {
+			}
+	};
+
+	class assignment : public mx::node {
+			mx::node::unique _left;
+			mx::node::unique _right;
+		public:
+			assignment(mx::node::unique&& l, mx::node::unique&& r) noexcept
+			: _left{std::move(l)}, _right{std::move(r)} {
+			}
+
+
+			auto duration(void) const noexcept -> mx::u64 override {
+				return 0;
+			}
+
+			auto evaluate(mx::u64 time, const mx::i8 def) const noexcept -> mx::i8 override {
+				return def;
+			}
+			auto debug(const mx::u64 indent = 0U) const noexcept -> void override {
+			}
+	};
 
 
 	class container : public mx::node {

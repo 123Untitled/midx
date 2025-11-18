@@ -1,7 +1,7 @@
 #ifndef language_lexer_lexeme_hpp
 #define language_lexer_lexeme_hpp
 
-#include "types.hpp"
+#include "core/types.hpp"
 #include <iostream>
 
 
@@ -28,8 +28,28 @@ namespace lx {
 			// -- public members ----------------------------------------------
 
 			const mx::u8* data;
-			const mx::usz size;
+			mx::usz size;
 
+			// -- public lifecycle --------------------------------------------
+
+			/* default constructor */
+			lexeme(void) noexcept
+			: data{nullptr}, size{0U} {
+			}
+
+			/* member constructor */
+			lexeme(const mx::u8* data, const mx::usz size) noexcept
+			: data{data}, size{size} {
+			}
+
+			/* copy constructor */
+			lexeme(const self&) noexcept = default;
+
+
+			// -- public assignment operators ---------------------------------
+
+			/* copy assignment operator */
+			auto operator=(const self&) noexcept -> self& = default;
 
 
 			// -- public operators --------------------------------------------

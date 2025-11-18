@@ -16,7 +16,7 @@ namespace pr {
 	struct rule;
 
 	template <mx::u8... Is, pr::action... As>
-	struct rule<tk::raw::token_class<Is...>, As...> final {
+	struct rule<tk::token_class<Is...>, As...> final {
 		non_instantiable_class(rule);
 	};
 
@@ -64,7 +64,7 @@ namespace pr {
 			struct config;
 
 			template <mx::u8... Is, pr::action... As>
-			struct config<pr::rule<tk::raw::token_class<Is...>, As...>> final {
+			struct config<pr::rule<tk::token_class<Is...>, As...>> final {
 				non_instantiable_class(config);
 				static consteval auto apply(self& tbl) noexcept -> void {
 					((tbl._table[Is] = &pr::parser::call<As...>), ...);
@@ -86,7 +86,7 @@ namespace pr {
 			}
 
 
-			auto execute(pr::parser& psr, const tk::raw::token& to) const /* noexcept */-> void {
+			auto execute(pr::parser& psr, const tk::token& to) const /* noexcept */-> void {
 				(psr.*_table[to.type])();
 			}
 

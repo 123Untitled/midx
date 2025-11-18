@@ -1,13 +1,17 @@
 #ifndef language_char_class_hpp
 #define language_char_class_hpp
 
-#include "types.hpp"
+#include "core/types.hpp"
 
 
 // -- C C  N A M E S P A C E --------------------------------------------------
 
 namespace cc {
 
+	/* is blank */
+	inline constexpr auto is_blank(const mx::u8 c) noexcept -> bool {
+		return c == ' ' || c == '\t';
+	}
 
 	/* is lower */
 	inline constexpr auto is_lower(const mx::u8 c) noexcept -> bool {
@@ -37,6 +41,11 @@ namespace cc {
 	/* is alnum */
 	inline constexpr auto is_alnum(const mx::u8 c) noexcept -> bool {
 		return cc::is_alpha(c) || cc::is_digit(c);
+	}
+
+	/* is ident */
+	inline constexpr auto is_ident(const mx::u8 c) noexcept -> bool {
+		return cc::is_alnum(c) || c == '_';
 	}
 
 	/* is xdigit */

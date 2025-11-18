@@ -1,6 +1,6 @@
 #include "language/lexer.hpp"
 #include "language/diagnostic.hpp"
-#include "language/tokens/token_list.hpp"
+#include "language/tokens/tokens.hpp"
 #include "language/lexer/char_class.hpp"
 
 
@@ -10,8 +10,10 @@
 
 /* default constructor */
 lx::lexer::lexer(void) noexcept
-: _head{nullptr}, _limit{nullptr}, _mark{nullptr},
-  _line{0U},      _base{0U},       _cursor{0U},
+: _it{nullptr},
+  _end{nullptr},
+  _line{0U},
+  _column{0U},
   _tokens{nullptr},
   _diag{nullptr} {
 }
@@ -22,12 +24,12 @@ lx::lexer::lexer(void) noexcept
 /* lex */
 auto lx::lexer::lex(const std::string& data, tk::tokens& tokens, an::diagnostic& diag) -> void {
 
-	_head   = reinterpret_cast<const mx::u8*>(data.data());
-	_limit  = _head + data.size();
-	_line   = 0U;
-	_base   = 0U;
+		_it = reinterpret_cast<const mx::u8*>(data.data());
+	   _end = _it + data.size();
+	  _line = 0U;
+	_column = 0U;
 	_tokens = &tokens;
-	_diag   = &diag;
+	  _diag = &diag;
 
 	self::_lex();
 }
@@ -35,50 +37,117 @@ auto lx::lexer::lex(const std::string& data, tk::tokens& tokens, an::diagnostic&
 
 // -- private methods ---------------------------------------------------------
 
-/* push token */
-//template <bool parse, tk::is_token_class T>
-template <bool parse, tk::id id>
-auto lx::lexer::push_token(void) -> void {
+/* error */
+auto lx::lexer::error(const char* msg) -> void {
+	_diag->push(msg, _line, _column, _column + 1U);
+	_tokens->push_token(
+		tk::invalid,
+		self::byte_chunk()
+	);
+}
 
-	const mx::usz _size = (_head - _mark);
-	_cursor = _base + _size;
+/* error */
+auto lx::lexer::error(const char* msg, const tk::chunk& ck) -> void {
+	_diag->push(msg, ck.range.ln, ck.range.cs, ck.range.ce);
+	_tokens->push_token(
+		tk::invalid,
+		ck
+	);
+}
 
-	tk::raw::token to{
-		id,
-		tk::raw::range{_line, _base, _cursor},
-		lx::lexeme{_mark, _size}
+/* byte chunk */
+auto lx::lexer::byte_chunk(void) noexcept -> tk::chunk {
+	const tk::chunk ck {
+				lx::lexeme{_it, 1U},
+				tk::range{_line, _column, _column + 1U}
 	};
+	++_column;
+	++_it;
+	return ck;
+}
 
-	if constexpr (parse)
-		_tokens->push_map_token(to);
-	else
-		_tokens->push_raw_token(to);
-	_base = _cursor;
+/* new chunk */
+auto lx::lexer::new_chunk(const mx::u8* mark) noexcept -> tk::chunk {
+	const mx::usz size = (_it - mark);
+	const mx::usz col_end = _column + size;
+	tk::chunk c{
+		lx::lexeme{mark, size},
+		tk::range{_line, _column, col_end}
+	};
+	_column = col_end;
+	return c;
 }
 
 /* push byte token */
-//template <tk::is_token_class T>
-template <tk::id id>
-auto lx::lexer::push_byte_token(void) -> void {
-	_tokens->push_map_token(
-		tk::raw::token{
-			id,
-			tk::raw::range{_line, _base, _base + 1U},
-			lx::lexeme{_head, 1U}
-		}
-	);
+auto lx::lexer::push_byte_token(const tk::id id) -> void {
+	_tokens->push_filtered_token(id, self::byte_chunk());
 }
 
-/* push error */
-template <mx::literal E>
-auto lx::lexer::push_error(void) -> void {
 
-	_diag->push(
-		E.data,
-		_line,
-		_base,
-		_base + 1U // will be changed after
-	);
+auto lx::lexer::skip_ignored(void) -> void {
+
+    while (_it < _end) {
+
+		switch (*_it) {
+
+			// skip blanks
+			case ' ':
+			case '\t': {
+				do {
+					++_column;
+				} while (++_it < _end && cc::is_blank(*_it));
+				break;
+			}
+
+			// skip linefeeds
+			case '\n': {
+				++_line;
+				while (++_it < _end && *_it == '\n')
+					++_line;
+				_column = 0U;
+				break;
+			}
+
+			// skip carriage returns
+			case '\r': {
+				do {
+					_it += (++_it < _end && *_it == '\n')
+						   ? 1U : 0U;
+					++_line;
+				} while (_it < _end && *_it == '\r');
+				_column = 0U;
+				break;
+			}
+
+			// skip comments
+			case '~': {
+				auto mark = _it;
+				do {
+					++_it;
+
+					// check end
+					if (_it >= _end)
+						break;
+
+					// include ending '~' if present
+					if (*_it == '~') {
+						++_it; break; }
+
+				} while (*_it != '\n' && *_it != '\r');
+
+				// push comment token
+				_tokens->push_token(tk::comment,
+									new_chunk(mark));
+				break;
+			}
+
+			// nothing ignored
+			default:
+				return;
+		}
+
+	} // while
+
 }
 
 
@@ -86,252 +155,422 @@ auto lx::lexer::push_error(void) -> void {
 auto lx::lexer::_lex(void) -> void {
 
 
-	while (_head < _limit) {
+	while (_it < _end) {
 
-		start:
-		//mx::u8 quote{'\''};
-		const mx::u8 c = *_head;
+		// skip ignored characters
+		self::skip_ignored();
 
-
-		// -- text ------------------------------------------------------------
-
-		if (cc::is_lower(*_head)) {
-			identifier:
-
-			_mark = _head;
-
-			do {
-				++_head;
-			} while (_head < _limit
-				&& (cc::is_alnum(*_head) || *_head == '_'));
-
-			self::push_token<true, tk::raw::text>();
-			continue;
-		}
+		if (_it >= _end)
+			break;
 
 
-		// -- notes -----------------------------------------------------------
+		// lookup character
 
-		if (cc::is_note(*_head)) {
+		switch (*_it) {
 
-			constexpr mx::u8 SHARP = 0U;
-			constexpr mx::u8 FLAT  = 1U;
-			constexpr bool alts[][2U] {
-				{true,  true}, {false, true},
-				{true, false}, {true,  true},
-				{false, true}, {true, false},
-				{true,  true}
-			};
-
-			_mark = _head;
-			++_head;
-
-			if (_head < _limit) {
-				if (*_head == '#') {
-					if (alts[c - 'A'][SHARP] == false) {
-						_cursor = _base + 1U;
-						// it's a comment, not an alteration
-						self::push_token<true, tk::raw::note>();
-						goto comment;
-					}
-					++_head;
-				}
-				else if (*_head == 'b') {
-					if (alts[c - 'A'][FLAT] == false) {
-						_cursor = _base + 1U;
-						// it's an identifier, not an alteration
-						self::push_token<true, tk::raw::note>();
-						goto identifier;
-					}
-
-					++_head;
-				}
-			}
-
-			while (_head < _limit && cc::is_digit(*_head))
-				++_head;
-
-			self::push_token<true, tk::raw::note>();
-			continue;
-		}
-
-
-
-		if (cc::is_digit(c)) {
-
-			_mark = _head;
-			++_head;
-
-			if (c == '0' && (_head < _limit)) {
-
-				switch (*_head) {
-					case 'b':
-						do {
-							++_head;
-						} while (_head < _limit && cc::is_binary(*_head));
-
-						self::push_token<true, tk::raw::binary>();
-						continue;
-
-					case 'x':
-						do {
-							++_head;
-						} while (_head < _limit && cc::is_hex(*_head));
-
-						self::push_token<true, tk::raw::hexadecimal>();
-						continue;
-
-					case 'o':
-						do {
-							++_head;
-						} while (_head < _limit && cc::is_octal(*_head));
-
-						self::push_token<true, tk::raw::octal>();
-						continue;
-
-					default:
-						// it's just a zero
-				}
-			}
-
-			while (_head < _limit && cc::is_digit(*_head))
-				++_head;
-
-			self::push_token<true, tk::raw::decimal>();
-			continue;
-		}
-
-
-
-		switch (c) {
-
-			case ' ':
-			case '\t':
-				++_head;
-				++_base;
+			// identifier
+			// abcdefghijklmnopqrstuvwxyz_
+			case 'a': case 'b': case 'c': case 'd':
+			case 'e': case 'f': case 'g': case 'h':
+			case 'i': case 'j': case 'k': case 'l':
+			case 'm': case 'n': case 'o': case 'p':
+			case 'q': case 'r': case 's': case 't':
+			case 'u': case 'v': case 'w': case 'x':
+			case 'y': case 'z': case '_':
+				lex_identifier();
 				continue;
 
-			case '\n':
-				++_head;
-				++_line;
-				_base = 0U;
+			// notes A-G
+			case 'C': case 'D': case 'E':
+			case 'F': case 'G': case 'A': case 'B':
+				lex_note();
 				continue;
 
-			case '\r':
-				_head += (++_head < _limit && *_head == '\n') ? 1U : 0U;
-				++_line;
-				_base = 0U;
+			// numbers 0-9
+			case '0': case '1': case '2': case '3':
+			case '4': case '5': case '6': case '7':
+			case '8': case '9':
+				lex_number();
 				continue;
 
-
-			// -- strings -----------------------------------------------------
-
-			//case '"':
-			//	quote = '"';
-			//
-			//case '\'': {
-			//	_mark = _head;
-			//	++_head;
-			//
-			//	while (_head < _limit
-			//	   && *_head != quote
-			//	   && *_head != '\n'
-			//	   && *_head != '\r')
-			//		++_head;
-			//
-			//	if (_head < _limit && *_head == quote)
-			//		++_head;
-			//	else
-			//		self::push_warning<"unterminated string">();
-			//
-			//	self::push_token<true, tk::string>();
-			//	continue;
-			//}
-
-			// -- comments ----------------------------------------------------
-
-			case '#': {
-				comment:
-
-				_mark = _head;
-
-				do {
-					++_head;
-				} while (_head < _limit
-					 && *_head != '\n'
-					 && *_head != '\r');
-
-				self::push_token<false, tk::raw::comment>();
-				continue;
-			}
 
 			// () [] {}
 			case '(':
-				self::push_byte_token<tk::raw::round_open>();
-				break;
+				push_byte_token(tk::priority_open);
+				continue;
+
 			case ')':
-				self::push_byte_token<tk::raw::round_close>();;
-				break;
+				push_byte_token(tk::priority_close);
+				continue;
+
 			case '[':
-				self::push_byte_token<tk::raw::square_open>();
-				break;
+				push_byte_token(tk::permutation_open);
+				continue;
+
 			case ']':
-				self::push_byte_token<tk::raw::square_close>();
-				break;
+				push_byte_token(tk::permutation_close);
+				continue;
+
 			case '{':
-				self::push_byte_token<tk::raw::curly_open>();
-				break;
+				push_byte_token(tk::condition_open);
+				continue;
+
 			case '}':
-				self::push_byte_token<tk::raw::curly_close>();;
-				break;
+				push_byte_token(tk::condition_close);
+				continue;
 
-			// = + - * /
+
+			// =
 			case '=':
-				self::push_byte_token<tk::raw::equal>();
-				break;
-			case '+':
-				self::push_byte_token<tk::raw::plus>();
-				break;
-			case '-':
-				self::push_byte_token<tk::raw::hyphen>();
-				break;
-			case '*':
-				self::push_byte_token<tk::raw::asterisk>();
-				break;
-			case '/':
-				self::push_byte_token<tk::raw::slash>();
-				break;
+				push_byte_token(tk::assignment);
+				continue;
 
-			/* . & : ^ \ */
-			case '.':
-				self::push_byte_token<tk::raw::dot>();
-				break;
+			// ;
+			case ';':
+				push_byte_token(tk::separator);
+				continue;
+
+
+			//case '+':
+			//	push_byte_token(tk::add);
+			//	continue;
+			//case '-':
+			//	push_byte_token(tk::subtract);
+			//	continue;
+			//case '*':
+			//	push_byte_token(tk::multiply);
+			//	continue;
+			//case '/':
+			//	push_byte_token(tk::divide);
+			//	continue;
+
+			// reference
 			case '&':
-				self::push_byte_token<tk::raw::ampersand>();
-				break;
+				lex_reference();
+				continue;
+
+			// parameter
 			case ':':
-				self::push_byte_token<tk::raw::colon>();
-				break;
+				lex_parameter();
+				continue;
+
+
+			// parallel
+			case '|':
+				push_byte_token(tk::parallel);
+				continue;
+
+
+			// crossfade
+			case '>': {
+
+				const auto ck = byte_chunk();
+
+				// skip ignored
+				self::skip_ignored();
+
+				if (_it < _end) {
+
+					switch (*_it) {
+						case '<': {
+							_tokens->push_filtered_token(
+								tk::crossfade,
+								ck,
+								self::byte_chunk()
+							);
+						}
+						case '=': {
+							//_tokens->push_filtered_token(
+							//	tk::greater_equal,
+							//	ck,
+							//	self::byte_chunk()
+							//);
+						}
+					}
+					continue;
+				}
+
+				// push greater token
+				//_tokens->push_filtered_token(
+				//	tk::greater,
+				//	ck
+				//);
+
+				continue;
+			}
+
 			case '^':
-				self::push_byte_token<tk::raw::caret>();
-				break;
+				lex_tempo(tk::tempo_fast);
+				continue;
 			case '\\':
-				self::push_byte_token<tk::raw::backslash>();
-				break;
+				lex_tempo(tk::tempo_slow);
+				continue;
 
 			default:
-				self::push_error<"unknown character">();
+				self::error("unknown character");
 		}
-		++_head;
-		++_base;
 	}
 
 	// push end of tokens
-	_tokens->push_map_token(
-		tk::raw::token{
-			tk::raw::end_of_tokens,
-			tk::raw::range{_line, _base, _base},
-			lx::lexeme{_head, 0U}
+	//_tokens->push_filtered_token(tk::end_of_tokens);
+}
+
+
+/* lex identifier */
+auto lx::lexer::lex_identifier(void) -> void {
+	const auto mark = _it;
+
+	do {
+		++_it;
+	} while (_it < _end && (cc::is_ident(*_it)));
+
+	_tokens->push_filtered_token(tk::identifier,
+						   self::new_chunk(mark));
+}
+
+/* lex note */
+auto lx::lexer::lex_note(void) -> void {
+
+	const auto mark = _it;
+
+	// check alterations
+	if (++_it < _end && (*_it == '#' || *_it == 'b'))
+		++_it;
+
+	while (_it < _end && cc::is_digit(*_it))
+		++_it;
+
+	_tokens->push_filtered_token(tk::note,
+					 self::new_chunk(mark));
+}
+
+/* lex number */
+auto lx::lexer::lex_number(void) -> void {
+
+	const mx::u8 c = *_it;
+
+	const auto mark = _it;
+	++_it;
+
+	if (c == '0' && (_it < _end)) {
+
+		switch (*_it) {
+
+			case 'b': {
+				do {
+					++_it;
+				} while (_it < _end && cc::is_binary(*_it));
+
+				_tokens->push_filtered_token(
+					tk::binary,
+					self::new_chunk(mark)
+				);
+				return;
+			}
+
+			case 'o': {
+				do {
+					++_it;
+				} while (_it < _end && cc::is_octal(*_it));
+
+				_tokens->push_filtered_token(
+					tk::octal,
+					self::new_chunk(mark)
+				);
+				return;
+			}
+
+			case 'x': {
+				do {
+					++_it;
+				} while (_it < _end && cc::is_hex(*_it));
+
+				_tokens->push_filtered_token(
+					tk::hexadecimal,
+					self::new_chunk(mark)
+				);
+				return;
+			}
+
+
+			default:
+				// it's just a zero
 		}
+	}
+
+	while (_it < _end && cc::is_digit(*_it))
+		++_it;
+
+	// push decimal token
+	_tokens->push_filtered_token(
+		tk::decimal,
+		self::new_chunk(mark)
+	);
+}
+
+
+/* lex tempo */
+auto lx::lexer::lex_tempo(const tk::id id) -> void {
+
+	auto ck = byte_chunk();
+	const auto eoc = _it;
+
+	// skip ignored
+	self::skip_ignored();
+
+	if (_it >= _end || !cc::is_digit(*_it)) {
+		self::error("expected tempo number", ck);
+		return;
+	}
+
+	const auto mark = _it;
+
+	do {
+		++_it;
+	} while (_it < _end && cc::is_digit(*_it));
+
+	// check if we have skipped something
+	if (mark != eoc) {
+		_tokens->push_filtered_token(
+			id, ck, self::new_chunk(mark)
+		);
+		return;
+	}
+
+	// we can extend the previous chunk
+	const auto gap = static_cast<mx::usz>(_it - mark);
+	ck.lexeme.size += gap;
+	ck.range.ce    += gap;
+	_column        += gap;
+
+	_tokens->push_filtered_token(id, ck);
+}
+
+
+
+/* lex parameter */
+auto lx::lexer::lex_parameter(void) -> void {
+
+		  auto ck  = byte_chunk();
+	const auto eoc = _it;
+
+	// skip ignored
+	self::skip_ignored();
+
+	if (_it >= _end) {
+		self::error("expected parameter name", ck);
+		return;
+	}
+
+	// check block start
+	if (*_it == ':') {
+
+		// check if we have skipped something
+		if (eoc != _it) {
+			_tokens->push_filtered_token(
+				tk::block_start, ck, self::byte_chunk()
+			);
+			return;
+		}
+
+		// we can extend the previous chunk
+		ck.lexeme.size += 1U;
+		ck.range.ce    += 1U;
+		++_column;
+		++_it;
+		_tokens->push_filtered_token(tk::block_start, ck);
+		return;
+	}
+
+
+	// check parameter reference
+	if (*_it == '&') {
+
+		// here we do not extend the chunk if possible
+		// too complex...
+
+		auto rf = byte_chunk();
+
+		// skip ignored
+		self::skip_ignored();
+
+
+		if (_it == _end || !(cc::is_lower(*_it) || *_it == '_')) {
+			_tokens->push_token(tk::param_reference, ck);
+			self::error("expected param-ref name", rf);
+			return;
+		}
+
+		// parse param-ref name
+		const auto mark = _it;
+		do {
+			++_it;
+		} while (_it < _end && cc::is_ident(*_it));
+
+		// push param-ref token
+		_tokens->push_filtered_token(
+			tk::param_reference, ck, rf, self::new_chunk(mark)
+		);
+
+		return;
+	}
+
+	// check parameter name
+	if (cc::is_lower(*_it) == true) {
+
+		// parse parameter name
+		const auto mark = _it;
+		do {
+			++_it;
+		} while (_it < _end && cc::is_lower(*_it));
+
+
+		// check if we have a skipped whitespaces
+		if (mark != eoc) {
+			_tokens->push_filtered_token(
+				tk::parameter, ck, self::new_chunk(mark)
+			);
+			return;
+		}
+
+		// we can extend the previous chunk
+		const auto gap = static_cast<mx::usz>(_it - eoc);
+		ck.lexeme.size += gap;
+		ck.range.ce    += gap;
+		_column        += gap;
+
+		// push token
+		_tokens->push_filtered_token(tk::parameter, ck);
+		return;
+	}
+
+}
+
+
+/* lex reference */
+auto lx::lexer::lex_reference(void) -> void {
+
+	const auto ck = byte_chunk();
+
+	// skip ignored
+	self::skip_ignored();
+
+	if (_it >= _end || !(cc::is_lower(*_it) || *_it == '_')) {
+		self::error("expected reference name", ck);
+		return;
+	}
+
+	// parse reference name
+	const auto mark = _it;
+	do {
+		++_it;
+	} while (_it < _end
+		&& (cc::is_ident(*_it)));
+
+	auto nk = self::new_chunk(mark);
+
+	// push reference token
+	_tokens->push_filtered_token(
+		tk::block_reference, ck, nk
 	);
 }

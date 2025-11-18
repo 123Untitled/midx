@@ -44,7 +44,7 @@ namespace lx {
 			/* state */
 			const lx::table* _state;
 
-			std::vector<tk::raw::token> _tokens;
+			std::vector<tk::token> _tokens;
 
 			std::vector<std::string> _errors;
 
@@ -203,7 +203,7 @@ auto lx::lexer::push_token(void) -> void {
 	//std::cout << "push token: " << static_cast<unsigned>(T::id) << '\n';
 
 	_tokens.emplace_back(
-		tk::raw::token{
+		tk::token{
 			T::id,
 			_line,
 			_checkpoint,
@@ -215,14 +215,14 @@ auto lx::lexer::push_token(void) -> void {
 template <tk::is_token_class T>
 auto lx::lexer::push_token2(void) -> void {
 	_tokens.emplace_back(
-		tk::raw::token{T::id, _line, _checkpoint, _it}
+		tk::token{T::id, _line, _checkpoint, _it}
 	);
 }
 
 template <tk::is_token_class T, typename... Tp>
 auto lx::lexer::push_token(const Tp&... args) -> void {
 	_tokens.emplace_back(
-		tk::raw::token{
+		tk::token{
 			T::id,
 			args...
 		}

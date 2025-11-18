@@ -1,19 +1,27 @@
-#include "language/tokens.hpp"
-#include "language/tokens/map_iterator.hpp"
+#include "language/tokens/tokens.hpp"
+#include <iostream>
+#include <iomanip>
+
+
+// -- T O K E N S -------------------------------------------------------------
 
 
 
-// -- S Y N  T O K E N --------------------------------------------------------
+// -- public methods ----------------------------------------------------------
 
-/* constructor */
-tk::syn::token::token(const tk::id id,
-					  const mx::usz start,
-					  const mx::usz count) noexcept
-: id{id}, start{start}, count{count} {
+/* debug */
+auto tk::tokens::debug(void) const -> void {
+
+	std::cout << "\x1b[31m----[TOKEN LIST DEBUG]----\x1b[0m\n";
+	for_each_filtered(
+		[&](const tk::const_token_view& tv) -> void {
+			std::cout << tv << '\n';
+		}
+	);
+    std::cout << "\x1b[31m--------------------------\x1b[0m\n";
 }
 
-//tk::syn::token::token(const tk::id id,
-//		const tk::const_map_iterator& it,
-//		const tk::const_map_iterator& end) noexcept
-//: id{id}, start{it.index()}, count{end.index() - start} {
-//}
+
+
+
+

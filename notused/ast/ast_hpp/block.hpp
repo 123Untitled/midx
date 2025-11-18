@@ -1,7 +1,7 @@
 #ifndef language_ast_block_hpp
 #define language_ast_block_hpp
 
-#include "language/tokens.hpp"
+#include "language/tokens/def.hpp"
 #include "language/ast/param.hpp"
 #include "language/syntax/specifier.hpp"
 
@@ -21,13 +21,13 @@ namespace as {
 			// -- private members ---------------------------------------------
 
 			/* specifier */
-			tk::raw::token* _specifier;
+			tk::token* _specifier;
 
 			/* spec id */
 			sp::id _spec_id;
 
 			/* identifier */
-			tk::raw::token* _identifier;
+			tk::token* _identifier;
 
 
 		public:
@@ -47,7 +47,7 @@ namespace as {
 			block(void) = delete;
 
 			/* token constructor */
-			block(tk::raw::token& tk, const mx::usz ps) noexcept
+			block(tk::token& tk, const mx::usz ps) noexcept
 			: _specifier{&tk},
 			  _spec_id{sp::to_id(tk.lexeme)},
 			  _identifier{nullptr},
@@ -55,7 +55,7 @@ namespace as {
 
 				// invalidate token if spec id is invalid
 				//_specifier->id = (_spec_id == sp::id::invalid)
-				//			   ? tk::raw::invalid
+				//			   ? tk::invalid
 				//			   : tk::specifier;
 			}
 
@@ -63,7 +63,7 @@ namespace as {
 			// -- public modifiers --------------------------------------------
 
 			/* identifier */
-			auto identifier(tk::raw::token* tk) noexcept -> void {
+			auto identifier(tk::token* tk) noexcept -> void {
 				_identifier = tk;
 			}
 
@@ -71,12 +71,12 @@ namespace as {
 			// -- public accessors --------------------------------------------
 
 			/* specifier */
-			auto specifier(void) const noexcept -> tk::raw::token& {
+			auto specifier(void) const noexcept -> tk::token& {
 				return *_specifier;
 			}
 
 			/* const specifier */
-			auto specifier(void) noexcept -> const tk::raw::token& {
+			auto specifier(void) noexcept -> const tk::token& {
 				return *_specifier;
 			}
 
@@ -88,12 +88,12 @@ namespace as {
 
 
 			/* identifier */
-			auto identifier(void) noexcept -> tk::raw::token& {
+			auto identifier(void) noexcept -> tk::token& {
 				return *_identifier;
 			}
 
 			/* const identifier */
-			auto identifier(void) const noexcept -> const tk::raw::token& {
+			auto identifier(void) const noexcept -> const tk::token& {
 				return *_identifier;
 			}
 

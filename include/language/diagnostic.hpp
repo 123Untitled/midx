@@ -1,8 +1,7 @@
 #ifndef language_diagnostic_hpp
 #define language_diagnostic_hpp
 
-#include "types.hpp"
-#include "language/tokens.hpp"
+#include "language/tokens/token_view.hpp"
 #include <vector>
 
 
@@ -15,14 +14,15 @@ namespace an {
 
 			struct entry final {
 				const char*   msg;
-				tk::raw::range   range;
+				tk::range   range;
 			};
 
 
 			std::vector<entry> _entries;
 
+
 			auto push(const char* msg,
-					  const tk::raw::range& range) -> void {
+					  const tk::range& range) -> void {
 				_entries.emplace_back(
 						an::diagnostic::entry{
 							msg,
@@ -32,11 +32,12 @@ namespace an {
 			}
 
 			auto push(const char* msg,
-					  const tk::raw::token& tk) -> void {
+					  const tk::token_view& tv) -> void {
+
 				_entries.emplace_back(
 						an::diagnostic::entry{
 							msg,
-							tk.range
+							tv.first_chunk().range
 						}
 				);
 			}
@@ -48,7 +49,7 @@ namespace an {
 				_entries.emplace_back(
 						an::diagnostic::entry{
 							msg,
-							tk::raw::range{
+							tk::range{
 								ln,
 								cs,
 								ce

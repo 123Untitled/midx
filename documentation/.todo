@@ -26,3 +26,13 @@ change comment symbol + accept Cb Fb or B# E# as valid note names
 # -----------
 implement panic parameter 
 
+
+
+# --------
+nvim match parent ()[]{}   disable <>
+
+#------
+leader+space->play stop
+
+#------
+vim midi note live selector listen

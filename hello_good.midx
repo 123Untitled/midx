@@ -1,0 +1,88 @@
+
+
+
+
+
+
+hello = workd =
+
+234
+
+
+~&hello  &world
+
+
+
+
+~:hello [:tr :&bass ( | 1 0 1) &bass] >< (:tr \2 1 1 0 0)
+~
+~
+~&hello
+~
+~
+~:tr 1 0 1 0
+~
+~:: hello :tr &bass :: ::::
+~
+~
+~intro_bass = :tr ^3 0 1 0 1 0 [1 0] >< 0 1 :&kick 0 0 1 0 1 0;
+~		:nt \4 E4 G4 B4 D5 &theme
+~		| \4 &  rythm0x2 123 (1 | 0 1 >< 0 [1 0 1] 0 0) {
+~		}
+~
+~
+~&intro_bass = :&intro_bass
+
+
+
+
+
+
+
+~bass = :&part1 &part2 2342
+
+
+
+~&hello
+
+~hello = world = :tr &al;
+~hello = world = :tr &al
+
+
+
+~hello = (
+
+
+
+
+
+
+
+~1 2 3;
+
+
+
+
+
+~0 0 1 | 2 3 4
+
+
+~>< 0 1 1
+
+~toto = 3
+
+~234 * 3 / 3
+
+
+
+
+~
+~bass = :tr ^3 \3 0 1 @euclid 0 1 0 [1 0] >< 0 1 0 0 1 0 1 0
+~		:ntE4G4B4D5&theme
+~		| \4 &rythm0x2 123 (1 | 0 1 >< 0 [1 0 1] 0 0)
+~		{
+~
+~			? synth:nt == A#3 ! :oc = +3
+~			?? synth:nt == B2 ! :oc = +1
+~			!! :oc = 0
+~		}

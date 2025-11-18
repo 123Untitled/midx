@@ -223,51 +223,51 @@ namespace lx {
 
 		// blank
 		lx::rule<cc::blank,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// line feed
 		lx::rule<cc::line_feed,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::newline,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// carriage return
 		lx::rule<cc::carriage_return,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::newline,
 					&lx::lexer::switch_state<lx::on_return>>,
 
 
 		// comment
 		lx::rule<cc::number_sign,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_comment>,
 					&lx::lexer::checkpoint>,
 
 		// single quote
 		lx::rule<cc::single_quote,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_string>,
 					&lx::lexer::checkpoint>,
 
 
 		// digits
 		lx::rule<cc::digit,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_digit>,
 					// add digit
 					&lx::lexer::checkpoint>,
 
 		// zero digit
 		lx::rule<cc::digit_zero,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_zero>,
 					&lx::lexer::checkpoint>,
 
 		// note
 		lx::rule<cc::note,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_note>,
 					&lx::lexer::checkpoint>,
 
@@ -275,31 +275,31 @@ namespace lx {
 
 		// bracket open
 		lx::rule<cc::bracket_open,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::bracket_open>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// bracket close
 		lx::rule<cc::bracket_close,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::bracket_close>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// at sign
 		lx::rule<cc::at_sign,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::at_sign>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// slash
 		lx::rule<cc::slash,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::slash>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// dot
 		lx::rule<cc::dot,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::dot>,
 					&lx::lexer::switch_state<lx::on_default>>
 
@@ -322,51 +322,51 @@ namespace lx {
 
 		// blank
 		lx::rule<cc::blank,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// line feed
 		lx::rule<cc::line_feed,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::newline,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// carriage return
 		lx::rule<cc::carriage_return,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::newline,
 					&lx::lexer::switch_state<lx::on_return>>,
 
 
 		// comment
 		lx::rule<cc::number_sign,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_comment>,
 					&lx::lexer::checkpoint>,
 
 		// single quote
 		lx::rule<cc::single_quote,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_string>,
 					&lx::lexer::checkpoint>,
 
 
 		// digits
 		lx::rule<cc::digit,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_digit>,
 					// add digit
 					&lx::lexer::checkpoint>,
 
 		// zero digit
 		lx::rule<cc::digit_zero,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_zero>,
 					&lx::lexer::checkpoint>,
 
 		// note
 		lx::rule<cc::note,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::switch_state<lx::on_note>,
 					&lx::lexer::checkpoint>,
 
@@ -374,31 +374,31 @@ namespace lx {
 
 		// bracket open
 		lx::rule<cc::bracket_open,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::bracket_open>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// bracket close
 		lx::rule<cc::bracket_close,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::bracket_close>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// at sign
 		lx::rule<cc::at_sign,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::at_sign>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// slash
 		lx::rule<cc::slash,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::slash>,
 					&lx::lexer::switch_state<lx::on_default>>,
 
 		// dot
 		lx::rule<cc::dot,
-					&lx::lexer::push_token<tk::raw::identifier>,
+					&lx::lexer::push_token<tk::identifier>,
 					&lx::lexer::push_token_byte<tk::dot>,
 					&lx::lexer::switch_state<lx::on_default>>
 	>{};
@@ -494,7 +494,7 @@ namespace lx {
 	//		using on_lead  = lx::action_list<&lx::lexer::switch_state<lx::initial_state>,
 	//										 &lx::lexer::checkpoint>;
 	//		using on_body  = lx::action_list<>;
-	//		using on_stop  = lx::action_list<&lx::lexer::push_token<tk::raw::identifier>>;
+	//		using on_stop  = lx::action_list<&lx::lexer::push_token<tk::identifier>>;
 	//}; // struct initial_state
 	//
 	//

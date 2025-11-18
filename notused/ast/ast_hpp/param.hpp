@@ -1,7 +1,7 @@
 #ifndef language_ast_param_hpp
 #define language_ast_param_hpp
 
-#include "language/tokens.hpp"
+#include "language/tokens/def.hpp"
 #include "language/syntax/parameter.hpp"
 
 
@@ -26,7 +26,7 @@ namespace as {
 			// -- private members ---------------------------------------------
 
 			/* parameter */
-			tk::raw::token* _param;
+			tk::token* _param;
 
 			/* param id */
 			pa::id _param_id;
@@ -51,7 +51,7 @@ namespace as {
 			}
 
 			/* specifier constructor */
-			param(const sp::id spec_id, tk::raw::token& tk, const mx::usz vs) noexcept
+			param(const sp::id spec_id, tk::token& tk, const mx::usz vs) noexcept
 			: _param{&tk}, _param_id{pa::id::invalid},
 			  vs{vs}, vc{0U} {
 
@@ -61,7 +61,7 @@ namespace as {
 
 				// set token id
 				//_param->id = (_param_id == pa::id::invalid)
-				//		   ? tk::raw::invalid
+				//		   ? tk::invalid
 				//		   : tk::parameter;
 			}
 
@@ -69,7 +69,7 @@ namespace as {
 			// -- public accessors --------------------------------------------
 
 			/* token */
-			auto token(void) const noexcept -> tk::raw::token& {
+			auto token(void) const noexcept -> tk::token& {
 				return *_param;
 			}
 

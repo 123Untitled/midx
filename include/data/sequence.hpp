@@ -3,8 +3,7 @@
 
 #include <vector>
 #include "time/signature.hpp"
-#include "language/tokens.hpp"
-#include "language/syntax/specifier.hpp"
+#include "language/tokens/def.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -38,24 +37,13 @@ namespace mx {
 		100   // PR
 	}; 
 
-	constexpr mx::seq_type to_seq_type[static_cast<mx::usz>(sp::id::count)] {
-		seq_type::TR, // trig
-		seq_type::NT, // note
-		seq_type::GA, // gate
-		seq_type::VL, // velo
-		seq_type::OC, // octa
-		seq_type::SE, // semi
-		seq_type::CH, // chan
-		seq_type::PR  // prob
-	};
-
 
 
 	struct seq_slot final {
 		public:
 			mx::i8 value;
 			mx::signature sign;
-			tk::raw::token* token;
+			tk::token* token;
 			mx::usz depth;
 	};
 
@@ -128,7 +116,7 @@ namespace mx {
 			// -- public modifiers --------------------------------------------
 
 			/* push */
-			auto push(const mx::i8 value, tk::raw::token& tk, const mx::signature& sign) -> void {
+			auto push(const mx::i8 value, tk::token& tk, const mx::signature& sign) -> void {
 
 				const auto repeat = sign.modulus();
 
@@ -146,7 +134,7 @@ namespace mx {
 			}
 
 			/* push */
-			auto push_trig(const mx::i8 value, tk::raw::token& tk, const mx::signature& sign) -> void {
+			auto push_trig(const mx::i8 value, tk::token& tk, const mx::signature& sign) -> void {
 
 				const auto repeat = sign.modulus();
 

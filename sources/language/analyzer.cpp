@@ -10,7 +10,13 @@
 
 /* default constructor */
 mx::analyzer::analyzer(void)
-: _lexer{}, _parser{} {
+: _data{},
+  _lexer{}, _parser{},
+  _tokens{},
+  _tree{},
+  _diagnostic{},
+  _model{},
+  _highlights{} {
 }
 
 
@@ -21,26 +27,25 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 	_data = std::move(data);
 
 		_tokens.clear();
-		  _tree.clear();
 	_diagnostic.clear();
 		 _model.clear();
-	   _builder.clear();
 
 	// lex
 	_lexer.lex(_data, _tokens, _diagnostic);
 
 	//_tokens.debug();
 
-	// parse
-	_parser.parse(_tokens, _diagnostic, _tree);
+	//for (const auto& tv : _tokens.filtered()) {
+	//	std::cout << tv << '\n';
+	//}
 
-	_tokens.debug_syn();
+	// parse
+	_parser.parse(_tokens, _tree, _diagnostic);
 
 	//_builder.build(_tree, _model, _diagnostic);
 
 	//_tree.debug();
 	//_tokens.debug(br);
-
 
 
 
@@ -52,7 +57,7 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 	//bool first = true;
 	//for (mx::usz i = 0U; i < _tokens.raw_size(); ++i) {
 	//	const auto& t           = _tokens[i];
-	//	const char* group       = tk::raw::vim_highlight[t.id];
+	//	const char* group       = tk::vim_highlight[t.id];
 	//
 	//	if (!first)
 	//		ss << ",";
@@ -66,33 +71,30 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 	//
 	//ss << "]}\r\n";
 
+	//_tokens.for_each
 
 	ss << "{\"type\":\"highlight\",\"highlights\":[";
 	bool first = true;
-	for (const auto& sv : _tokens.syn_tokens()) {
 
-		const auto& t           = sv.token();
-		const char* group       = tk::syn::vim_highlight[t.id];
-
-
-		for (const auto& mt : sv) {
-			if (!first)
-				ss << ",";
-			else
-				first = false;
-			ss << "{\"l\":" << mt.range.ln
-			   << ",\"s\":" << mt.range.cs
-			   << ",\"e\":" << mt.range.ce
-			   << ",\"g\":\"" << group << "\"}";
-
-		}
-	}
+	_tokens.for_each(
+		[](const tk::const_token_view& tv, std::stringstream& ss, bool& first) static -> void {
+			const auto& group = tk::highlight[tv.id()];
+			tv.for_each_chunk(
+				[](const tk::chunk& ch, std::stringstream& ss, bool& first, const char* group) static -> void {
+					if (!first)
+						ss << ",";
+					else
+						first = false;
+					ss << "{\"l\":"   << ch.range.ln
+					   << ",\"s\":"   << ch.range.cs
+					   << ",\"e\":"   << ch.range.ce
+					   << ",\"g\":\"" << group
+					   << "\"}";
+			}, ss, first, group);
+	}, ss, first);
 
 	ss << "]}\r\n";
 
-	int i = 0;
-
-	i += 3;
 
 
 	// --- deuxième objet : diagnostics ---

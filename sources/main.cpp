@@ -1,14 +1,11 @@
 #include <iostream>
 #include "application.hpp"
 
-#include "language/tokens/raw_iterator.hpp"
-
 
 auto main(int ac, char** av) -> int {
 
+
 	try {
-
-
 
 		mx::application::run();
 	}
