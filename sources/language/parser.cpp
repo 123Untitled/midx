@@ -40,6 +40,7 @@ auto pr::parser::parse(tk::tokens&   tokens,
 	_end = fi.end();
 
 	_depth = 0U;
+	_new_track = true;
 
 	// parse scope
 	if (_it == _end) {
@@ -47,7 +48,7 @@ auto pr::parser::parse(tk::tokens&   tokens,
 		return;
 	}
 
-	auto root = parse_expr<pr::level::block>(pr::precedence::none);
+	auto root = parse_expr(pr::precedence::none);
 
 	if (!root) {
 		std::cout << "No expression parsed\n";
@@ -92,56 +93,70 @@ auto pr::parser::error(const char* msg,
 	_diag->push(msg, tv.first_chunk().range);
 }
 
-
+struct depth_guard {
+	mx::uint& d;
+	depth_guard(mx::uint& depth) : d{depth} { ++d; }
+	~depth_guard() { --d; }
+};
 
 
 /* parse expr */
-template <pr::level L>
 auto pr::parser::parse_expr(const pr::precedence min_pre) -> mx::usz {
+	depth_guard dg{_depth};
 
-	std::cout << "\x1b[35mEntering\x1b[0m parse_expr " << _depth++ << '\n';
+	std::cout << "\x1b[32mparse_expr\x1b[0m [" << _depth << "]\n";
+	std::cout << "Min precedence: " << min_pre << '\n';
 
 	mx::usz left = 0U;
 
 	while (_it != _end) {
 
 		auto& tk = _it.token();
-		auto nud = pr::nud_of<L>(tk);
-		std::cout << "\x1b[32mNUD\x1b[0m loop\n";
+		auto nud = pr::nud_of(tk);
 
+		//std::cout << " Current token: " << *_it << '\n';
 
 		// no NUD found, go to LED phase
 		if (!nud) {
 			//std::cout << " No NUD found\n";
 			break;
 		}
+		//std::cout << "\x1b[32mNUD\x1b[0m loop " << *_it << '\n';
+		//std::cout << " Found NUD\n";
 
-		if (pr::can_start<L>(tk) == false) {
+		if (pr::can_start(tk) == false) {
 			error("Token cannot start an expression", _it);
 			return 0U;
 			break;
 		}
+		//std::cout << " Can start expression\n";
 
-		//std::cout << " Found NUD\n";
 		// consume token in nud function
 		//const auto node = (this->*nud)(std::move(left));
 		//left = node != 0U ? node : left;
 		left = (this->*nud)(left);
+		if (!left) {
+			//std::cout << " NUD returned null\n";
+			//return 0U;
+			//break;
+		}
+		//else
+		//	std::cout << " NUD returned node\n";
 	}
 
 
 	// loop for led
 	while (_it != _end) {
-		std::cout << "\x1b[31mLED\x1b[0m loop\n";
 
 		const auto& tk = _it.token();
-		const auto led = pr::led_of<L>(tk);
-		const auto pre = pr::pre_of<L>(tk);
+		const auto led = pr::led_of(tk);
+		const auto pre = pr::pre_of(tk);
 
 		if (!led) {
 			//std::cout << " No LED found\n";
 			break;
 		}
+		//std::cout << "\x1b[31mLED\x1b[0m loop " << *_it << '\n';
 
 		if (pre <= min_pre)
 			break;
@@ -170,8 +185,9 @@ auto debug(const char* msg, const tk::iterator& it) -> void {
 // -- N U D S -----------------------------------------------------------------
 
 
-template <pr::level L>
 mx::usz pr::parser::nud_value(const mx::usz left) {
+
+	const auto id = _it.token().id;
 
 	// new marker
     _arena.mark();
@@ -180,8 +196,9 @@ mx::usz pr::parser::nud_value(const mx::usz left) {
     if (left) {
 
 		// is sequence
-		if (std::holds_alternative<as::sequence>(_arena.node(left))) {
-			const auto& seq = std::get<as::sequence>(_arena.node(left));
+		if (_arena.is_sequence(left)) {
+
+			const auto& seq = _arena.node(left);
 			_arena.push(seq.start, seq.count);
 		}
 		// is not sequence
@@ -189,21 +206,22 @@ mx::usz pr::parser::nud_value(const mx::usz left) {
 	}
 
 	// push initial leaf
-	_arena.push(_arena.make_node<as::leaf>(_it.token()));
+	_arena.push(
+		_arena.make_node(as::type::leaf, _it.token())
+	);
 
 	// consume other values
-	while (++_it != _end && _it.token().id == tk::decimal) {
+	while (++_it != _end && _it.token().id == id/*tk::decimal*/) {
 		_arena.push(
-			_arena.make_node<as::leaf>(_it.token())
-		);
+			_arena.make_node(as::type::leaf, _it.token()));
 	}
 
-	if (left == 0U || !std::holds_alternative<as::sequence>(_arena.node(left))) {
+	if (left == 0U || !_arena.is_sequence(left)) {
 		const auto [start, count] = _arena.flush();
-		return _arena.make_node<as::sequence>(start, count);
+		return _arena.make_node(as::type::sequence, start, count);
 	}
 
-	auto& seq = std::get<as::sequence>(_arena.node(left));
+	auto& seq = _arena.node(left);
 	auto [start,count] = _arena.flush();
 	seq.start = start;
 	seq.count = count;
@@ -211,22 +229,61 @@ mx::usz pr::parser::nud_value(const mx::usz left) {
 }
 
 
+auto pr::parser::lookahead(tk::iterator it) const noexcept -> bool {
+
+	mx::usz depth = 1U;
+
+	while (it != _end && depth > 0U) {
+		const auto& tk = it.token();
+		switch (tk.id) {
+			case tk::priority_open:
+			case tk::permutation_open:
+				++depth;
+				break;
+
+			case tk::priority_close:
+			case tk::permutation_close:
+				--depth;
+				break;
+
+            case tk::block_reference:
+			case tk::parameter:
+				return true;
+
+			default:
+				break;
+		}
+		++it;
+	}
+	return false;
+}
 
 // -- N U D S -----------------------------------------------------------------
 
 
 /* nud group */
-template <pr::level L>
 auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 
 	debug("NUD group", _it);
 	const auto it = _it;
 
+
+
 	// consume opening parenthesis
 	++_it;
 
+	//if constexpr (L == pr::level::param
+	//		   || L == pr::level::sequence) {
+	//	if (lookahead(_it) == true) {
+	//		return 0;
+	//	}
+	//}
+
 	// parse inner expression
-    const auto inside = parse_expr<L>(pr::precedence::none);
+    const auto inside = parse_expr(
+			//pr::precedence::tracksep
+			pr::precedence::none
+			);
 
 	if (_it != _end && _it.token().id == tk::priority_close) {
 		debug("NUD group", _it);
@@ -241,7 +298,7 @@ auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 		return inside;
 
 	// check if left is sequence
-	if (as::node_is<as::sequence>(_arena, left))
+	if (_arena.is_sequence(left))
 		return _arena.append_to_sequence(left, inside);
 
 	// else make new sequence
@@ -249,9 +306,7 @@ auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 }
 
 
-
 /* nud permutation */
-template <pr::level L>
 auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 
 	debug("NUD permutation", _it);
@@ -261,7 +316,7 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 	++_it;
 
 	// parse inner expression
-    const auto inside = parse_expr<L>(pr::precedence::none);
+    const auto inside = parse_expr(pr::precedence::none);
 
 
 	if (_it != _end && _it.token().id == tk::permutation_close) {
@@ -274,12 +329,12 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 		return left;
 
 	 // make permutation node
-	mx::usz perm;
-	auto& pref = as::make_node<as::permutation>(_arena, perm);
+	mx::usz perm = _arena.make_node(as::type::permutation);
+	auto& pref = _arena.node(perm);
 
 	// check if inside is sequence
-	if (as::node_is<as::sequence>(_arena, inside)) {
-		const auto& seq = std::get<as::sequence>(_arena.node(inside));
+	if (_arena.is_sequence(inside)) {
+		const auto& seq = _arena.node(inside);
 		pref.start = seq.start;
 		pref.count = seq.count;
 	}
@@ -293,7 +348,7 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 		return perm;
 
 	// check if left is sequence
-	if (as::node_is<as::sequence>(_arena, left))
+	if (_arena.is_sequence(left))
 		return _arena.append_to_sequence(left, perm);
 
 	// else make new sequence
@@ -302,55 +357,170 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 
 
 /* nud parameter */
-template <pr::level L>
-auto pr::parser::nud_parameter(const mx::usz left) -> mx::usz {
-
-	if constexpr (L == pr::level::block) {
-		// create track node
-		// ...
-		// handle left
-		// left maybe 0, a sequence, a prefix tempo, etc.
-	}
-
-
-	++_it;
-	return 0U;
+auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
+	++_it; // consume parameter token
+	return left;
 }
 
+
+/* led parameter */
+auto pr::parser::led_parameter(mx::usz left) -> mx::usz {
+
+	std::cout << "LED parameter input left: " << as::what_is(_arena.node(left)) << "\n";
+
+    mx::usz track;
+
+	if (_arena.is_track(left)) {
+		track = left;
+	}
+	else if (left == 0U) {
+        // create new track node
+        track = _arena.make_node(as::type::track);
+	}
+	else {
+		std::cout << "\x1b[31merror\x1b[0m\n";
+		error("Parameter must follow a track", _it);
+		return 0U;
+    }
+
+	/* IMPLEMENTATION STEPS:
+	   keep last track list
+	   keep last param list
+
+	   and / or 
+	   
+	   use state and switch in this function
+	   led_parameter becomes nud_parameter
+	   !!!!!!
+
+	   */
+
+
+    // 2) create parameter node
+    mx::usz param = _arena.make_node(as::type::parameter, _it.token());
+    _arena.append_to_sequence(track, param);
+
+    ++_it; // consume :nt
+
+    // 3) parse the sequence belonging to this param
+    mx::usz seq = parse_expr(
+			precedence::parameter
+			);
+	std::cout << "[" << _depth << "] LED param: back from parse_expr: "
+			  << as::what_is(_arena.node(seq)) << '\n';
+
+    if (seq)
+        _arena.append_to_sequence(param, seq);
+
+    return track;
+}
+
+	//// recursive sequence parsing
+	//const auto seq = parse_expr<pr::level::sequence>(pr::precedence::none);
+	//std::cout << "back from sequence parse: " << seq << '\n';
+	//
+	//if (seq) {
+	//	_arena.append_to_sequence(param, seq);
+	//	//_arena.merge_as_sequence(param, seq);
+	//}
+	//
+	//
+	//return track;
+
+
+
 /* nud tempo */
-template <pr::level L>
 auto pr::parser::nud_tempo(mx::usz left) -> mx::usz {
-
-	// consume tempo token
-    ++_it;
-
-    // new context: mark children
-    _arena.mark();
-
-    // parse everything that belongs to this tempo block
-    mx::usz inside = parse_expr<L>(pr::precedence::tempo);
-
-    // tempo closes automatically when parse_expr returns
-    auto [start, count] = _arena.flush();
-
-    //mx::usz tempo_idx = _arena.make_node<ast::tempo>(tvalue, start, count);
-
-    // merge with left
-    //if (left == 0)
-    //    return tempo_idx;
-    //
-    //if (as::node_is<ast::sequence>(_arena.node(left)))
-    //    return _arena.append_to_sequence(left, tempo_idx);
-    //
-    //return _arena.merge_as_sequence(left, tempo_idx);
-	return 0;
+    ++_it; // consume tempo token
+	return left;
 }
 
 
 // -- L E D S -----------------------------------------------------------------
 
+
+auto pr::parser::led_tracksep(const mx::usz left) -> mx::usz {
+
+	std::cout << "LED tracksep input left: " << as::what_is(_arena.node(left)) << "\n";
+
+	const auto& tk = _it.token();
+
+	do { // skip consecutive parallel operators
+		++_it;
+	} while (_it != _end && _it.token().id == tk::block_start);
+
+	if (_it == _end)
+		return left;
+
+	const auto right = parse_expr(
+			pr::precedence::none
+			//pr::pre_of(tk)
+			);
+
+	if (left == 0U) {
+		std::cout << "LED tracksep merging: null + "
+				  << as::what_is(_arena.node(right)) << "\n";
+		return right;
+	}
+
+	if (right == 0U) {
+		std::cout << "LED tracksep merging: "
+				  << as::what_is(_arena.node(left)) << " + null\n";
+		return left;
+	}
+
+	std::cout << "LED tracksep merging: "
+			  << as::what_is(_arena.node(left)) << " + "
+			  << as::what_is(_arena.node(right)) << "\n";
+
+	return _arena.merge_as_sequence(left, right);
+}
+
+
+/* led parallel */
+auto pr::parser::led_parallel(const mx::usz left) -> mx::usz {
+
+	std::cout << "LED parallel input left: " << as::what_is(_arena.node(left)) << "\n";
+	debug("LED parallel", _it);
+
+	const auto& tk = _it.token();
+
+	do { // skip consecutive parallel operators
+		++_it;
+	} while (_it != _end && _it.token().id == tk::parallel);
+
+	if (_it == _end)
+		return left;
+
+    auto right = parse_expr(pr::pre_of(tk));
+
+	std::cout << "back from parallel parse: " << (right ? as::what_is(_arena.node(right)) : "null") << '\n';
+
+	if (left == 0U) {
+		std::cout << "LED parallel merging: null + "
+				  << as::what_is(_arena.node(right)) << "\n";
+		return right;
+	}
+
+	if (right == 0U) {
+		std::cout << "LED parallel merging: "
+				  << as::what_is(_arena.node(left)) << " + null\n";
+		return left;
+	}
+
+	std::cout << "LED parallel merging: "
+			  << as::what_is(_arena.node(left)) << " + "
+			  << as::what_is(_arena.node(right)) << "\n";
+
+	return _arena.make_node(
+				as::type::parallel,
+				_arena.new_remap(left),
+				_arena.new_remap(right)
+	);
+}
+
+
 /* led crossfade */
-template <pr::level L>
 auto pr::parser::led_crossfade(const mx::usz left) -> mx::usz {
 
 	debug("LED crossfade", _it);
@@ -364,143 +534,15 @@ auto pr::parser::led_crossfade(const mx::usz left) -> mx::usz {
 	if (_it == _end)
 		return left;
 
-	const auto right = parse_expr<L>(pr::pre_of<L>(tk));
+	const auto right = parse_expr(pr::pre_of(tk));
 
 	return left == 0U ? right :
 		 (right == 0U ? left :
-		   _arena.make_node<as::crossfade>(
+		   _arena.make_node(
+			   as::type::crossfade,
 			   _arena.new_remap(left),
 			   _arena.new_remap(right)
 		   ));
 }
 
-template <pr::level L>
-auto pr::parser::led_tracksep(const mx::usz left) -> mx::usz {
-	++_it;
-	return 0U;
-
-	//debug("LED tracksep", _it);
-	//
-	//const auto& tk = _it.token();
-	//
-	//do { // skip consecutive parallel operators
-	//	++_it;
-	//} while (_it != _end && _it.token().id == tk::block_start);
-	//
-	//if (_it == _end)
-	//	return left;
-	//
- //   auto right = parse_expr<L>(pr::pre_of<L>(tk));
-	//
-	//
-	//if (left == nullptr)
-	//	return right;
-	//
-	//if (right == nullptr)
-	//	return left;
-	//
-	//return as::make_unique<as::binary>(
-	//	std::move(left),
-	//	std::move(right),
-	//	tk
-	//);
-	//return left;
-}
-
-
-/* led parallel */
-template <pr::level L>
-auto pr::parser::led_parallel(const mx::usz left) -> mx::usz {
-
-	debug("LED parallel", _it);
-
-	const auto& tk = _it.token();
-
-	do { // skip consecutive parallel operators
-		++_it;
-	} while (_it != _end && _it.token().id == tk::parallel);
-
-	if (_it == _end)
-		return left;
-
-    auto right = parse_expr<L>(pr::pre_of<L>(tk));
-
-	if (left == 0U)
-		return right;
-
-	if (right == 0U)
-		return left;
-
-	return _arena.make_node<as::parallel>(
-			_arena.new_remap(left),
-			_arena.new_remap(right)
-	);
-}
-
-
-
-
-
-//auto pr::parser::led_parallel(as::node::unique&& left) -> as::node::unique {
-//
-//    debug("LED parallel", _it);
-//
-//    const auto& tk = _it.token(); // token de l'opérateur |
-//
-//    // 1) Skip des || consécutifs (ton comportement permissif)
-//    do {
-//        ++_it;
-//    } while (_it != _end && _it.token().id == tk::parallel);
-//
-//    // Pas de RHS → on ne fabrique rien de spécial
-//    if (_it == _end)
-//        return left;
-//
-//    // 2) Parser la partie droite avec la bonne précédence
-//    auto right = parse_expr(pr::pre_of(tk));
-//
-//    // Si vraiment rien à droite → on garde juste la gauche
-//    if (!right)
-//        return left;
-//
-//    // 3) Si pas de gauche (cas comme `(| 2 3)`), on renvoie juste right
-//    if (!left)
-//        return right;
-//
-//    // 4) Fusion dans un nœud parallel
-//
-//    // Si la gauche est déjà un parallel, on le réutilise
-//    if (auto* par = dynamic_cast<as::parallel*>(left.get())) {
-//
-//        // Optionnel : si la droite est aussi un parallel (parenthèses), on la "flatten"
-//        if (auto* par_right = dynamic_cast<as::parallel*>(right.get())) {
-//            auto& children = par_right->children();
-//            for (auto& child : children) {
-//                par->add_child(std::move(child));
-//            }
-//            children.clear();
-//        } else {
-//            par->add_child(std::move(right));
-//        }
-//
-//        return left;
-//    }
-//
-//    // Sinon on crée un nouveau parallel et on y met left + right
-//    auto par = as::make_unique<as::parallel>(tk);
-//
-//    par->add_child(std::move(left));
-//
-//    if (auto* par_right = dynamic_cast<as::parallel*>(right.get())) {
-//        auto& children = par_right->children();
-//        for (auto& child : children) {
-//            par->add_child(std::move(child));
-//        }
-//        children.clear();
-//    } else {
-//        par->add_child(std::move(right));
-//    }
-//
-//    return par;
-//}
 

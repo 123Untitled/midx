@@ -1,71 +1,12 @@
 #ifndef language_ast_hpp
 #define language_ast_hpp
 
-#include "core/types.hpp"
-#include "language/tokens/def.hpp"
-
-#include <variant>
+#include "language/ast/node.hpp"
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
 
 namespace as {
-
-
-	struct dummy final {};
-
-
-	struct permutation final {
-		mx::usz start;
-		mx::usz count;
-	};
-
-	struct track final {
-		mx::usz start;
-		mx::usz count;
-	};
-
-
-	struct parallel final {
-		mx::usz left;
-		mx::usz right;
-	};
-
-	struct crossfade final {
-		mx::usz left;
-		mx::usz right;
-	};
-
-
-	struct parameter final {
-		const tk::token* token;
-		mx::usz index;
-	};
-
-	struct sequence final {
-		mx::usz start;
-		mx::usz count;
-	};
-
-	struct leaf final {
-		const tk::token* token;
-		leaf(const tk::token& t) noexcept
-		: token{&t} {
-		}
-	};
-
-
-
-	using node = std::variant<
-		as::dummy,
-		as::permutation,
-		as::parallel,
-		as::crossfade,
-		as::parameter,
-		as::sequence,
-		as::leaf
-	>;
-
 
 
 	// -- A R E N A -----------------------------------------------------------
@@ -84,9 +25,9 @@ namespace as {
 			// -- private members ---------------------------------------------
 
 			std::vector<as::node> _nodes;
-			std::vector<mx::usz>   _remap;
-			std::vector<mx::usz>   _stack;
-			std::vector<mx::usz>   _marks;
+			std::vector<mx::usz>  _remap;
+			std::vector<mx::usz>  _stack;
+			std::vector<mx::usz>  _marks;
 
 
 			// -- private methods ---------------------------------------------
@@ -94,7 +35,7 @@ namespace as {
 			/* pop mark
 			   pop the last mark from the mark stack
 			   and return its value */
-			auto _pop_mark(void) -> mx::usz {
+			auto _pop_mark(void) /*noexcept*/ -> mx::usz {
 				if (_marks.empty())
 					throw std::runtime_error{"No marks to pop"};
 				const auto mark = _marks.back();
@@ -108,7 +49,14 @@ namespace as {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			arena(void) noexcept = default;
+			arena(void) noexcept
+			: _nodes{}, _remap{},
+			  _stack{}, _marks{} {
+
+				static_cast<void>(
+					make_node(as::type::dummy)
+				);
+			}
 
 			/* destructor */
 			~arena(void) noexcept = default;
@@ -117,10 +65,11 @@ namespace as {
 			/* make node
 			   create a new node in the arena
 			   and return its index */
-			template <typename T, typename... Ts>
+			template <typename... Ts>
 			auto make_node(Ts&&... args) -> mx::usz {
 				const mx::usz index = _nodes.size();
-				_nodes.emplace_back(T{std::forward<Ts>(args)...});
+				static_cast<void>(
+						_nodes.emplace_back(std::forward<Ts>(args)...));
 				return index;
 			}
 
@@ -136,25 +85,32 @@ namespace as {
 			   to be flushed later */
 			auto push(const mx::usz start,
 					  const mx::usz count) -> void {
+
+				const auto size = _stack.size();
+				_stack.resize(size + count);
+
 				for (mx::usz i = 0U; i < count; ++i)
-					_stack.emplace_back(_remap[start + i]);
+					_stack[size + i] = _remap[start + i];
 			}
 
 			/* clear
 			   reset the arena to an empty state */
 			auto clear(void) noexcept -> void {
+
 				_nodes.clear(); _remap.clear();
 				_stack.clear(); _marks.clear();
+
 				static_cast<void>(
-						self::make_node<as::dummy>()
+					make_node(as::type::dummy)
 				);
+
 			}
 
 			/* mark
 			   push a mark onto the mark stack
 			   to remember the current stack size */
 			auto mark(void) -> void {
-				_marks.emplace_back(_stack.size());
+				_marks.push_back(_stack.size());
 			}
 
 			/* flush
@@ -163,7 +119,7 @@ namespace as {
 			   and count of flushed nodes */
 			auto flush(void) -> std::pair<mx::usz, mx::usz> {
 
-				const auto mark = self::_pop_mark();
+				const auto mark = _pop_mark();
 
 				const mx::usz start = _remap.size();
 				const mx::usz count = _stack.size() - mark;
@@ -247,17 +203,18 @@ namespace as {
 				/* noexcept */
 				-> mx::usz {
 
-				auto& seq = std::get<as::sequence>(self::node(left));
+				// assume left is sequence
+				auto& seq = node(left);
 
-				self::mark();
+				mark();
 
 				// push all children of to sequence
-				self::push(seq.start, seq.count);
-				// push what
-				self::push(elem);
+				push(seq.start, seq.count);
+				// push new element
+				push(elem);
 
 				// flush
-				const auto [start, count] = self::flush();
+				const auto [start, count] = flush();
 				seq.start = start;
 				seq.count = count;
 
@@ -269,34 +226,50 @@ namespace as {
 
 				const auto start = _remap.size();
 				_remap.resize(start + 2U);
+
 				_remap[start + 0U] = left;
 				_remap[start + 1U] = right;
-				return self::make_node<as::sequence>(start, 2U);
+
+				return make_node(
+					as::type::sequence,
+					start, 2U
+				);
 			}
 
-			template <typename T, typename... Ts>
-			friend auto make_node(self&, mx::usz&, Ts&&...) -> T&;
+
+			// -- public accessors --------------------------------------------
+
+			/* is sequence */
+			auto is_sequence(const mx::usz index) /*noexcept*/ -> bool {
+				return node(index).type == as::type::sequence;
+			}
+
+			/* is leaf */
+			auto is_leaf(const mx::usz index) /*noexcept*/ -> bool {
+				return node(index).type == as::type::leaf;
+			}
+
+			/* is track */
+			auto is_track(const mx::usz index) /*noexcept*/ -> bool {
+				return node(index).type == as::type::track;
+			}
 
 	}; // class arena
 
 
-	/* node is */
-	template <typename T>
-	auto node_is(const as::arena& a, const mx::usz index) /*noexcept*/ -> bool {
-		const auto& n = a.node(index);
-		return std::holds_alternative<T>(n);
+	inline auto what_is(const as::node& n) -> const char* {
+		switch (n.type) {
+			case as::type::dummy:       return "dummy";
+			case as::type::permutation: return "permutation";
+			case as::type::track:       return "track";
+			case as::type::parallel:    return "parallel";
+			case as::type::crossfade:   return "crossfade";
+			case as::type::parameter:   return "parameter";
+			case as::type::sequence:    return "sequence";
+			case as::type::leaf:        return "leaf";
+			default:                    return "unknown";
+		}
 	}
-
-	/* make node */
-	template <typename T, typename... Ts>
-	auto make_node(as::arena& a, mx::usz& i, Ts&&... args) -> T& {
-		i = a._nodes.size();
-		auto& n = a._nodes.emplace_back(T{std::forward<Ts>(args)...});
-		return std::get<T>(n);
-	}
-
-
-
 
 
 	struct debug final {
@@ -318,7 +291,8 @@ namespace as {
 
 
 			auto _visit(const mx::usz index) -> void {
-				std::visit(self{_arena, _indent + 2U}, _arena.remap(index));
+				self d{_arena, _indent + 2U};
+				d._switch(_arena.remap(index));
 			}
 
 
@@ -330,53 +304,86 @@ namespace as {
 
 
 			static auto run(const as::arena& a, const as::node& n) -> void {
-				std::visit(as::debug{a}, n);
+				as::debug{a}._switch(n);
 			}
 
-			auto operator()(const as::dummy& d) -> void {
-				_pad();
-				std::cout << "dummy\n";
+
+			auto _switch(const as::node& n) -> void {
+
+				switch (n.type) {
+
+					case as::type::dummy: {
+						_pad();
+						std::cout << "dummy\n";
+						break;
+					}
+
+					case as::type::permutation: {
+						_pad();
+						std::cout << "permutation:\n";
+
+						for (mx::usz i = 0U; i < n.count; ++i)
+							_visit(n.start + i);
+						break;
+					}
+
+					case as::type::track: {
+						_pad();
+						std::cout << "track:\n";
+
+						for (mx::usz i = 0U; i < n.count; ++i)
+							_visit(n.start + i);
+						break;
+					}
+
+					case as::type::parallel: {
+						_pad();
+						std::cout << "parallel:\n";
+
+						_visit(n.start);
+						_visit(n.count);
+						break;
+					}
+
+					case as::type::crossfade: {
+						_pad();
+						std::cout << "crossfade:\n";
+						_visit(n.start);
+						_visit(n.count);
+						break;
+					}
+
+					case as::type::parameter: {
+						_pad();
+						std::cout << "parameter: " << *(n.token) << '\n';
+
+						for (mx::usz i = 0U; i < n.count; ++i)
+							_visit(n.start + i);
+						break;
+					}
+
+					case as::type::sequence: {
+						_pad();
+						std::cout << "sequence:\n";
+
+						for (mx::usz i = 0U; i < n.count; ++i)
+							_visit(n.start + i);
+						break;
+					}
+
+					case as::type::leaf: {
+						_pad();
+						std::cout << "leaf: " << *(n.token) << '\n';
+						break;
+					}
+
+					default:
+						throw std::runtime_error{"Unknown node type in debug"};
+				}
 			}
 
-			auto operator()(const as::permutation& g) -> void {
-				_pad();
-				std::cout << "permutation:\n";
-
-				for (mx::usz i = 0U; i < g.count; ++i)
-					_visit(g.start + i);
-			}
-
-			auto operator()(const as::parallel& p) -> void {
-				_pad();
-				std::cout << "parallel:\n";
-
-				_visit(p.left);
-				_visit(p.right);
-			}
-			auto operator()(const as::crossfade& c) -> void {
-				_pad();
-				std::cout << "crossfade:\n";
-				_visit(c.left);
-				_visit(c.right);
-			}
-			auto operator()(const as::parameter& p) -> void {
-				_pad();
-				std::cout << "parameter: " << *(p.token) << '\n';
-			}
-			auto operator()(const as::sequence& s) -> void {
-				_pad();
-				std::cout << "sequence:\n";
-
-				for (mx::usz i = 0U; i < s.count; ++i)
-					_visit(s.start + i);
-			}
-			auto operator()(const as::leaf& l) -> void {
-				_pad();
-				std::cout << "leaf: " << *(l.token) << '\n';
-			}
 
 	}; // struct debug
-
 
 } // namespace as
 

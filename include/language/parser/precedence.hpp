@@ -19,14 +19,17 @@ namespace pr {
 
 		parallel   = 20U,
 		crossfade  = 30U,
+
 		parameter  = 40U,
+
 		tempo      = 50U,
-		sequence   = 55U,
-		term       = 60U,
-		factor     = 70U,
+
 		grouping   = 80U
 	};
 
 } // namespace pr
+		//sequence   = 55U,
+		//term       = 60U,
+		//factor     = 70U,
 
 #endif // language_parser_precedence_hpp

@@ -4,6 +4,7 @@
 #include "language/tokens/def.hpp"
 #include "language/parser/rules.hpp"
 #include "language/parser.hpp"
+#include "language/parser/levels.hpp"
 
 
 // -- P R  N A M E S P A C E --------------------------------------------------
@@ -11,24 +12,14 @@
 namespace pr {
 
 
-	/* level */
-	enum class level : mx::uint {
-		scope,
-		block,
-		param,
-		value
-	};
-
-
-
 	/* number */
-	template <pr::level L>
 	consteval auto rule_number(void) -> pr::rule {
 		return pr::rule {
-			.nud = &pr::parser::nud_value<L>,
+			.nud = &pr::parser::nud_value,
 			.led = nullptr,
 			.pre = pr::precedence::none,
-			.can_start = true, //L == pr::level::value,
+			.can_start = true,
+				//L == pr::level::sequence,
 			.is_infix   = false,
 			.is_prefix  = false,
 			.is_postfix = false
@@ -36,7 +27,6 @@ namespace pr {
 	}
 
 	/* empty */
-	template <pr::level L>
 	consteval auto rule_empty(void) -> pr::rule {
 		return pr::rule {
 			.nud = nullptr,
@@ -50,30 +40,48 @@ namespace pr {
 	}
 
 	/* tempo */
-	template <pr::level L>
 	consteval auto rule_tempo(void) -> pr::rule {
 		return pr::rule {
-			.nud = &pr::parser::nud_tempo<L>,
+			//.nud = &pr::parser::nud_tempo,
+			.nud = &pr::parser::nud_value,
 			.led = nullptr,
 			.pre = pr::precedence::tempo,
-			.can_start  = L != pr::level::scope,
+			.can_start  = true,
 			.is_infix   = false,
 			.is_prefix  = true,
 			.is_postfix = false
 		};
 	}
 
+	/* parameter */
+	consteval auto rule_parameter(void) -> pr::rule {
+
+		return pr::rule {
+			// nud
+			.nud = nullptr,
+			.led = &pr::parser::led_parameter,
+			// precedence
+			pr::precedence::parameter,
+			// can start
+			false,
+			// is prefix
+			true,
+			// is infix
+			true,
+			// is postfix
+			false
+		};
+	}
 
 	// -- R U L E S -----------------------------------------------------------
 
-	template <pr::level L>
 	constexpr pr::rule rules[tk::max_tokens] {
-
 
 		// identifier
 		{
 			// nud
-			nullptr,
+			&pr::parser::nud_value,
+			//nullptr,
 			// led
 			nullptr,
 			// precedence
@@ -107,19 +115,19 @@ namespace pr {
 		},
 
 		// separator ;
-		pr::rule_empty<L>(),
+		pr::rule_empty(),
+
 
 		// tempo ^2 \2
-		pr::rule_tempo<L>(),
-		pr::rule_tempo<L>(),
-
+		pr::rule_tempo(),
+		pr::rule_tempo(),
 
 		// parallel
 		{
 			// nud
 			nullptr,
 			// led
-			&pr::parser::led_parallel<L>,
+			&pr::parser::led_parallel,
 			// precedence
 			pr::precedence::parallel,
 			// can start
@@ -137,7 +145,7 @@ namespace pr {
 			// nud
 			nullptr,
 			// led
-			&pr::parser::led_crossfade<L>,
+			&pr::parser::led_crossfade,
 			// precedence
 			pr::precedence::crossfade,
 			// can start
@@ -153,13 +161,16 @@ namespace pr {
 		// block start
 		{
 			// nud
-			nullptr,
+			//nullptr,
+			.nud = &pr::parser::nud_value,
 			// led
-			&pr::parser::led_tracksep<L>,
+			//&pr::parser::led_tracksep,
+			nullptr,
 			// precedence
-			pr::precedence::tracksep,
+			//pr::precedence::tracksep,
+			pr::precedence::none,
 			// can start
-			true,
+			false,
 			// is prefix
 			false,
 			// is infix
@@ -169,27 +180,12 @@ namespace pr {
 		},
 
 		// parameter
-		{
-			// nud
-			&pr::parser::nud_parameter<L>,
-			// led
-			nullptr,
-			// precedence
-			pr::precedence::parameter,
-			// can start
-			true,
-			// is prefix
-			true,
-			// is infix
-			false,
-			// is postfix
-			false
-		},
+		pr::rule_parameter(),
 
 		// block reference
 		{
 			// nud
-			&pr::parser::nud_value<L>,
+			&pr::parser::nud_value,
 			// led
 			nullptr,
 			// precedence
@@ -207,7 +203,7 @@ namespace pr {
 		// param reference
 		{
 			// nud
-			&pr::parser::nud_value<L>,
+			&pr::parser::nud_value,
 			// led
 			nullptr,
 			// precedence
@@ -225,28 +221,29 @@ namespace pr {
 
 		// -- numbers ---------------------------------------------------------
 		// note,
-		rule_number<L>(),
+		rule_number(),
 		// binary,
-		rule_number<L>(),
+		rule_number(),
 		// octal,
-		rule_number<L>(),
+		rule_number(),
 		// decimal,
-		rule_number<L>(),
+		rule_number(),
 		// hexadecimal,
-		rule_number<L>(),
+		rule_number(),
 
 
 		// () [] {}
 		// priority_open,
 		{
 			// nud
-			&pr::parser::nud_group<L>,
+			&pr::parser::nud_group,
 			// led
 			nullptr,
 			// precedence
 			pr::precedence::grouping,
 			// can start
-			L == pr::level::block,
+			true,
+			//L == pr::level::block,
 			// is prefix
 			false,
 			// is infix
@@ -255,12 +252,12 @@ namespace pr {
 			false
 		},
 		// priority_close,
-		pr::rule_empty<L>(),
+		pr::rule_empty(),
 
 		// permutation_open,
 		{
 			// nud
-			&pr::parser::nud_permutation<L>,
+			&pr::parser::nud_permutation,
 			// led
 			nullptr,
 			// precedence
@@ -275,7 +272,7 @@ namespace pr {
 			false
 		},
 		// permutation_close,
-		pr::rule_empty<L>(),
+		pr::rule_empty(),
 
 		// condition_open,
 		{
@@ -296,47 +293,43 @@ namespace pr {
 		},
 
 		// condition_close,
-		pr::rule_empty<L>(),
+		pr::rule_empty(),
 
 
 
 		// -- non used tokens -------------------------------------------------
 
 		// comment
-		pr::rule_empty<L>(),
+		pr::rule_empty(),
 
 		// invalid
-		pr::rule_empty<L>(),
+		pr::rule_empty(),
 
 		// end of tokens
-		pr::rule_empty<L>(),
+		pr::rule_empty(),
 	};
 
 
 	// -- helpers -------------------------------------------------------------
 
 	/* nud of */
-	template <pr::level L>
 	inline auto nud_of(const tk::token& token) noexcept -> pr::rule::nud_type {
-		return rules<L>[token.id].nud;
+		return rules[token.id].nud;
 	}
 
 	/* led of */
-	template <pr::level L>
 	inline auto led_of(const tk::token& token) noexcept -> pr::rule::led_type {
-		return rules<L>[token.id].led;
+		return rules[token.id].led;
 	}
 
 	/* precedence of */
-	template <pr::level L>
 	inline auto pre_of(const tk::token& token) noexcept -> pr::precedence {
-		return rules<L>[token.id].pre;
+		return rules[token.id].pre;
 	}
 
 	/* can start */
-	template <pr::level L>
 	inline auto can_start(const tk::token& token) noexcept -> bool {
-		return rules<L>[token.id].can_start;
+		return rules[token.id].can_start;
 	}
 
 } // namespace pr

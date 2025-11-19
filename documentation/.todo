@@ -36,3 +36,12 @@ leader+space->play stop
 
 #------
 vim midi note live selector listen
+
+
+
+# binary number is broken !!
+
+
+#------
+add random step param: 0 or 1 to enable/disable random step selection :rd 0 0 (tr | nt) 0 vl
+add random value param ?

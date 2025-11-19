@@ -51,6 +51,8 @@ namespace pr {
 
 			mx::uint _depth;
 
+			bool _new_track;
+
 		public:
 
 			// -- public lifecycle --------------------------------------------
@@ -72,38 +74,29 @@ namespace pr {
 			auto error(const char*, const tk::iterator&) -> void;
 
 
-			template <pr::level>
 			auto parse_expr(const pr::precedence) -> mx::usz;
 
 
 
-			template <pr::level>
 			auto nud_tempo(const mx::usz) -> mx::usz;
 
-			template <pr::level>
 			auto nud_value(const mx::usz) -> mx::usz;
 
-			template <pr::level>
 			auto nud_group(const mx::usz) -> mx::usz;
 
-			template <pr::level>
 			auto nud_parameter(const mx::usz) -> mx::usz;
+			auto led_parameter(const mx::usz) -> mx::usz;
 
-			template <pr::level>
 			auto nud_permutation(const mx::usz) -> mx::usz;
 
-			template <pr::level>
 			auto led_parallel(const mx::usz) -> mx::usz;
 
-			template <pr::level>
 			auto led_crossfade(const mx::usz) -> mx::usz;
 
-			template <pr::level>
 			auto led_tracksep(const mx::usz) -> mx::usz;
 
 
-			auto merge_as_sequence(const mx::usz, const mx::usz) -> mx::usz;
-			auto append_to_sequence(const mx::usz, const mx::usz) -> mx::usz;
+			auto lookahead(tk::iterator) const noexcept -> bool;
 
 			auto abord(void) noexcept -> void {
 				_it = _end;
