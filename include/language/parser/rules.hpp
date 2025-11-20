@@ -2,7 +2,6 @@
 #define language_parser_rules_hpp
 
 #include "language/parser/precedence.hpp"
-#include "language/ast.hpp"
 
 
 // -- P R  N A M E S P A C E --------------------------------------------------
@@ -70,44 +69,3 @@ namespace pr {
 } // namespace pr
 
 #endif // language_parser_rules_hpp
-
-
-
-			// -- private static members --------------------------------------
-
-			//static constinit self _rules[tk::end_of_tokens + 1U];
-
-
-		//public:
-
-			// -- public static methods ---------------------------------------
-
-			/* of */
-			//static auto of(const tk::id type) noexcept -> const self& {
-			//	return self::_rules[type];
-			//}
-			//
-			///* of */
-			//static auto of(const tk::token& token) noexcept -> const self& {
-			//	return self::of(token.id);
-			//}
-
-	// -- helpers -------------------------------------------------------------
-
-	/* nud of */
-	//template <pr::level L = pr::level::value>
-	//inline auto nud_of(const tk::token& token) noexcept -> pr::rule<L>::nud_type {
-	//	return rule<L>::of(token).nud;
-	//}
-	//
-	///* led of */
-	//template <pr::level L = pr::level::value>
-	//inline auto led_of(const tk::token& token) noexcept -> pr::rule<L>::led_type {
-	//	return rule<L>::of(token).led;
-	//}
-	//
-	///* precedence of */
-	//template <pr::level L = pr::level::value>
-	//inline auto pre_of(const tk::token& token) noexcept -> pr::precedence {
-	//	return rule<L>::of(token).pre;
-	//}

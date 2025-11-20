@@ -4,7 +4,7 @@
 #include "language/tokens/tokens.hpp"
 #include "language/diagnostic.hpp"
 #include "language/parser/rules.hpp"
-#include "language/ast.hpp"
+#include "language/ast/tree.hpp"
 
 #include "language/parser/levels.hpp"
 
@@ -37,12 +37,11 @@ namespace pr {
 
 			// -- private members ---------------------------------------------
 
-			/* arena */
-			as::arena _arena;
+			/* tree */
+			as::tree _tree;
 
 			/* tokens */
 			tk::tokens* _tokens;
-			as::tree*   _tree;
 
 			/* diagnostic */
 			an::diagnostic* _diag;

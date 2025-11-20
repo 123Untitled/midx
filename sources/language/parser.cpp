@@ -29,10 +29,10 @@ auto pr::parser::parse(tk::tokens&   tokens,
 
 	// get references
 	_tokens = &tokens;
-	_tree   = &tree;
+	//_tree   = &tree;
 	_diag   = &diag;
 
-	_arena.clear();
+	_tree.clear();
 
 	// initialize iterators
 	const auto fi = tokens.filtered();
@@ -58,9 +58,9 @@ auto pr::parser::parse(tk::tokens&   tokens,
 		std::cout << "Parsed expression:\n";
 	}
 
-	const auto& n = _arena.node(root);
+	const auto& n = _tree.node(root);
 
-	as::debug::run(_arena, n);
+	as::debug::run(_tree, n);
 }
 
 auto dbg_token(const char* msg, const tk::token& t) -> void {
@@ -210,13 +210,13 @@ auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
 	}
 
 	// make atomic values node
-	const auto av = _arena.make_node(as::type::atomic_values, start, count);
+	const auto av = _tree.make_node(as::type::atomic_values, start, count);
 
 	if (left == 0U) {
-		left = _arena.make_node(as::type::sequence);
+		left = _tree.make_node(as::type::sequence);
 	}
 
-	return _arena.append_to_sequence(left, av);
+	return _tree.append_to_sequence(left, av);
 }
 
 
@@ -227,39 +227,39 @@ mx::usz pr::parser::nud_value(const mx::usz left) {
 	const auto id = _it.token().id;
 
 	// new marker
-    _arena.mark();
+    _tree.mark();
 
 	// left exists
     if (left) {
 
 		// is sequence
-		if (_arena.is_sequence(left)) {
+		if (_tree.is_sequence(left)) {
 
-			const auto& seq = _arena.node(left);
-			_arena.push(seq.start, seq.count);
+			const auto& seq = _tree.node(left);
+			_tree.push(seq.start, seq.count);
 		}
 		// is not sequence
-		else { _arena.push(left); }
+		else { _tree.push(left); }
 	}
 
 	// push initial leaf
-	_arena.push(
-		_arena.make_node(as::type::leaf, *_it/*.token()*/)
+	_tree.push(
+		_tree.make_node(as::type::leaf, *_it/*.token()*/)
 	);
 
 	// consume other values
 	while (++_it != _end && _it.token().id == id/*tk::decimal*/) {
-		_arena.push(
-			_arena.make_node(as::type::leaf, *_it/*.token()*/));
+		_tree.push(
+			_tree.make_node(as::type::leaf, *_it/*.token()*/));
 	}
 
-	if (left == 0U || !_arena.is_sequence(left)) {
-		const auto [start, count] = _arena.flush();
-		return _arena.make_node(as::type::sequence, start, count);
+	if (left == 0U || !_tree.is_sequence(left)) {
+		const auto [start, count] = _tree.flush();
+		return _tree.make_node(as::type::sequence, start, count);
 	}
 
-	auto& seq = _arena.node(left);
-	auto [start,count] = _arena.flush();
+	auto& seq = _tree.node(left);
+	auto [start,count] = _tree.flush();
 	seq.start = start;
 	seq.count = count;
 	return left;
@@ -305,11 +305,11 @@ auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 		return inside;
 
 	// check if left is sequence
-	if (_arena.is_sequence(left))
-		return _arena.append_to_sequence(left, inside);
+	if (_tree.is_sequence(left))
+		return _tree.append_to_sequence(left, inside);
 
 	// else make new sequence
-	return _arena.merge_as_sequence(left, inside);
+	return _tree.merge_as_sequence(left, inside);
 }
 
 
@@ -345,18 +345,18 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 		return left;
 
 	 // make permutation node
-	mx::usz perm = _arena.make_node(as::type::permutation);
-	auto& pref = _arena.node(perm);
+	mx::usz perm = _tree.make_node(as::type::permutation);
+	auto& pref = _tree.node(perm);
 
 	// check if inside is sequence
-	if (_arena.is_sequence(inside)) {
-		const auto& seq = _arena.node(inside);
+	if (_tree.is_sequence(inside)) {
+		const auto& seq = _tree.node(inside);
 		pref.start = seq.start;
 		pref.count = seq.count;
 	}
 	else {
 		// need remap index here
-		pref.start = _arena.new_remap(inside);
+		pref.start = _tree.new_remap(inside);
 		pref.count = 1U;
 	}
 
@@ -364,11 +364,11 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 		return perm;
 
 	// check if left is sequence
-	if (_arena.is_sequence(left))
-		return _arena.append_to_sequence(left, perm);
+	if (_tree.is_sequence(left))
+		return _tree.append_to_sequence(left, perm);
 
 	// else make new sequence
-	return _arena.merge_as_sequence(left, perm);
+	return _tree.merge_as_sequence(left, perm);
 }
 
 
@@ -378,7 +378,7 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 	debug("NUD parameter", _it);
 
 	// create new track
-	auto track = _arena.make_node(as::type::track);
+	auto track = _tree.make_node(as::type::track);
 
 	do {
 
@@ -397,11 +397,11 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 		if (seq) {
 			// create new parameter
-			mx::usz param = _arena.make_node(as::type::parameter,
+			mx::usz param = _tree.make_node(as::type::parameter,
 											*it/*.token()*/);
 
-			_arena.append_to_sequence(param, seq);
-			_arena.append_to_sequence(track, param);
+			_tree.append_to_sequence(param, seq);
+			_tree.append_to_sequence(track, param);
 		}
 		; int i = 0;
 
@@ -416,12 +416,12 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 	if (left) {
 
-		if (_arena.is_sequence(left)) // work with permutations because permu is created at end
-			return _arena.append_to_sequence(left, track);
+		if (_tree.is_sequence(left)) // work with permutations because permu is created at end
+			return _tree.append_to_sequence(left, track);
 
-		auto seq = _arena.make_node(as::type::sequence);
-		_arena.append_to_sequence(seq, left);
-		_arena.append_to_sequence(seq, track);
+		auto seq = _tree.make_node(as::type::sequence);
+		_tree.append_to_sequence(seq, left);
+		_tree.append_to_sequence(seq, track);
 		return seq;
 	}
 
@@ -486,10 +486,10 @@ auto pr::parser::led_parallel(const mx::usz left) -> mx::usz {
 	if (right == 0U) {
 		return left;
 	}
-	return _arena.make_node(
+	return _tree.make_node(
 				as::type::parallel,
-				_arena.new_remap(left),
-				_arena.new_remap(right)
+				_tree.new_remap(left),
+				_tree.new_remap(right)
 	);
 }
 
@@ -521,10 +521,10 @@ auto pr::parser::led_crossfade(const mx::usz left) -> mx::usz {
 
 	return left == 0U ? right :
 		 (right == 0U ? left :
-		   _arena.make_node(
+		   _tree.make_node(
 			   as::type::crossfade,
-			   _arena.new_remap(left),
-			   _arena.new_remap(right)
+			   _tree.new_remap(left),
+			   _tree.new_remap(right)
 		   ));
 }
 
