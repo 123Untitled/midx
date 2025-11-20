@@ -83,12 +83,17 @@ auto tk::const_token_view::num_chunks(void) const noexcept -> mx::usz {
 /* ostream operator */
 auto operator<<(std::ostream& os, const tk::const_token_view& tv) -> std::ostream& {
 
+	if (tv.is_null()) {
+		os << "<null token>";
+		return os;
+	}
+
 	const auto id = tv.id();
 	const auto len = tk::max_name_len - std::strlen(tk::names[id]);
 
 	os << tk::colors[id] << tk::names[id] << "\x1b[0m";
-	for (mx::usz i = 0U; i < len; ++i)
-		os << ' ';
+	//for (mx::usz i = 0U; i < len; ++i)
+	//	os << ' ';
 	os << " '";
 
 	tv.for_each_chunk(
@@ -98,7 +103,6 @@ auto operator<<(std::ostream& os, const tk::const_token_view& tv) -> std::ostrea
 			const char* ptr = reinterpret_cast<const char*>(c.lexeme.data);
 			for (mx::usz i = 0U; i < c.lexeme.size; ++i)
 				os << ptr[i];
-
 	}, os);
 	os << "'";
 

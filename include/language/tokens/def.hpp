@@ -76,14 +76,14 @@ namespace tk {
 		crossfade,
 
 
-		// block start
-		block_start,
+		// track separator
+		track_separator,
 
 		// parameter
 		parameter,
 
 		// references
-		block_reference,
+		track_reference,
 		param_reference,
 
 		// numbers
@@ -171,8 +171,8 @@ namespace tk {
 		"crossfade",
 
 
-		// block start
-		"block_start",
+		// track separator
+		"track_separator",
 
 		// parameter :param
 		"parameter",

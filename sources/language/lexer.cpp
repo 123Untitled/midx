@@ -468,7 +468,7 @@ auto lx::lexer::lex_parameter(void) -> void {
 		// check if we have skipped something
 		if (eoc != _it) {
 			_tokens->push_filtered_token(
-				tk::block_start, ck, self::byte_chunk()
+				tk::track_separator, ck, self::byte_chunk()
 			);
 			return;
 		}
@@ -478,7 +478,7 @@ auto lx::lexer::lex_parameter(void) -> void {
 		ck.range.ce    += 1U;
 		++_column;
 		++_it;
-		_tokens->push_filtered_token(tk::block_start, ck);
+		_tokens->push_filtered_token(tk::track_separator, ck);
 		return;
 	}
 
@@ -571,6 +571,6 @@ auto lx::lexer::lex_reference(void) -> void {
 
 	// push reference token
 	_tokens->push_filtered_token(
-		tk::block_reference, ck, nk
+		tk::track_reference, ck, nk
 	);
 }

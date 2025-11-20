@@ -15,12 +15,10 @@ namespace pr {
 		none       = 0U,
 		assignment = 10U,
 
-		tracksep  = 15U,
+		//tracksep  = 15U,
 
 		parallel   = 20U,
 		crossfade  = 30U,
-
-		parameter  = 40U,
 
 		tempo      = 50U,
 

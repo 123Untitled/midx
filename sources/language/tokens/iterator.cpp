@@ -48,6 +48,19 @@ auto tk::iterator::operator++(int) noexcept -> self {
 	return tmp;
 }
 
+/* pre-decrement operator */
+auto tk::iterator::operator--(void) noexcept -> self& {
+	--_index;
+	return *this;
+}
+
+/* post-decrement operator */
+auto tk::iterator::operator--(int) noexcept -> self {
+	self tmp = *this;
+	--_index;
+	return tmp;
+}
+
 /* equality operator */
 auto tk::iterator::operator==(const self& other) const noexcept -> bool {
 	return _index == other._index;

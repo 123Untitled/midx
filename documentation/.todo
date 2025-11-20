@@ -45,3 +45,10 @@ vim midi note live selector listen
 #------
 add random step param: 0 or 1 to enable/disable random step selection :rd 0 0 (tr | nt) 0 vl
 add random value param ?
+
+
+# ---- 
+operator <+> positive superposition (AND logic)
+operator <-> negative superposition (NAND logic)
+operator <^> exclusive superposition (XOR logic)
+operator <=> equivalence superposition (XNOR logic)

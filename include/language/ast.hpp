@@ -28,6 +28,7 @@ namespace as {
 			std::vector<mx::usz>  _remap;
 			std::vector<mx::usz>  _stack;
 			std::vector<mx::usz>  _marks;
+			std::vector<as::node*> _refs;
 
 
 			// -- private methods ---------------------------------------------
@@ -45,6 +46,15 @@ namespace as {
 
 
 		public:
+
+			auto ref_at(const mx::usz index) const /*noexcept*/ -> const as::node& {
+				if (index >= _refs.size()) {
+					std::cout << "Ref index out of bounds: " << index
+							  << " >= " << _refs.size() << '\n';
+					throw std::runtime_error{"Arena ref index out of bounds"};
+				}
+				return *_refs[index];
+			}
 
 			// -- public lifecycle --------------------------------------------
 
@@ -312,6 +322,16 @@ namespace as {
 
 				switch (n.type) {
 
+					case as::type::atomic_values: {
+						_pad();
+						std::cout << "atomic_values: "
+								  << "token_start=" << n.data.values.token_start
+								  << ", value_start=" << n.data.values.value_start
+								  << ", count=" << n.data.values.duration
+								  << '\n';
+						break;
+					}
+
 					case as::type::dummy: {
 						_pad();
 						std::cout << "dummy\n";
@@ -355,7 +375,8 @@ namespace as {
 
 					case as::type::parameter: {
 						_pad();
-						std::cout << "parameter: " << *(n.token) << '\n';
+						std::cout << "parameter: " << (n.token) << '\n';
+						//std::cout << "parameter: " << *(n.token) << '\n';
 
 						for (mx::usz i = 0U; i < n.count; ++i)
 							_visit(n.start + i);
@@ -373,7 +394,8 @@ namespace as {
 
 					case as::type::leaf: {
 						_pad();
-						std::cout << "leaf: " << *(n.token) << '\n';
+						std::cout << "leaf: " << (n.token) << '\n';
+						//std::cout << "leaf: " << *(n.token) << '\n';
 						break;
 					}
 

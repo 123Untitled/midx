@@ -18,7 +18,10 @@ namespace as {
 		leaf,
 		parallel,
 		crossfade,
-		permutation
+		permutation,
+
+		atomic_values,
+		atomic_refs
 	};
 
 } // namespace as

@@ -10,11 +10,10 @@ namespace pr {
 
 
 	/* level */
-	enum class level : mx::uint {
-		scope,
-		track,
-		param,
-		sequence
+	enum level : mx::uint {
+		expression,
+		sequence,
+		max_levels
 	};
 
 } // namespace pr

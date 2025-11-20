@@ -72,6 +72,12 @@ namespace tk {
 			/* post-increment operator */
 			auto operator++(int) noexcept -> self;
 
+			/* pre-decrement operator */
+			auto operator--(void) noexcept -> self&;
+
+			/* post-decrement operator */
+			auto operator--(int) noexcept -> self;
+
 			auto operator-(const mx::isz offset) const noexcept -> self {
 				self it = *this;
 				it._index -= offset;

@@ -6,8 +6,6 @@
 #include "language/parser/rules.hpp"
 #include "language/ast.hpp"
 
-#include "language/parser/levels.hpp"
-
 
 // -- forward declarations ----------------------------------------------------
 
@@ -19,6 +17,7 @@ namespace an { class diagnostic; }
 
 namespace pr {
 
+	enum class level : mx::uint;
 
 	// -- P A R S E R ---------------------------------------------------------
 
@@ -52,7 +51,7 @@ namespace pr {
 
 			mx::uint _depth;
 
-			bool _back;
+			bool _new_track;
 
 		public:
 
@@ -71,45 +70,33 @@ namespace pr {
 
 			// -- private methods ---------------------------------------------
 
-			auto error(const char*) const -> void;
-			auto error(const char*, const tk::iterator&) const -> void;
+			auto error(const char*) -> void;
+			auto error(const char*, const tk::iterator&) -> void;
 
 
-			template <pr::level L>
 			auto parse_expr(const pr::precedence) -> mx::usz;
 
 
 
-			template <pr::level L>
 			auto nud_tempo(const mx::usz) -> mx::usz;
 
 			auto nud_value(const mx::usz) -> mx::usz;
 
-			auto nud_atomic_value(const mx::usz) -> mx::usz;
-
-
-			template <pr::level L>
 			auto nud_group(const mx::usz) -> mx::usz;
 
 			auto nud_parameter(const mx::usz) -> mx::usz;
+			auto led_parameter(const mx::usz) -> mx::usz;
 
-			auto nud_track_separator(const mx::usz) -> mx::usz;
-
-			template <pr::level L>
 			auto nud_permutation(const mx::usz) -> mx::usz;
 
-
-
-			template <pr::level>
 			auto led_parallel(const mx::usz) -> mx::usz;
 
-			template <pr::level>
 			auto led_crossfade(const mx::usz) -> mx::usz;
 
+			auto led_tracksep(const mx::usz) -> mx::usz;
 
 
 			auto lookahead(tk::iterator) const noexcept -> bool;
-			auto lookahead_op(tk::iterator) const noexcept -> bool;
 
 			auto abord(void) noexcept -> void {
 				_it = _end;

@@ -5,6 +5,7 @@
 #include "language/tokens/def.hpp"
 
 
+
 // -- T K  N A M E S P A C E --------------------------------------------------
 
 namespace tk {
@@ -52,7 +53,10 @@ namespace tk {
 			// -- public lifecycle --------------------------------------------
 
 			/* deleted default constructor */
-			token_view(void) = delete;
+			//token_view(void) = delete;
+			token_view(void)
+			: _chunks{nullptr}, _token{nullptr} {
+			}
 
 
 			// -- public accessors --------------------------------------------
@@ -131,7 +135,10 @@ namespace tk {
 			// -- public lifecycle --------------------------------------------
 
 			/* deleted default constructor */
-			const_token_view(void) = delete;
+			//const_token_view(void) = delete;
+			const_token_view(void)
+			: _chunks{nullptr}, _token{nullptr} {
+			}
 
 
 			// -- public accessors --------------------------------------------
@@ -162,10 +169,13 @@ namespace tk {
 				}
 			}
 
+			auto is_null(void) const noexcept -> bool {
+				return _token == nullptr || _chunks == nullptr;
+			}
+
 	}; // class const_token_view
 
 } // namespace tk
-
 
 
 /* ostream operator */

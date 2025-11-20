@@ -2,38 +2,25 @@
 
 
 
-~(:tr 2) | :tr (9 | 2) :tr 0
-~(:tr 2) (:tr (9 | 2) :tr 0)
 
-:tr (2 | 0) 0 :tr 0
 
+:tr 1 2 3 :&bass
 
 
 
 
-
-~(1 | 1 ) |
-
-~(:tr 1 0)
+~:tr 1 >< 2 | :tr 3
 
 
 
 
+~[:tr 234 :: :tr 23] | :tr 4 | 5 6
+
+
+~:tr 0 1 2 :tr 3 4 5 (:tr 6)
 
 
 
 
-~:tr (1 0 | :tr)
-~:tr (1 0 :tr)
-~:tr (| 0 1 0 :&bass :tr)
-~:tr 0 1 0 :tr
-~:tr ><
-~
-~:tr (1 0 | :tr)
-~
-~:tr 10 01 10 10
-~
-~:tr (&bass | &flute)
-~:tr | &bass
-~:tr :: (&bass | &flute)
-~:tr :: | &bass
+
+~[:tr 1 :nt Cb4 (:tr [2 | 3] :nt A#3)]
