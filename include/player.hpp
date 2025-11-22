@@ -6,6 +6,9 @@
 #include "midi/midi_engine.hpp"
 
 
+namespace as { class tree; }
+
+
 // -- M X  N A M E S P A C E --------------------------------------------------
 
 namespace mx {
@@ -13,7 +16,6 @@ namespace mx {
 
 	// -- forward declarations ------------------------------------------------
 
-	class model;
 	class monitor;
 
 
@@ -35,8 +37,8 @@ namespace mx {
 			/* clock */
 			mx::clock _clock;
 
-			/* model reference */
-			mx::model* _model;
+			/* tree reference */
+			const as::tree* _tree;
 
 			/* midi engine */
 			mx::midi_engine _engine;
@@ -61,8 +63,8 @@ namespace mx {
 			/* stop */
 			auto stop(void) -> void;
 
-			/* switch model */
-			auto switch_model(mx::model&) noexcept -> void;
+			/* switch tree */
+			auto switch_tree(const as::tree&) noexcept -> void;
 
 
 			// -- public overrides --------------------------------------------

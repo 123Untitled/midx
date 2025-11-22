@@ -32,8 +32,8 @@ auto mx::application::reparse(std::string&& data) -> void {
 	if (analyzer.has_errors() == true)
 		return;
 
-	// switch model
-	_player.switch_model(analyzer.model());
+	// switch tree
+	_player.switch_tree(analyzer.tree());
 	_active = (_active == 0U) ? 1U : 0U;
 
 	_player.start();

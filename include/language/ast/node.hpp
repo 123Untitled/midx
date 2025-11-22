@@ -1,10 +1,13 @@
 #ifndef language_ast_node_hpp
 #define language_ast_node_hpp
 
+#include "language/syntax/parameter.hpp"
 #include "language/ast/type.hpp"
-#include "language/tokens/def.hpp"
+//#include "language/tokens/def.hpp"
 #include "language/tokens/token_view.hpp"
 
+// max_align_t
+//#include <new>
 
 // -- A S  N A M E S P A C E --------------------------------------------------
 
@@ -14,100 +17,342 @@ namespace tk {
 
 namespace as {
 
-	class arena;
-	struct node;
+	//class tree;
+
+	//struct ctx final {
+	//
+	//	const as::tree& tree;
+	//	const tk::tokens& tokens;
+	//	//std::vector<const as::node*> stack;
+	//};
 
 
-	struct ctx final {
-
-		const as::arena& arena;
-		const tk::tokens& tokens;
-		std::vector<const as::node*> stack;
-	};
-
-
-	struct node_base {
+	struct alignas(std::max_align_t) header final {
+		mx::u32 size;
+		as::type type;
+		//as::category category;
+		//as::shape shape;
 		mx::usz duration;
 	};
 
+	struct alignas(std::max_align_t) remap_range final {
+		mx::usz start; // start index in arena
+		mx::usz count; // count of nodes
+		remap_range(void) noexcept
+		: start{0U}, count{0U} {
+		}
+		remap_range(const mx::usz s,
+					const mx::usz c) noexcept
+		: start{s}, count{c} {
+		}
 
-	// -- A T O M I C  S E Q U E N C E ----------------------------------------
+		auto end(void) const noexcept -> mx::usz {
+			return start + count;
+		}
 
-	struct atomic_values final : public as::node_base {
+	};
+
+
+
+
+	// -- P R O G R A M -------------------------------------------------------
+
+	struct program final {
+
+		/* header */
+		as::header header;
+
+		/* range */
+		as::remap_range range;
+
+
+		static consteval auto make_header(void) noexcept -> as::header {
+			return as::header{
+				sizeof(as::program),
+				as::type::program,
+				0U
+			};
+		}
+
+		program(void) noexcept
+		: header{make_header()}, range{} {
+		}
+
+	}; // struct program
+
+
+
+	// -- A T O M I C  V A L U E S --------------------------------------------
+
+	struct atomic_values final {
+
+		/* header */
+		as::header header;
 
 		mx::usz token_start; // tokens start index
 		mx::usz value_start; // values start index
-		// count is duration in this case
+		// count is duration in header.duration
 
-		atomic_values(void) noexcept
-		: as::node_base{}, token_start{0U}, value_start{0U} {
+
+		static constexpr auto make_header(const mx::usz count) noexcept -> as::header {
+			return as::header{
+				sizeof(as::atomic_values),
+				as::type::atomic_values,
+				count
+			};
 		}
 
-		atomic_values(const mx::usz start,
+
+		atomic_values(void) = delete;
+
+		atomic_values(const mx::usz tstart,
+					  const mx::usz vstart,
 					  const mx::usz count) noexcept
-		: as::node_base{count},
-		  token_start{start},
-		  value_start{0U} {
+		: header{make_header(count)},
+		  token_start{tstart}, value_start{vstart} {
 		}
 
+	}; // struct atomic_values
+
+
+	// -- R E F E R E N C E S -------------------------------------------------
+
+	struct references final {
+
+		/* header */
+		as::header header;
+
+		mx::usz tok_start; // tokens start index
+		mx::usz ref_start; // references start index
+		mx::usz count;     // count of references
+
+
+		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
+			return as::header{
+				sizeof(as::references),
+				as::type::references,
+				dur
+			};
+		}
+
+		references(void) = delete;
+
+		references(const mx::usz tok_start,
+				   const mx::usz ref_start,
+				   const mx::usz count,
+				   const mx::usz dur) noexcept
+		: header{make_header(dur)},
+		  tok_start{tok_start}, ref_start{ref_start}, count{count} {
+		}
 	};
 
 
-	struct atomic_refs final : public as::node_base {
+	// -- T R A C K -----------------------------------------------------------
 
-		mx::usz token_start; // tokens start index
-		mx::usz value_start; // references start index as node index
-		mx::usz count;       // count of references
+	struct track final {
 
-		atomic_refs(void) noexcept
-		: as::node_base{}, token_start{0U}, value_start{0U}, count{0U} {
+		/* header */
+		as::header header;
+
+		/* param ranges */
+		as::remap_range ranges[pa::max_params];
+
+
+		static consteval auto make_header(void) noexcept -> as::header {
+			return as::header{
+				sizeof(as::track),
+				as::type::track,
+				0U
+			};
+		}
+
+		track(void) noexcept
+		: header{make_header()}, ranges{} {
 		}
 	};
 
 
-	// -- N O D E -------------------------------------------------------------
+	// -- P A R A M E T E R ---------------------------------------------------
 
-	struct node final {
+	struct parameter final {
 
-		union u {
-			as::atomic_values values;
-			as::atomic_refs   refs;
-			u(void) noexcept {
-			}
+		/* header */
+		as::header header;
 
-		} data;
+		/* child (direct node index) */
+		mx::usz child;
 
-		as::type type;
-		//const tk::token* token;
-		const tk::token_view token;
-		mx::usz start;
-		mx::usz count;
+		/* token view */
+		tk::token_view tv;
 
-		explicit node(const as::type nt) noexcept
-		: type{nt}, token{}, start{0U}, count{0U} {
+
+		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
+			return as::header{
+				sizeof(as::parameter),
+				as::type::parameter,
+				dur
+			};
 		}
 
-		//node(const as::type  nt,
-		//	 const tk::token& tk) noexcept
-		//: type{nt}, token{&tk}, start{0U}, count{0U} {
-		//}
-		//node(const as::type nt,
-		//	 const mx::usz  s,
-		//	 const mx::usz  c) noexcept
-		//: type{nt}, token{nullptr}, start{s}, count{c} {
-		//}
+		parameter(void) = delete;
 
-		node(const as::type  nt,
-			 const tk::token_view& tk) noexcept
-		: type{nt}, token{tk}, start{0U}, count{0U} {
+		parameter(const mx::usz& child, const tk::token_view& t, const mx::usz dur) noexcept
+		: header{make_header(dur)}, child{child}, tv{t} {
 		}
-		node(const as::type nt,
-			 const mx::usz  s,
-			 const mx::usz  c) noexcept
-		: type{nt}, token{}, start{s}, count{c} {
+	};
+
+
+	// -- G R O U P -----------------------------------------------------------
+
+	struct group final {
+
+		/* header */
+		as::header header;
+
+		/* range */
+		as::remap_range range;
+
+
+		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
+			return as::header{
+				sizeof(as::group),
+				as::type::group,
+				dur
+			};
 		}
 
-	}; // struct node
+		group(void) = delete;
+
+		group(const as::remap_range& r, const mx::usz dur) noexcept
+		: header{make_header(dur)},
+		  range{r} {
+		}
+	};
+
+
+	// -- P A R A L L E L -----------------------------------------------------
+
+	struct parallel final {
+
+		/* header */
+		as::header header;
+
+		/* range */
+		as::remap_range range;
+
+
+		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
+			return as::header{
+				sizeof(as::parallel),
+				as::type::parallel,
+				dur
+			};
+		}
+
+		parallel(void) = delete;
+
+		parallel(const as::remap_range& range, const mx::usz dur) noexcept
+		: header{make_header(dur)},
+		  range{range} {
+		}
+
+	}; // struct parallel
+
+
+	// -- C R O S S F A D E ---------------------------------------------------
+
+	struct crossfade final {
+
+		/* header */
+		as::header header;
+
+		/* left node index */
+		mx::usz left;
+
+		/* right node index */
+		mx::usz right;
+
+
+		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
+			return as::header{
+				sizeof(as::crossfade),
+				as::type::crossfade,
+				dur
+			};
+		}
+
+		/* deleted default constructor */
+		crossfade(void) = delete;
+
+		crossfade(const mx::usz l,
+				  const mx::usz r,
+				  const mx::usz d) noexcept
+		: header{make_header(d)},
+		  left{l}, right{r} {
+		}
+	};
+
+
+	// -- P E R M U T A T I O N -----------------------------------------------
+
+	struct permutation final {
+
+		/* header */
+		as::header header;
+
+		/* range */
+		as::remap_range range;
+
+
+		static consteval auto make_header(void) noexcept -> as::header {
+			return as::header{
+				sizeof(as::permutation),
+				as::type::permutation,
+				0U
+			};
+		}
+
+		permutation(void) noexcept
+		: header{make_header()}, range{} {
+		}
+	};
+
+
+	// -- T E M P O -----------------------------------------------------------
+
+	struct tempo final {
+
+		/* header */
+		as::header header;
+
+		/* numerator */
+		mx::usz num;
+
+		/* denominator */
+		mx::usz den;
+
+		/* child node */
+		mx::usz child;
+
+
+		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
+			return as::header{
+				sizeof(as::tempo),
+				as::type::tempo,
+				dur
+			};
+		}
+
+		tempo(void) = delete;
+
+		tempo(const mx::usz num,
+			  const mx::usz den,
+			  const mx::usz child,
+			  const mx::usz dur) noexcept
+		: header{make_header(dur)},
+		  num{num}, den{den}, child{child} {
+		}
+	};
 
 } // namespace as
 

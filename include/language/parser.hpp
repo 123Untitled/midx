@@ -8,6 +8,9 @@
 
 #include "language/parser/levels.hpp"
 
+#include "language/syntax/parameter.hpp"
+#include "language/identifier_map.hpp"
+
 
 // -- forward declarations ----------------------------------------------------
 
@@ -38,7 +41,7 @@ namespace pr {
 			// -- private members ---------------------------------------------
 
 			/* tree */
-			as::tree _tree;
+			as::tree* _tree;
 
 			/* tokens */
 			tk::tokens* _tokens;
@@ -52,6 +55,13 @@ namespace pr {
 			mx::uint _depth;
 
 			bool _back;
+
+			pa::id _last_param;
+
+			/* identifiers */
+			sx::identifier_map _idents;
+
+			float _tempo;
 
 		public:
 
@@ -73,7 +83,28 @@ namespace pr {
 			auto error(const char*) const -> void;
 			auto error(const char*, const tk::iterator&) const -> void;
 
+			template <pr::level L, typename... Tp>
+			auto debug_level(const Tp&... args) -> void {
+				std::cout << '[' << _depth << ']';
+				switch (L) {
+					case pr::level::expr:
+						std::cout << "[\x1b[32mlevel expression\x1b[0m]";
+						break;
 
+					case pr::level::seq:
+						std::cout << "[\x1b[31mlevel   sequence\x1b[0m]";
+						break;
+				}
+				((std::cout << ' ' << args), ...);
+				std::cout << '\n';
+			}
+
+
+			auto _parse(void) -> mx::usz;
+			auto _parse_identifiers(void) -> bool;
+
+
+			/* parse expression */
 			template <pr::level L>
 			auto parse_expr(const pr::precedence) -> mx::usz;
 
@@ -85,6 +116,9 @@ namespace pr {
 			auto nud_value(const mx::usz) -> mx::usz;
 
 			auto nud_atomic_value(const mx::usz) -> mx::usz;
+
+
+			auto nud_references(const mx::usz) -> mx::usz;
 
 
 			template <pr::level L>

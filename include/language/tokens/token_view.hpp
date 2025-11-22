@@ -59,6 +59,12 @@ namespace tk {
 			}
 
 
+			/* make invalid */
+			auto make_invalid(void) const noexcept -> void {
+				_token->id = tk::invalid;
+			}
+
+
 			// -- public accessors --------------------------------------------
 
 			/* token id */

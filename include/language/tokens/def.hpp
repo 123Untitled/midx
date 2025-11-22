@@ -83,7 +83,7 @@ namespace tk {
 		parameter,
 
 		// references
-		track_reference,
+		reference,
 		param_reference,
 
 		// numbers
@@ -178,7 +178,7 @@ namespace tk {
 		"parameter",
 
 		// references
-		"block_reference",
+		"reference",
 		"param_reference",
 
 		// numbers
@@ -309,8 +309,8 @@ namespace tk {
 		//"Operator",
 
 		// tempo ^2 \2
-		"@property",
-		"@property",
+		"StorageClass",
+		"StorageClass",
 
 		// parallel |
 		"Operator",
@@ -326,8 +326,8 @@ namespace tk {
 		"Type",
 
 		// references
-		"String",
-		"Type",
+		"Function",
+		"Function",
 
 		// numbers
 		"Number",
@@ -348,7 +348,8 @@ namespace tk {
 		"Comment",
 
 		// invalid
-		"DiagnosticUnderlineError",
+		//"DiagnosticUnderlineError",
+		"Underlined",
 
 		// end_of_tokens
 		"None"

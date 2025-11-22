@@ -17,11 +17,11 @@ namespace pr {
 	template <pr::level L>
 	consteval auto rule_number(void) -> pr::rule {
 		return pr::rule {
-			.nud = &pr::parser::nud_value,
-			//.nud = &pr::parser::nud_atomic_value,
+			//.nud = &pr::parser::nud_value,
+			.nud = &pr::parser::nud_atomic_value,
 			.led = nullptr,
 			.pre = pr::precedence::none,
-			.can_start = L == pr::level::sequence,
+			.can_start = L == pr::level::seq,
 			// is infix, is prefix, is postfix
 			false, false, false
 		};
@@ -42,10 +42,11 @@ namespace pr {
 	template <pr::level L>
 	consteval auto rule_tempo(void) -> pr::rule {
 		return pr::rule {
-			.nud = nullptr,
+			.nud = &pr::parser::nud_tempo<L>,
 			.led = nullptr,
 			.pre = pr::precedence::tempo,
-			// can start, is infix, is prefix, is postfix
+			//.pre = pr::precedence::none,
+			// can start, is prefix, is infix, is postfix
 			true, false, true, false
 		};
 	}
@@ -55,7 +56,7 @@ namespace pr {
 	consteval auto rule_parameter(void) -> pr::rule {
 		return pr::rule {
 			// nud
-			.nud = L == pr::level::expression ?
+			.nud = L == pr::level::expr ?
 						&pr::parser::nud_parameter :
 						nullptr,
 			.led = nullptr,
@@ -66,42 +67,13 @@ namespace pr {
 		};
 	}
 
-	/* identifier */
-	template <pr::level L>
-	consteval auto rule_identifier(void) -> pr::rule {
-		return pr::rule {
-			// nud
-			nullptr,
-			// led
-			nullptr,
-			// precedence
-			pr::precedence::none,
-			// can start, is prefix, is infix, is postfix
-			true, false, false, false
-		};
-	}
-
-	/* assignment */
-	template <pr::level L>
-	consteval auto rule_assignment(void) -> pr::rule {
-		return pr::rule {
-			// nud
-			nullptr,
-			// led
-			nullptr,
-			// precedence
-			pr::precedence::none,
-			// can start, is prefix, is infix, is postfix
-			false, false, false, false
-		};
-	}
 
 	/* track separator */
 	template <pr::level L>
 	consteval auto rule_track_separator(void) -> pr::rule {
 		return pr::rule {
 			// nud
-			.nud = L == pr::level::expression ? &pr::parser::nud_track_separator : nullptr,
+			.nud = L == pr::level::expr ? &pr::parser::nud_track_separator : nullptr,
 			// led
 			.led = nullptr,
 			// precedence
@@ -118,10 +90,10 @@ namespace pr {
 	constexpr pr::rule rules[tk::max_tokens] {
 
 		// identifier
-		pr::rule_identifier<L>(),
+		pr::rule_empty(),
 
 		// assignment =
-		pr::rule_assignment<L>(),
+		pr::rule_empty(),
 
 		// separator ;
 		pr::rule_empty(),
@@ -139,14 +111,8 @@ namespace pr {
 			&pr::parser::led_parallel<L>,
 			// precedence
 			pr::precedence::parallel,
-			// can start
-			false,
-			// is prefix
-			false,
-			// is infix
-			true,
-			// is postfix
-			false
+			// can start, is prefix, is infix, is postfix
+			false, false, true, false
 		},
 
 		// crossfade
@@ -157,14 +123,8 @@ namespace pr {
 			&pr::parser::led_crossfade<L>,
 			// precedence
 			pr::precedence::crossfade,
-			// can start
-			false,
-			// is prefix
-			false,
-			// is infix
-			true,
-			// is postfix
-			false
+			// can start, is prefix, is infix, is postfix
+			false, false, true, false
 		},
 
 		// track separator
@@ -173,10 +133,11 @@ namespace pr {
 		// parameter
 		pr::rule_parameter<L>(),
 
-		// track reference
+
+		// reference
 		{
 			// nud
-			&pr::parser::nud_value,
+			&pr::parser::nud_references,
 			// led
 			nullptr,
 			// precedence
@@ -188,13 +149,14 @@ namespace pr {
 		// param reference
 		{
 			// nud
-			&pr::parser::nud_value,
+			//&pr::parser::nud_param_reference,
+			nullptr,
 			// led
 			nullptr,
 			// precedence
 			pr::precedence::none,
 			// can start
-			.can_start = L == pr::level::sequence,
+			.can_start = L == pr::level::seq,
 			// is prefix, is infix, is postfix
 			false, false, false
 		},

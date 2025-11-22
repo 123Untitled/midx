@@ -347,12 +347,12 @@ auto lx::lexer::lex_note(void) -> void {
 /* lex number */
 auto lx::lexer::lex_number(void) -> void {
 
-	const mx::u8 c = *_it;
+	const mx::u8 first = *_it;
 
 	const auto mark = _it;
 	++_it;
 
-	if (c == '0' && (_it < _end)) {
+	if (first == '0' && (_it < _end)) {
 
 		switch (*_it) {
 
@@ -571,6 +571,6 @@ auto lx::lexer::lex_reference(void) -> void {
 
 	// push reference token
 	_tokens->push_filtered_token(
-		tk::track_reference, ck, nk
+		tk::reference, ck, nk
 	);
 }

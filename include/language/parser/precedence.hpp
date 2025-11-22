@@ -13,19 +13,17 @@ namespace pr {
 
 	enum precedence : mx::uint {
 		none       = 0U,
-		assignment = 10U,
-
-		//tracksep  = 15U,
 
 		parallel   = 20U,
 		crossfade  = 30U,
 
-		tempo      = 50U,
 
-		grouping   = 80U
+		grouping   = 80U,
+		tempo      = 90U,
 	};
 
 } // namespace pr
+
 		//sequence   = 55U,
 		//term       = 60U,
 		//factor     = 70U,

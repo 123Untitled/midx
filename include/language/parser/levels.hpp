@@ -11,8 +11,7 @@ namespace pr {
 
 	/* level */
 	enum level : mx::uint {
-		expression,
-		sequence,
+		expr, seq,
 		max_levels
 	};
 

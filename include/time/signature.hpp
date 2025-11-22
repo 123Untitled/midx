@@ -1,7 +1,7 @@
 #ifndef midilang_time_signature_hpp
 #define midilang_time_signature_hpp
 
-#include "types.hpp"
+#include "core/types.hpp"
 #include "midi/constant.hpp"
 
 

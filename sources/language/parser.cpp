@@ -6,6 +6,8 @@
 #include <iostream>
 #include "language/parser/table.hpp"
 
+#include "atoi.hpp"
+#include "math.hpp"
 
 // -- P A R S E R -------------------------------------------------------------
 
@@ -13,7 +15,8 @@
 
 /* default constructor */
 pr::parser::parser(void)
-: _tokens{nullptr},
+: _tree{nullptr},
+  _tokens{nullptr},
   _diag{nullptr},
   _it{},
   _end{}
@@ -29,10 +32,12 @@ auto pr::parser::parse(tk::tokens&   tokens,
 
 	// get references
 	_tokens = &tokens;
-	//_tree   = &tree;
+	_tree   = &tree;
 	_diag   = &diag;
 
-	_tree.clear();
+	_tree->clear();
+	_tree->tokens = &tokens;
+	_idents.clear();
 
 	// initialize iterators
 	const auto fi = tokens.filtered();
@@ -40,6 +45,7 @@ auto pr::parser::parse(tk::tokens&   tokens,
 	_end = fi.end();
 
 	_depth = 0U;
+	_tempo = 1.0f;
 	_back = false;
 
 	// parse scope
@@ -48,19 +54,11 @@ auto pr::parser::parse(tk::tokens&   tokens,
 		return;
 	}
 
-	auto root = parse_expr<pr::level::expression>(pr::precedence::none);
+	auto root = self::_parse();
+	std::cout << "Parsing completed, root node index: " << root << '\n';
 
-	if (!root) {
-		std::cout << "No expression parsed\n";
-		return;
-	}
-	else {
-		std::cout << "Parsed expression:\n";
-	}
-
-	const auto& n = _tree.node(root);
-
-	as::debug::run(_tree, n);
+	as::printer::run(*_tree, root, tokens);
+	//_tree->debug();
 }
 
 auto dbg_token(const char* msg, const tk::token& t) -> void {
@@ -99,20 +97,82 @@ struct depth_guard {
 	~depth_guard() { --d; }
 };
 
-template <pr::level L, typename... Tp>
-auto debug_level(const Tp&... args) -> void {
-	switch (L) {
-		case pr::level::expression:
-			std::cout << "[\x1b[32mlevel expression\x1b[0m]";
+
+
+/* parse (private) */
+auto pr::parser::_parse(void) -> mx::usz {
+
+	auto p = as::make_node<as::program>(*_tree).index;
+	_tree->mark();
+
+	while (_it != _end) {
+		std::cout << "\n-- PARSE LOOP --\nCurrent token: " << *_it << '\n';
+
+		// skip separators
+		do {
+			if (_it.token().id != tk::separator)
+				break;
+		} while (++_it != _end);
+
+		if (_parse_identifiers() == true)
+			continue;
+
+		auto expr = parse_expr<pr::level::expr>(pr::precedence::none);
+
+		if (expr != 0U) {
+			_tree->push(expr);
+			continue;
+		}
+
+		if (_it == _end)
 			break;
 
-		case pr::level::sequence:
-			std::cout << "[\x1b[31mlevel   sequence\x1b[0m]";
-			break;
+		error("Unexpected token in expression", _it);
+		++_it;
 	}
-	((std::cout << ' ' << args), ...);
-	std::cout << '\n';
+
+	auto& program = _tree->node<as::program>(p);
+	program.range = _tree->flush();
+
+	// compute max duration
+	mx::usz dur = 0U;
+	mx::usz it  = program.range.start;
+	mx::usz end = it + program.range.count;
+
+	for (; it < end; ++it) {
+		const auto& h = _tree->remap_header(it);
+		dur = dur < h.duration ? h.duration : dur;
+	}
+	program.header.duration = dur;
+
+	return p;
 }
+
+
+/* parse identifiers */
+auto pr::parser::_parse_identifiers(void) -> bool {
+
+	if (_it == _end || _it.token().id != tk::identifier)
+		return false;
+
+	auto it = _it;
+	while (++_it != _end && _it.token().id == tk::identifier);
+	auto end = _it;
+
+	const auto expr = parse_expr<pr::level::expr>(pr::precedence::none);
+
+	while (it != end) {
+		std::cout << "Mapping identifier '"
+				  << it.view().first_chunk().lexeme
+				  << "' to expr index " << expr << '\n';
+		if (!_idents.insert(it.view().first_chunk().lexeme, expr)) {
+			error("Duplicate identifier", it);
+		}
+		++it;
+	}
+	return true;
+}
+
 
 
 /* parse expr */
@@ -120,11 +180,12 @@ template <pr::level L>
 auto pr::parser::parse_expr(const pr::precedence min_pre) -> mx::usz {
 	depth_guard dg{_depth};
 
-	debug_level<L>("parse_expr", "min pre", min_pre, "depth", _depth);
+	debug_level<L>("PARSE*EXPR", "min pre", min_pre);
 
 	mx::usz left = 0U;
 
 	while (_it != _end) {
+		debug_level<L>("nud loop", "current token", *_it);
 
 		auto& tk = _it.token();
 		auto nud = pr::nud_of<L>(tk);
@@ -145,7 +206,7 @@ auto pr::parser::parse_expr(const pr::precedence min_pre) -> mx::usz {
 		// consume token in nud function
 		left = (this->*nud)(left);
 
-		if constexpr (L == pr::level::sequence)
+		if constexpr (L == pr::level::seq)
 			if (_back == true)
 				return left;
 	}
@@ -153,6 +214,7 @@ auto pr::parser::parse_expr(const pr::precedence min_pre) -> mx::usz {
 
 	// loop for led
 	while (_it != _end) {
+		debug_level<L>("led loop", "current token", *_it);
 
 		const auto& tk = _it.token();
 		const auto led = pr::led_of<L>(tk);
@@ -172,7 +234,7 @@ auto pr::parser::parse_expr(const pr::precedence min_pre) -> mx::usz {
 		if (!left)
 			return 0U;
 
-		if constexpr (L == pr::level::sequence)
+		if constexpr (L == pr::level::seq)
 			if (_back == true)
 				return left;
 
@@ -191,81 +253,144 @@ auto debug(const char* msg, const tk::iterator& it) -> void {
 /* nud atomic value */
 auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
 
-	const auto start = _it.index();
-	   mx::usz count = 1U;
+	debug("NUD atomic value", _it);
 
-	while (++_it != _end) {
+	const auto token_start = _it.index();
+	const auto value_start = _tree->value_start();
+	   mx::usz count       = 0U;
+
+
+	do {
+
+		// get token view
+		const auto tv = *_it;
 
 		switch (_it.token().id) {
+
 			case tk::note:
+				//++count;
+				continue;
+
 			case tk::binary:
-			case tk::octal:
-			case tk::decimal:
-			case tk::hexadecimal:
+				_tree->push_value(
+					mx::convert_bin<false>[_last_param](tv, *_diag)
+				);
 				++count;
 				continue;
-			default:
-				break;
+
+			case tk::octal:
+				_tree->push_value(
+					mx::convert_oct<false>[_last_param](tv, *_diag)
+				);
+				++count;
+				continue;
+
+			case tk::decimal:
+				_tree->push_value(
+					mx::convert_dec<false>[_last_param](tv, *_diag)
+				);
+				++count;
+				continue;
+
+			case tk::hexadecimal:
+				_tree->push_value(
+					mx::convert_hex<false>[_last_param](tv, *_diag)
+				);
+				++count;
+				continue;
 		}
-	}
+
+		break;
+
+	} while (++_it != _end);
+
+	if (count == 0U) // not necessarily, because nud called on valid token
+		return left;
 
 	// make atomic values node
-	const auto av = _tree.make_node(as::type::atomic_values, start, count);
+	const auto av = as::make_node<as::atomic_values>(
+								*_tree,
+								token_start,
+								value_start,
+								count);
 
-	if (left == 0U) {
-		left = _tree.make_node(as::type::sequence);
-	}
+	if (left == 0U)
+		return av.index;
 
-	return _tree.append_to_sequence(left, av);
+	if (_tree->is_group(left))
+		// extend group with new atomic values
+		return _tree->extend_group(left, av.index), left;
+
+	// make new group
+	return _tree->make_group_with(left, av.index);
 }
 
 
 
 
-mx::usz pr::parser::nud_value(const mx::usz left) {
 
-	const auto id = _it.token().id;
-
-	// new marker
-    _tree.mark();
-
-	// left exists
-    if (left) {
-
-		// is sequence
-		if (_tree.is_sequence(left)) {
-
-			const auto& seq = _tree.node(left);
-			_tree.push(seq.start, seq.count);
-		}
-		// is not sequence
-		else { _tree.push(left); }
-	}
-
-	// push initial leaf
-	_tree.push(
-		_tree.make_node(as::type::leaf, *_it/*.token()*/)
-	);
-
-	// consume other values
-	while (++_it != _end && _it.token().id == id/*tk::decimal*/) {
-		_tree.push(
-			_tree.make_node(as::type::leaf, *_it/*.token()*/));
-	}
-
-	if (left == 0U || !_tree.is_sequence(left)) {
-		const auto [start, count] = _tree.flush();
-		return _tree.make_node(as::type::sequence, start, count);
-	}
-
-	auto& seq = _tree.node(left);
-	auto [start,count] = _tree.flush();
-	seq.start = start;
-	seq.count = count;
-	return left;
-}
 
 // -- N U D S -----------------------------------------------------------------
+
+
+/* nud track reference */
+auto pr::parser::nud_references(const mx::usz left) -> mx::usz {
+
+	debug("NUD references", _it);
+
+	mx::usz   dur = 0U;
+	mx::usz count = 0U;
+	const auto ref_start = _tree->ref_start();
+	const auto tok_start = _it.index();
+
+
+	do {
+
+		// get lexeme
+		const auto lex = _it.view().last_chunk().lexeme;
+
+		// lookup identifier
+		const auto found = _idents.find(lex);
+
+
+		if (found.index != 0U) {
+			++count;
+			_tree->push_ref(found.index);
+
+			// get header to accumulate duration
+			const auto& h = _tree->header(found.index);
+			dur += h.duration;
+			continue;
+		}
+
+		if (found.empty != true)
+			error("Undefined reference", _it);
+
+	} while (++_it != _end
+		&& _it.token().id == tk::reference);
+
+
+	if (count == 0U)
+		return left;
+
+	// create new references node
+	const auto r = as::make_node<as::references>(*_tree,
+												 tok_start,
+												 ref_start,
+												 count,
+												 dur);
+
+	if (!left)
+		return r.index;
+
+	if (_tree->is_group(left)) {
+		_tree->extend_group(left, r.index);
+		return left;
+	}
+
+	// else make new group
+	return _tree->make_group_with(left, r.index);
+}
 
 
 /* nud group */
@@ -278,19 +403,15 @@ auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 	// consume opening parenthesis
 	++_it;
 
-	if constexpr (L == pr::level::sequence) {
+	if constexpr (L == pr::level::seq) {
 		if (lookahead(_it) == true) {
 			_back = true;
-			std::cout << "NUD group: lookahead found parameter or block ref, returning left\n";
 			return left;
 		}
 	}
 
 	// parse inner expression
-    const auto inside = parse_expr<L>(
-			//pr::precedence::tracksep
-			pr::precedence::none
-			);
+    const auto inside = parse_expr<L>(pr::precedence::none);
 
 	if (_it != _end && _it.token().id == tk::priority_close) {
 		debug("NUD group", _it);
@@ -298,18 +419,23 @@ auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 	}
 	else error("Unclosed group", it);
 
-	if (!inside) // 0 ()
+	if (!inside)
 		return left;
 
 	if (!left)
 		return inside;
 
-	// check if left is sequence
-	if (_tree.is_sequence(left))
-		return _tree.append_to_sequence(left, inside);
 
-	// else make new sequence
-	return _tree.merge_as_sequence(left, inside);
+	// CHECK IF LEFT IS SAME TYPE AS INSIDE ??
+
+	// check if left is group
+	if (_tree->is_group(left)) {
+		_tree->extend_group(left, inside);
+		return left;
+	}
+
+	// else make new group
+	return _tree->make_group_with(left, inside);
 }
 
 
@@ -323,7 +449,7 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 	// consume opening bracket
 	++_it;
 
-	if constexpr (L == pr::level::sequence) {
+	if constexpr (L == pr::level::seq) {
 		if (lookahead(_it) == true) {
 			_back = true;
 			std::cout << "NUD group: lookahead found parameter or block ref, returning left\n";
@@ -345,30 +471,29 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 		return left;
 
 	 // make permutation node
-	mx::usz perm = _tree.make_node(as::type::permutation);
-	auto& pref = _tree.node(perm);
+	mx::usz perm = _tree->make_node<as::permutation>();
+	auto& pref = _tree->node<as::permutation>(perm);
 
-	// check if inside is sequence
-	if (_tree.is_sequence(inside)) {
-		const auto& seq = _tree.node(inside);
-		pref.start = seq.start;
-		pref.count = seq.count;
-	}
+	// check for collapse
+	if (_tree->is_collapsable(inside))
+		pref.range = _tree->range_of(inside);
+
 	else {
 		// need remap index here
-		pref.start = _tree.new_remap(inside);
-		pref.count = 1U;
+		pref.range = as::remap_range(_tree->new_remap(inside), 1U);
 	}
 
 	if (!left)
 		return perm;
 
-	// check if left is sequence
-	if (_tree.is_sequence(left))
-		return _tree.append_to_sequence(left, perm);
+	// check if left is group
+	if (_tree->is_group(left)) {
+		_tree->extend_group(left, perm);
+		return left;
+	}
 
-	// else make new sequence
-	return _tree.merge_as_sequence(left, perm);
+	// else make new group
+	return _tree->make_group_with(left, perm);
 }
 
 
@@ -377,8 +502,11 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 	debug("NUD parameter", _it);
 
-	// create new track
-	auto track = _tree.make_node(as::type::track);
+	static std::vector<mx::usz> params[pa::max_params];
+	for (mx::usz i = 0U; i < pa::max_params; ++i)
+		params[i].clear();
+	bool has_params = false;
+
 
 	do {
 
@@ -386,24 +514,39 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 		// skip consecutive parameters
 		do {
-			it = _it++; // copy and consume
-		} while (_it != _end
+			it = _it; // copy and consume
+		} while (++_it != _end
 			&& _it.token().id == tk::parameter);
 
+
+
+		// here check parameter name !
+		_last_param = pa::to_id(*it);
+
+		if (_last_param == pa::invalid) {
+			error("Invalid parameter name", it);
+			abord();
+			break;
+		}
+
+
 		// recurse sequence parsing
-		const mx::usz seq = parse_expr<pr::level::sequence>(
-								pr::precedence::none
-				);
+		const mx::usz seq = parse_expr<pr::level::seq>(
+								pr::precedence::none);
 
 		if (seq) {
-			// create new parameter
-			mx::usz param = _tree.make_node(as::type::parameter,
-											*it/*.token()*/);
 
-			_tree.append_to_sequence(param, seq);
-			_tree.append_to_sequence(track, param);
+			// get header of seq
+			const auto dur = _tree->header(seq).duration;
+
+			// create new parameter
+			const auto param =
+				as::make_node<as::parameter>(*_tree, seq, *it, dur);
+
+			//_tree.push(param.index);
+			params[_last_param].push_back(param.index);
+			has_params = true;
 		}
-		; int i = 0;
 
 		if (_back == true) {
 			_back = false;
@@ -413,30 +556,136 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 	} while (_it != _end && _it.token().id == tk::parameter);
 
+	// no parameters found
+	if (!has_params)
+		return left;
 
-	if (left) {
+	// make track node
+	const auto track = as::make_node<as::track>(*_tree);
 
-		if (_tree.is_sequence(left)) // work with permutations because permu is created at end
-			return _tree.append_to_sequence(left, track);
+	// loop over parameters and extend ranges
+	for (mx::usz i = 0U; i < pa::max_params; ++i) {
 
-		auto seq = _tree.make_node(as::type::sequence);
-		_tree.append_to_sequence(seq, left);
-		_tree.append_to_sequence(seq, track);
-		return seq;
+		if (params[i].empty() == true)
+			continue;
+
+		// mark
+		_tree->mark();
+		// push all parameter nodes
+		for (const auto p : params[i])
+			_tree->push(p);
+		// flush and set range
+		track.ref.ranges[i] = _tree->flush();
 	}
 
-	return track;
+
+	const auto count = track.ref.ranges[pa::dura].count;
+
+	mx::usz dur = 0U;
+	if (count > 0U) {
+		// for each child in duration parameter
+		// accumulate duration
+		for (mx::usz i = 0U; i < count; ++i) {
+			const auto& h =
+				_tree->remap_header(
+					track.ref.ranges[pa::dura].start + i);
+			dur += h.duration;
+		}
+		track.ref.header.duration = dur;
+	}
+	else {
+		// no duration parameter, compute polyrythmic cycle duration
+
+		const auto& ranges = track.ref.ranges;
+
+		for (mx::usz i = 0U; i < pa::max_params; ++i) {
+
+			const auto& range = ranges[i];
+			if (range.count == 0U)
+				continue;
+
+			mx::usz p_dur = 0U;
+			// for each child in parameter
+			for (mx::usz j = 0U; j < range.count; ++j) {
+				const auto& h = _tree->remap_header(range.start + j);
+				p_dur += h.duration;
+			}
+			if (dur == 0U)
+				dur = p_dur;
+			else
+				dur = mx::lcm(dur, p_dur);
+		}
+		track.ref.header.duration = dur;
+	}
+
+
+
+
+
+	if (!left)
+		return track.index;
+
+	// get header of left
+	const auto& header = _tree->header(left);
+
+	// check if left is group
+	if (header.type == as::type::group) {
+		_tree->extend_range_of(left, track.index); // HERE NEED TO CALL EXTEND GROUP
+		return left;
+	}
+
+	else
+		return _tree->make_group_with(left, track.index);
 }
-
-
-
 
 
 /* nud tempo */
 template <pr::level L>
 auto pr::parser::nud_tempo(mx::usz left) -> mx::usz {
-    ++_it; // consume tempo token
-	return left;
+
+	mx::usz num = 1U;
+	mx::usz den = 1U;
+
+	do { // accumulate consecutive tempo changes
+
+		auto tv = *_it;
+		switch (_it.token().id) {
+
+			case tk::tempo_fast: {
+				// conversion will be implemented later...
+				num += 1;
+				break;
+			}
+
+			case tk::tempo_slow: {
+				// conversion will be implemented later...
+				den += 1;
+				break;
+			}
+
+			default:
+				break;
+		}
+
+	} while (++_it != _end && (_it.token().id == tk::tempo_fast
+						    || _it.token().id == tk::tempo_slow));
+
+	// recurse right expression
+	const auto right = parse_expr<L>(pr::precedence::none);
+
+	if (!right)
+		return left;
+
+	// get right duration
+	const auto dur = _tree->header(right).duration;
+
+	const auto tempo = as::make_node<as::tempo>(*_tree, num, den, right, dur);
+
+	if (!left)
+		return tempo.index;
+
+	// else make new group
+	return _tree->make_group_with(left, tempo.index);
 }
 
 
@@ -457,8 +706,7 @@ auto pr::parser::nud_track_separator(const mx::usz left) -> mx::usz {
 template <pr::level L>
 auto pr::parser::led_parallel(const mx::usz left) -> mx::usz {
 
-	debug("LED parallel", _it);
-
+	// get current token
 	const auto& tk = _it.token();
 
 	do { // skip consecutive parallel operators
@@ -468,29 +716,30 @@ auto pr::parser::led_parallel(const mx::usz left) -> mx::usz {
 	if (_it == _end)
 		return left;
 
-	if constexpr (L == pr::level::sequence) {
+	if constexpr (L == pr::level::seq) {
 		if (lookahead_op(_it) == true) {
 			_back = true;
-			std::cout << "LED parallel: lookahead found parameter or block ref, returning left\n";
 			return left;
 		}
 	}
 
+	// recurse right expression
     auto right = parse_expr<L>(pr::pre_of<L>(tk));
 
+	if (!right)
+		std::cout << "LED parallel: right is 0\n";
+	else
+		std::cout << "LED parallel: right is " << _tree->what_is(right) << '\n';
 
-	if (left == 0U) {
-		return right;
-	}
+	if (!left)
+		std::cout << "LED parallel: left is 0\n";
+	else
+		std::cout << "LED parallel: left is " << _tree->what_is(left) << '\n';
 
-	if (right == 0U) {
-		return left;
-	}
-	return _tree.make_node(
-				as::type::parallel,
-				_tree.new_remap(left),
-				_tree.new_remap(right)
-	);
+	return  left == 0U ? right 
+		: (right == 0U ? left
+		// make parallel node by absorbing ranges
+		: _tree->make_parallel(left, right));
 }
 
 
@@ -509,7 +758,7 @@ auto pr::parser::led_crossfade(const mx::usz left) -> mx::usz {
 	if (_it == _end)
 		return left;
 
-	if constexpr (L == pr::level::sequence) {
+	if constexpr (L == pr::level::seq) {
 		if (lookahead_op(_it) == true) {
 			_back = true;
 			std::cout << "LED crossfade: lookahead found parameter or block ref, returning left\n";
@@ -517,15 +766,19 @@ auto pr::parser::led_crossfade(const mx::usz left) -> mx::usz {
 		}
 	}
 
+	// recurse right expression
 	const auto right = parse_expr<L>(pr::pre_of<L>(tk));
 
-	return left == 0U ? right :
-		 (right == 0U ? left :
-		   _tree.make_node(
-			   as::type::crossfade,
-			   _tree.new_remap(left),
-			   _tree.new_remap(right)
-		   ));
+	if (!right) return left;
+	if (!left)  return right;
+
+	// get left header
+	const auto& lh = _tree->header(left);
+	const auto& rh = _tree->header(right);
+
+	const auto dur = lh.duration > rh.duration ? lh.duration : rh.duration;
+
+	return as::make_node<as::crossfade>(*_tree, left, right, dur).index;
 }
 
 
@@ -552,7 +805,7 @@ auto pr::parser::lookahead(tk::iterator it) const noexcept -> bool {
 				--depth;
 				break;
 
-            case tk::track_reference:
+            case tk::reference:
 			case tk::parameter: {
 				if (value_found == true)
 					error("mixed expression not allowed", it);
@@ -583,7 +836,7 @@ auto pr::parser::lookahead_op(tk::iterator it) const noexcept -> bool {
 		const auto& tk = it.token();
 		switch (tk.id) {
 			case tk::parameter:
-			case tk::track_reference:
+			case tk::reference:
 				return true;
 
 			case tk::decimal:

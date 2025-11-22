@@ -10,18 +10,39 @@ namespace as {
 
 	// -- T Y P E -------------------------------------------------------------
 
-	enum class type : mx::uint {
-		dummy,
+	enum class type : mx::u32 {
+
+		program,
+
+		group,
+
 		track,
 		parameter,
-		sequence,
-		leaf,
 		parallel,
 		crossfade,
 		permutation,
 
+		tempo,
+
+		references,
 		atomic_values,
-		atomic_refs
+	};
+
+
+	// -- C A T E G O R Y -----------------------------------------------------
+
+	enum class category : mx::u8 {
+		none,
+		generic,
+		semantic
+	};
+
+	enum class shape : mx::u8 {
+		none,
+		unary,
+		binary,
+		ternary,
+		n_ary
 	};
 
 } // namespace as

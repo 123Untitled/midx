@@ -52,3 +52,22 @@ operator <+> positive superposition (AND logic)
 operator <-> negative superposition (NAND logic)
 operator <^> exclusive superposition (XOR logic)
 operator <=> equivalence superposition (XNOR logic)
+
+
+# ----
+add :dura parameter to set duration of track
+this is a sequence, so each value means when retrigger all polyrythmic sequence, at end of dura, next track is triggered
+if dura is not set, track is loop on LCM (least common multiple) of all step length of each polyrythmic sequence
+
+
+# ----
+
+fix Pushing range start=0 count=0
+fix  track_separator after identifier
+world ::
+	:tr 0 1 0 1
+	:nt [B2 (55 | 62 29) D5 F7];
+
+
+# ----
+when multiple highlights on same slot, generate different colors

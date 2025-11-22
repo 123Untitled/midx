@@ -1,7 +1,7 @@
 #ifndef language_syntax_specifier_hpp
 #define language_syntax_specifier_hpp
 
-#include "types.hpp"
+#include "core/types.hpp"
 #include "literal.hpp"
 #include "core/containers/flat_trie.hpp"
 
@@ -23,15 +23,6 @@ namespace sp {
 		semi,
 		chan,
 		prob,
-
-		// track specifier
-		track,
-
-		// pattern specifier
-		pattern,
-
-		// song specifier
-		song,
 
 		invalid,
 

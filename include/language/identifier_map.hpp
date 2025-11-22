@@ -2,13 +2,18 @@
 #define language_identifier_map_hpp
 
 #include "language/identifier_key.hpp"
-#include "language/ast/value.hpp"
 #include <unordered_map>
 
 
 // -- S X  N A M E S P A C E --------------------------------------------------
 
 namespace sx {
+
+
+	struct ident_value final {
+		mx::usz index;
+		bool empty;
+	};
 
 
 	// -- I D E N T I F I E R  M A P ------------------------------------------
@@ -27,7 +32,7 @@ namespace sx {
 			// -- private members ---------------------------------------------
 
 			/* map */
-			std::unordered_map<sx::identifier_key, mx::usz,
+			std::unordered_map<sx::identifier_key, sx::ident_value,
 							   sx::identifier_key::hash> _map;
 
 		public:
@@ -36,33 +41,22 @@ namespace sx {
 			// -- public modifiers --------------------------------------------
 
 			/* insert */
-			auto insert(const as::block& b, const mx::usz index) -> bool {
-				const auto it = _map.try_emplace(sx::identifier_key{b}, index);
-				return it.second;
-			}
-
-			/* insert */
-			auto insert(const sp::id spec_id,
-						const lx::lexeme& lex,
-						const mx::usz index) -> bool {
-				const auto it = _map.try_emplace(
-						sx::identifier_key{spec_id, lex}, index);
+			auto insert(const lx::lexeme& l, const mx::usz index) -> bool {
+				const auto it = _map.try_emplace(sx::identifier_key{l},
+												 sx::ident_value{index, index == 0U});
 				return it.second;
 			}
 
 			/* find */
-			auto find(const as::param& p, const as::value& v, mx::usz& index) const noexcept -> sp::id {
-				const sp::id spec_id = p.param_to_spec();
-				const lx::lexeme& lex = v.token().lexeme;
+			auto find(const lx::lexeme& l) const noexcept -> sx::ident_value {
 
-				const sx::identifier_key key{spec_id, lex};
+				const sx::identifier_key key{l};
 				const auto it = _map.find(key);
 
 				if (it == _map.end())
-					return sp::id::invalid;
+					return sx::ident_value{0U, false};
 
-				index = it->second;
-				return spec_id;
+				return it->second;
 			}
 
 

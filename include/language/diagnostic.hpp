@@ -43,6 +43,17 @@ namespace an {
 			}
 
 			auto push(const char* msg,
+					  const tk::const_token_view& tv) -> void {
+
+				_entries.emplace_back(
+						an::diagnostic::entry{
+							msg,
+							tv.first_chunk().range
+						}
+				);
+			}
+
+			auto push(const char* msg,
 					  const mx::usz ln,
 					  const mx::usz cs,
 					  const mx::usz ce) -> void {

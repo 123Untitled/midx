@@ -1,5 +1,5 @@
 #include "player.hpp"
-#include "data/model.hpp"
+#include "language/ast/tree.hpp"
 #include "time/signature.hpp"
 
 #include "monitoring/monitor.hpp"
@@ -8,6 +8,7 @@
 
 
 #include <iostream>
+#include <sstream>
 
 #include <sys/event.h>
 
@@ -19,7 +20,7 @@
 mx::player::player(const mx::monitor& monitor)
 : mx::watcher{},
   _clock{monitor.kqueue(), *this},
-  _model{nullptr},
+  _tree{nullptr},
   _engine{} {
 
 	// add user event to monitor
@@ -55,9 +56,9 @@ auto mx::player::stop(void) -> void {
 	_engine.stop();
 }
 
-/* model */
-auto mx::player::switch_model(mx::model& m) noexcept -> void {
-	_model = &m;
+/* switch tree */
+auto mx::player::switch_tree(const as::tree& tree) noexcept -> void {
+	_tree = &tree;
 }
 
 
@@ -69,14 +70,14 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 	static mx::u64 tick_count = 0U;
 
 
-	//const mx::signature ppqn_24{1, 16};
-	//
-	//if (_model && ppqn_24.is_time(tick_count) == false) {
+	const mx::signature ppqn_24{1, 16};
+
+	//if (_tree && ppqn_24.is_time(tick_count) == false) {
 	//	++tick_count;
 	//	return;
 	//}
 
-	if (_model == nullptr) {
+	if (_tree == nullptr) {
 		++tick_count;
 		return;
 	}
@@ -84,11 +85,15 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 	std::stringstream ss;
 	ss << "{\"type\":\"animation\",\"highlights\":[";
 
-	_engine.off_pass();
+	//_engine.off_pass();
 	//_model->play(ss, _engine, ppqn_24.count(tick_count));
-	_model->play(ss, _engine, tick_count);
+	//_tree->play(ss, ppqn_24.count(tick_count));
+	_tree->play(ss, tick_count);
+
+	//std::cout << ppqn_24.count(tick_count) << "\n";
+	//_model->play(ss, _engine, tick_count);
 	// send and clear events
-	_engine.flush();
+	//_engine.flush();
 
 	auto str = ss.str();
 

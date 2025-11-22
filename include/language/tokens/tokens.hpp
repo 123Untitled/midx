@@ -121,6 +121,13 @@ namespace tk {
 			}
 
 
+			/* view */
+			auto filtered_view(const mx::usz index) const noexcept -> tk::const_token_view {
+				return tk::const_token_view{_chunks.data(),
+										   _tokens.data() + _filtered[index]};
+			}
+
+
 			// -- public methods ----------------------------------------------
 
 			/* for each */

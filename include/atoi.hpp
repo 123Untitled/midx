@@ -1,11 +1,10 @@
 #ifndef language_to_integer_hpp
 #define language_to_integer_hpp
 
-#include "types.hpp"
+#include "core/types.hpp"
 #include "language/tokens/def.hpp"
 #include "language/diagnostic.hpp"
-#include "data/sequence.hpp"
-#include "language/syntax/specifier.hpp"
+#include "language/syntax/parameter.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -44,11 +43,11 @@ namespace mx {
 	};
 
 
-	template <sp::id>
+	template <pa::id>
 	struct overflow;
 
 	template <>
-	struct overflow<sp::id::trig> {
+	struct overflow<pa::trig> {
 		non_instantiable_class(overflow);
 		constexpr static mx::i8 max = 1;
 		constexpr static mx::i8 min = 0;
@@ -56,7 +55,7 @@ namespace mx {
 	}; // struct overflow
 
 	template <>
-	struct overflow<sp::id::note> {
+	struct overflow<pa::note> {
 		non_instantiable_class(overflow);
 		constexpr static mx::i8 max = 127;
 		constexpr static mx::i8 min = 0;
@@ -64,7 +63,7 @@ namespace mx {
 	}; // struct overflow
 
 	template <>
-	struct overflow<sp::id::gate> {
+	struct overflow<pa::gate> {
 		non_instantiable_class(overflow);
 		constexpr static mx::i8 max = 100;
 		constexpr static mx::i8 min = 0;
@@ -72,7 +71,7 @@ namespace mx {
 	}; // struct overflow
 
 	template <>
-	struct overflow<sp::id::velo> {
+	struct overflow<pa::velo> {
 		non_instantiable_class(overflow);
 		constexpr static mx::i8 max = 127;
 		constexpr static mx::i8 min = 0;
@@ -80,7 +79,7 @@ namespace mx {
 	}; // struct overflow
 
 	template <>
-	struct overflow<sp::id::octa> {
+	struct overflow<pa::octa> {
 		non_instantiable_class(overflow);
 		constexpr static mx::i8 max = +10;
 		constexpr static mx::i8 min = -10;
@@ -88,7 +87,7 @@ namespace mx {
 	}; // struct overflow
 
 	template <>
-	struct overflow<sp::id::semi> {
+	struct overflow<pa::semi> {
 		non_instantiable_class(overflow);
 		constexpr static mx::i8 max = +127;
 		constexpr static mx::i8 min = -128;
@@ -96,7 +95,7 @@ namespace mx {
 	}; // struct overflow
 
 	template <>
-	struct overflow<sp::id::chan> {
+	struct overflow<pa::chan> {
 		non_instantiable_class(overflow);
 		constexpr static mx::i8 max = 15;
 		constexpr static mx::i8 min = 0;
@@ -104,32 +103,44 @@ namespace mx {
 	}; // struct overflow
 
 	template <>
-	struct overflow<sp::id::prob> {
+	struct overflow<pa::prob> {
 		non_instantiable_class(overflow);
 		constexpr static mx::i8 max = 100;
 		constexpr static mx::i8 min = 0;
 		constexpr static bool   neg = false;
 	}; // struct overflow
 
+	template <>
+	struct overflow<pa::dura> {
+		non_instantiable_class(overflow);
+		constexpr static mx::i8 max = 127;
+		constexpr static mx::i8 min = 0;
+		constexpr static bool   neg = false;
+	}; // struct overflow
+
 
 	/* convert integer */
-	template <typename L, typename B, bool neg>
-	auto convert(const tk::token& tk,
+	template <pa::id ID, typename BASE, bool NEG>
+	auto convert(const tk::token_view& tv,
 				 an::diagnostic& diag) noexcept -> mx::i8 {
 
-		const mx::u8* it  = tk.lexeme.data;
-		const mx::u8* end = tk.lexeme.data
-						  + tk.lexeme.size;
+		// get first chunk
+		const auto& ck = tv.first_chunk();
 
-		if constexpr (B::base != 10U) {
+
+		const mx::u8* it  = ck.lexeme.data;
+		const mx::u8* end = ck.lexeme.data
+						  + ck.lexeme.size;
+
+		if constexpr (BASE::base != 10U) {
 			// skip base prefix
 			it += 2U;
 		}
 
 		mx::i8 num = 0U;
-		constexpr mx::i8 max       = L::max;
-		constexpr mx::i8 min       = L::min;
-		constexpr mx::i8 mul_limit = neg ? (min / B::base) : max / B::base;
+		constexpr mx::i8 max       = mx::overflow<ID>::max;
+		constexpr mx::i8 min       = mx::overflow<ID>::min;
+		constexpr mx::i8 mul_limit = NEG ? (min / BASE::base) : max / BASE::base;
 
 		//std::cout << "min: " << mx::i32(min) << ", max: " << mx::i32(max) << "\n";
 
@@ -138,41 +149,45 @@ namespace mx {
 		while (it < end) {
 
 			// check multiplication overflow
-			if constexpr (neg == true) {
+			if constexpr (NEG == true) {
 				if (num < mul_limit) {
 					// push error
 					num = min;
-					diag.push("value overflow", tk);
+					diag.push("value overflow", ck.range);
+					tv.make_invalid();
 					break;
 				}
 			}
-			if constexpr (neg == false) {
+			if constexpr (NEG == false) {
 				if (num > mul_limit) {
 					// push error
 					num = max;
-					diag.push("value overflow", tk);
+					diag.push("value overflow", ck.range);
+					tv.make_invalid();
 					break;
 				}
 			}
 
-			num *= B::base;
-			const mx::i8 digit = B::to_digit(*it);
+			num *= BASE::base;
+			const mx::i8 digit = BASE::to_digit(*it);
 
 			// check subtraction overflow
-			if constexpr (neg == true) {
+			if constexpr (NEG == true) {
 				if (num < (min + digit)) {
 					// push error
-					num = neg ? min : max;
-					diag.push("value overflow", tk);
+					num = min;
+					diag.push("value overflow", ck.range);
+					tv.make_invalid();
 					break;
 				}
 				num -= digit;
 			}
-			if constexpr (neg == false) {
+			if constexpr (NEG == false) {
 				if (num > (max - digit)) {
 					// push error
 					num = max;
-					diag.push("value overflow", tk);
+					diag.push("value overflow", ck.range);
+					tv.make_invalid();
 					break;
 				}
 				num += digit;
@@ -183,63 +198,74 @@ namespace mx {
 		return num;
 	}
 
+	using convert_fn = auto (*)(const tk::token_view&,
+									an::diagnostic&) noexcept -> mx::i8;
+
 	/* convert decimal */
-	template <sp::id I, bool neg>
-	auto convert_dec = &convert<mx::overflow<I>, mx::dec, neg>;
+	template <bool NEG>
+	mx::convert_fn convert_dec[] {
+		&mx::convert<pa::trig, mx::dec, NEG>,
+		&mx::convert<pa::note, mx::dec, NEG>,
+		&mx::convert<pa::gate, mx::dec, NEG>,
+		&mx::convert<pa::velo, mx::dec, NEG>,
+		&mx::convert<pa::octa, mx::dec, NEG>,
+		&mx::convert<pa::semi, mx::dec, NEG>,
+		&mx::convert<pa::chan, mx::dec, NEG>,
+		&mx::convert<pa::prob, mx::dec, NEG>,
+		&mx::convert<pa::dura, mx::dec, NEG>
+	};
 
 	/* convert binary */
-	template <sp::id I, bool neg>
-	auto convert_bin = &convert<mx::overflow<I>, mx::bin, neg>;
+	template <bool NEG>
+	mx::convert_fn convert_bin[] {
+		&mx::convert<pa::trig, mx::bin, NEG>,
+		&mx::convert<pa::note, mx::bin, NEG>,
+		&mx::convert<pa::gate, mx::bin, NEG>,
+		&mx::convert<pa::velo, mx::bin, NEG>,
+		&mx::convert<pa::octa, mx::bin, NEG>,
+		&mx::convert<pa::semi, mx::bin, NEG>,
+		&mx::convert<pa::chan, mx::bin, NEG>,
+		&mx::convert<pa::prob, mx::bin, NEG>,
+		&mx::convert<pa::dura, mx::bin, NEG>
+	};
 
 	/* convert octal */
-	template <sp::id I, bool neg>
-	auto convert_oct = &convert<mx::overflow<I>, mx::oct, neg>;
+	template <bool NEG>
+	mx::convert_fn convert_oct[] {
+		&mx::convert<pa::trig, mx::oct, NEG>,
+		&mx::convert<pa::note, mx::oct, NEG>,
+		&mx::convert<pa::gate, mx::oct, NEG>,
+		&mx::convert<pa::velo, mx::oct, NEG>,
+		&mx::convert<pa::octa, mx::oct, NEG>,
+		&mx::convert<pa::semi, mx::oct, NEG>,
+		&mx::convert<pa::chan, mx::oct, NEG>,
+		&mx::convert<pa::prob, mx::oct, NEG>,
+		&mx::convert<pa::dura, mx::oct, NEG>
+	};
 
 	/* convert hexadecimal */
-	template <sp::id I, bool neg>
-	auto convert_hex = &convert<mx::overflow<I>, mx::hex, neg>;
+	template <bool NEG>
+	mx::convert_fn convert_hex[] {
+		&mx::convert<pa::trig, mx::hex, NEG>,
+		&mx::convert<pa::note, mx::hex, NEG>,
+		&mx::convert<pa::gate, mx::hex, NEG>,
+		&mx::convert<pa::velo, mx::hex, NEG>,
+		&mx::convert<pa::octa, mx::hex, NEG>,
+		&mx::convert<pa::semi, mx::hex, NEG>,
+		&mx::convert<pa::chan, mx::hex, NEG>,
+		&mx::convert<pa::prob, mx::hex, NEG>,
+		&mx::convert<pa::dura, mx::hex, NEG>
+	};
 
 
 
 
-	//template <sp::id I, bool neg = false>
-	//auto to_integer(tk::token& tk,
-	//				mx::sequence& seq,
-	//				an::diagnostic& diag) noexcept -> mx::i8 {
-	//
-	//	std::cout << "ID: " << static_cast<mx::usz>(I) << "\n";
-	//	bool is_neg = false;
-	//
-	//	switch (tk.id) {
-	//
-	//		// decimal number
-	//		case tk::decimal:
-	//			return convert_dec<I, neg>(tk, diag);
-	//
-	//		// binary number
-	//		case tk::binary:
-	//			return convert_bin<I, neg>(tk, diag);
-	//
-	//		// octal number
-	//		case tk::octal:
-	//			return convert_oct<I, neg>(tk, diag);
-	//
-	//		// hexadecimal number
-	//		case tk::hexadecimal:
-	//			return convert_hex<I, neg>(tk, diag);
-	//
-	//		case tk::note:
-	//			break;
-	//
-	//		default:
-	//			diag.push_error("invalid value", tk);
-	//			tk.id = tk::invalid;
-	//			break;
-	//	}
-	//
-	//
-	//	return 0;
+
+	//auto convert(const tk::token_view& tv,
+	//			 an::diagnostic& diag) noexcept -> mx::i8 {
 	//}
+
+
 
 			//struct alteration final {
 			//	const bool sharp;

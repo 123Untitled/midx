@@ -15,7 +15,6 @@ mx::analyzer::analyzer(void)
   _tokens{},
   _tree{},
   _diagnostic{},
-  _model{},
   _highlights{} {
 }
 
@@ -28,7 +27,6 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 
 		_tokens.clear();
 	_diagnostic.clear();
-		 _model.clear();
 
 	// lex
 	_lexer.lex(_data, _tokens, _diagnostic);
