@@ -112,13 +112,13 @@ namespace mx {
 			}
 
 			/* is time */
-			auto is_time(const value_type& count) const noexcept -> bool {
-				return (count % _modulus) == 0U;
+			auto is_time(const value_type& ticks) const noexcept -> bool {
+				return (ticks % _modulus) == 0U;
 			}
 
 			/* count */
-			auto count(const value_type& clock) const noexcept -> value_type {
-				return clock / _modulus;
+			auto count(const value_type& ticks) const noexcept -> value_type {
+				return ticks / _modulus;
 			}
 
 			/* to ticks */
@@ -145,6 +145,13 @@ namespace mx {
 			auto assign(const value_type& num, const value_type& den) noexcept -> void {
 				_numerator = num;
 				_denominator = den;
+				_modulus = self::_compute_modulus();
+			}
+
+			/* factor */
+			auto factor(const value_type& num, const value_type& den) noexcept -> void {
+				_numerator *= num;
+				_denominator *= den;
 				_modulus = self::_compute_modulus();
 			}
 
@@ -185,4 +192,4 @@ namespace mx {
 
 } // namespace mx
 
-#endif // midilang_time_signature_hpp
+#endif // time_signature_hpp

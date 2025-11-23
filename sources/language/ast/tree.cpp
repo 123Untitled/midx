@@ -1,23 +1,17 @@
 #include "language/ast/tree.hpp"
 
 #include <sstream>
-#include "time/signature.hpp"
 
 
 auto as::tree::play_atomic(play_ctx& ctx) const -> void {
 	const auto& atomic = node<as::atomic_values>(ctx.fr.node);
 
-	mx::signature s{ctx.fr.num, ctx.fr.den};
+	double local_time = ctx.fr.dur * ctx.fr.speed;
 
-	//if (s.is_time(ctx.fr.tick) == false)
-	//if (s.is_time(ctx.absolute) == false)
-		//return;
+	double step_f = ::fmod(local_time, atomic.header.steps);
 
-	//const auto count = s.count(ctx.absolute);
-	//const auto count = s.count(ctx.fr.tick);
+	mx::usz step = (mx::usz)::floor(step_f);
 
-	//const auto step = count % atomic.header.duration;
-	const auto step = ctx.fr.tick % atomic.header.duration;
 
 	const mx::i8 value = value_at(atomic.value_start + step);
 
@@ -39,31 +33,70 @@ auto as::tree::play_atomic(play_ctx& ctx) const -> void {
 
 }
 
+
+
+auto as::tree::play_group(play_ctx& ctx) const -> void {
+
+	const auto& group = node<as::group>(ctx.fr.node);
+
+	double local_time = ctx.fr.dur * ctx.fr.speed;
+	local_time = ::fmod(local_time, group.header.steps);
+
+    auto it  = group.range.start;
+    auto end = group.range.end();
+
+	int i = 0;
+    for (; it < end; ++it) {
+        mx::usz child = remap_index(it);
+        auto steps = header(child).steps;
+
+        if (local_time < steps) {
+            ctx.push(child, local_time / ctx.fr.speed, ctx.fr.speed);
+            return;
+        }
+		local_time -= steps;
+    }
+}
+
+
+auto as::tree::play_parameter(play_ctx& ctx) const -> void {
+	const auto& param = node<as::parameter>(ctx.fr.node);
+	// push child node with full duration
+	ctx.push(param.child, ctx.fr.dur, ctx.fr.speed);
+}
+
+auto as::tree::play_tempo(play_ctx& ctx) const -> void {
+	const auto& tempo = node<as::tempo>(ctx.fr.node);
+
+	// push child node with full duration
+	ctx.push(tempo.child, ctx.fr.dur, tempo.factor * ctx.fr.speed);
+}
+
+
+
 auto as::tree::play_reference(play_ctx& ctx) const -> void {
 	const auto& refs = node<as::references>(ctx.fr.node);
 
 		   auto it = refs.ref_start;
 		   auto tk = refs.tok_start;
 	const auto end = refs.ref_start + refs.count;
-	auto tick = ctx.fr.tick;
+
+	auto local_time = ctx.fr.dur * ctx.fr.speed;
+	local_time = ::fmod(local_time, refs.header.steps);
 
 	// loop over referenced nodes
 	for (; it < end; ++it, ++tk) {
 		const auto node = ref_at(it);
-		const auto dur  = header(node).duration;
+		const auto steps = header(node).steps;
 
-		if (tick < dur) {
+		if (local_time < steps) {
 			// push node and local tick
-			ctx.push(node, tick);
-			goto highlight;
+			ctx.push(node, local_time / ctx.fr.speed, ctx.fr.speed);
 			break;
 		}
 		// decrement tick
-		tick -= dur;
+		local_time -= steps;
 	}
-	return;
-
-highlight:
 
 	auto tv = tokens->filtered_view(tk);
 
@@ -82,113 +115,53 @@ highlight:
 }
 
 
-auto as::tree::play_group(play_ctx& ctx) const -> void {
-
-	const auto& group = node<as::group>(ctx.fr.node);
-
-		   auto it = group.range.start;
-	const auto end = group.range.end();
-	auto tick = ctx.fr.tick;
-
-	// loop over child nodes
-	for (; it < end; ++it) {
-		const auto node = remap_index(it);
-		const auto dur  = header(node).duration;
-
-		if (tick < dur) {
-			// push node and local tick
-			ctx.push(node, tick);
-			return;
-		}
-		else {
-			// decrement tick
-			tick -= dur;
-		}
-	}
-}
-
-
-auto as::tree::play_parameter(play_ctx& ctx) const -> void {
-	const auto& param = node<as::parameter>(ctx.fr.node);
-	// push child node with full duration
-	ctx.push(param.child, ctx.fr.tick);
-}
-
-auto as::tree::play_tempo(play_ctx& ctx) const -> void {
-	const auto& tempo = node<as::tempo>(ctx.fr.node);
-
-	// push child node with full duration
-	ctx.push(tempo.child,
-			ctx.fr.tick, // * (tempo.den) / (tempo.num),
-			ctx.fr.num * tempo.num,
-			ctx.fr.den * tempo.den
-			);
-}
 
 
 
-auto as::tree::play_parallel(play_ctx& ctx) const -> void {
-	const auto& parallel = node<as::parallel>(ctx.fr.node);
-
-		   auto it = parallel.range.start;
-	const auto end = parallel.range.end();
-	const auto pdur = header(ctx.fr.node).duration;
-
-
-	// loop over child nodes
-	for (; it < end; ++it) {
-		const auto node = remap_index(it);
-		const auto dur  = header(node).duration;
-
-		ctx.push(node, ctx.fr.tick % dur);
-		continue;
-
-	}
-}
 
 auto as::tree::play_track(play_ctx& ctx) const -> void {
+
     const auto& track = node<as::track>(ctx.fr.node);
 
-    // tick local pour la track
-    const auto track_tick = ctx.fr.tick;
-	//ctx.absolute = track_tick; // JUST FOR TESTING !!!
+	// track ticks
+	auto local_time = ctx.fr.dur * ctx.fr.speed;
+	local_time = ::fmod(local_time, track.header.steps);
 
-    // loop over parameters
-    for (mx::usz i = 0U; i < pa::max_params; ++i) {
 
-        const auto& range = track.ranges[i];
+    // Parcourt chaque param indépendamment
+    for (mx::usz p = 0; p < pa::max_params; ++p) {
 
-        if (range.count == 0U)
+        const auto& range = track.ranges[p];
+        if (range.count == 0)
             continue;
 
-        // total duration of this param
-        mx::usz total = 0;
-        for (mx::usz j = 0; j < range.count; ++j)
-            total += header(remap_index(range.start + j)).duration;
+        // Durée totale du param (avec tempo)
+		mx::usz total_steps = 0U;
+        for (mx::usz j = 0; j < range.count; ++j) {
+            mx::usz node = remap_index(range.start + j);
+			total_steps += header(node).steps;
+        }
 
-        // determine which event in this param plays at track_tick
-        mx::usz tick = track_tick % total;
 
-        auto it = range.start;
-        const auto end = it + range.count;
+        auto param_time = ::fmod(local_time, total_steps);
 
-        for (; it < end; ++it) {
-            const auto node = remap_index(it);
-            const auto dur  = header(node).duration;
+        for (mx::usz j = 0; j < range.count; ++j) {
+            mx::usz node = remap_index(range.start + j);
+            mx::usz steps = header(node).steps;
 
-            if (tick < dur) {
-                ctx.push(node, tick);
+            if (param_time < steps) {
+                ctx.push(node, param_time / ctx.fr.speed, ctx.fr.speed);
                 break;
             }
-            tick -= dur;
+			param_time -= steps;
         }
     }
 }
 
 
-auto as::tree::play(std::stringstream& hi, const mx::usz ticks) const -> void {
+auto as::tree::play(std::stringstream& hi, const double time) const -> void {
 
-	play_ctx ctx{hi, ticks};
+	play_ctx ctx{hi, time};
 
 	// get root node
 	const auto& root = node<as::program>(0U);
@@ -196,13 +169,15 @@ auto as::tree::play(std::stringstream& hi, const mx::usz ticks) const -> void {
 		   auto it = root.range.start;
 	const auto end = root.range.end();
 
+
 	// loop over child nodes
 	for (; it < end; ++it) {
-		const auto node = remap_index(it);
-		const auto dur = header(node).duration;
+		const auto node  = remap_index(it);
+		const auto steps = header(node).steps;
 
 		// push node and local tick
-		ctx.push(node, ticks % dur, 1U, 1U);
+
+		ctx.push(node, ::fmod(time, steps), 1.0);
 
 		while (ctx.stack.empty() == false) {
 
@@ -254,6 +229,32 @@ auto as::tree::play(std::stringstream& hi, const mx::usz ticks) const -> void {
 	}
 }
 
+auto as::tree::play_parallel(play_ctx& ctx) const -> void {
+
+	const auto& parallel = node<as::parallel>(ctx.fr.node);
+
+		   auto it = parallel.range.start;
+	const auto end = parallel.range.end();
+
+	double local_time = ctx.fr.dur * ctx.fr.speed;
+	local_time = ::fmod(local_time, parallel.header.steps);
+
+	// loop over child nodes
+	for (; it < end; ++it) {
+		const auto node = remap_index(it);
+		const auto steps = header(node).steps;
+
+		// Position locale dans l'enfant
+        double local_steps = fmod(local_time, steps);
+
+        // On repasse dans le domaine du child (avant tempo)
+        double child_dur = local_steps / ctx.fr.speed;
+
+        // On pousse le child
+        ctx.push(node, child_dur, ctx.fr.speed);
+
+	}
+}
 
 
 //auto as::tree::play_atomic(play_ctx& ctx) const -> void {
@@ -290,50 +291,6 @@ auto as::tree::play(std::stringstream& hi, const mx::usz ticks) const -> void {
 //	);
 //
 //}
-//
-//auto as::tree::play_reference(play_ctx& ctx) const -> void {
-//	const auto& refs = node<as::references>(ctx.fr.node);
-//
-//		   auto it = refs.ref_start;
-//		   auto tk = refs.tok_start;
-//	const auto end = refs.ref_start + refs.count;
-//	auto tick = ctx.fr.tick;
-//
-//	// loop over referenced nodes
-//	for (; it < end; ++it, ++tk) {
-//		const auto node = ref_at(it);
-//		const auto dur  = header(node).duration;
-//
-//		if (tick < dur) {
-//			// push node and local tick
-//			ctx.push(node, tick);
-//			goto highlight;
-//			break;
-//		}
-//		// decrement tick
-//		tick -= dur;
-//	}
-//	return;
-//
-//highlight:
-//
-//	auto tv = tokens->filtered_view(tk);
-//
-//	tv.for_each_chunk(
-//		[](const tk::chunk& ck, std::stringstream& ss) static -> void {
-//			//const char* group = "IncSearch";
-//			const char* group = "Underlined";
-//			const auto& r = ck.range;
-//
-//			ss << "{\"l\":" << r.ln
-//					   << ",\"s\":" << r.cs
-//					   << ",\"e\":" << r.ce
-//					   << ",\"g\":\"" << group << "\"},";
-//		}, ctx.hi
-//	);
-//}
-//
-//
 //auto as::tree::play_group(play_ctx& ctx) const -> void {
 //
 //	const auto& group = node<as::group>(ctx.fr.node);
@@ -378,25 +335,6 @@ auto as::tree::play(std::stringstream& hi, const mx::usz ticks) const -> void {
 //}
 //
 //
-//
-//auto as::tree::play_parallel(play_ctx& ctx) const -> void {
-//	const auto& parallel = node<as::parallel>(ctx.fr.node);
-//
-//		   auto it = parallel.range.start;
-//	const auto end = parallel.range.end();
-//	const auto pdur = header(ctx.fr.node).duration;
-//
-//
-//	// loop over child nodes
-//	for (; it < end; ++it) {
-//		const auto node = remap_index(it);
-//		const auto dur  = header(node).duration;
-//
-//		ctx.push(node, ctx.fr.tick % dur);
-//		continue;
-//
-//	}
-//}
 //
 //auto as::tree::play_track(play_ctx& ctx) const -> void {
 //    const auto& track = node<as::track>(ctx.fr.node);
@@ -630,3 +568,171 @@ std::vector<bool> euclid(mx::usz k, mx::usz n)
     return pattern;
 }
 
+
+
+
+
+
+
+
+
+/////// G O O D   I M P L E M E N T A T I O N   B E L O W ///////
+//
+//auto as::tree::play_atomic(play_ctx& ctx) const -> void {
+//	const auto& atomic = node<as::atomic_values>(ctx.fr.node);
+//
+//	double local_time = ctx.fr.dur * ctx.fr.speed;
+//
+//
+//	 // compute step from real-time duration
+//    double ratio = local_time / atomic.header.duration;
+//
+//    mx::usz step = (mx::usz)floor(ratio * atomic.header.steps);
+//
+//
+//	const mx::i8 value = value_at(atomic.value_start + step);
+//
+//	auto tv = tokens->filtered_view(
+//		atomic.token_start + step);
+//
+//	tv.for_each_chunk(
+//		[](const tk::chunk& ck, std::stringstream& ss) static -> void {
+//			const char* group = "IncSearch";
+//			//const char* group = "Underlined";
+//			const auto& r = ck.range;
+//
+//			ss << "{\"l\":" << r.ln
+//					   << ",\"s\":" << r.cs
+//					   << ",\"e\":" << r.ce
+//					   << ",\"g\":\"" << group << "\"},";
+//		}, ctx.hi
+//	);
+//
+//}
+//
+//
+//
+//auto as::tree::play_group(play_ctx& ctx) const -> void {
+//
+//	const auto& group = node<as::group>(ctx.fr.node);
+//
+//	double local_dur = ctx.fr.dur * ctx.fr.speed;
+//	local_dur = ::fmod(local_dur, group.header.duration);
+//
+//    auto it  = group.range.start;
+//    auto end = group.range.end();
+//
+//	int i = 0;
+//    for (; it < end; ++it) {
+//        mx::usz child = remap_index(it);
+//        auto dur   = header(child).duration;
+//
+//        if (local_dur < dur) {
+//            ctx.push(child, local_dur / ctx.fr.speed, ctx.fr.speed);
+//            return;
+//        }
+//        local_dur -= dur;
+//    }
+//}
+//
+//
+//auto as::tree::play_parameter(play_ctx& ctx) const -> void {
+//	const auto& param = node<as::parameter>(ctx.fr.node);
+//	// push child node with full duration
+//	ctx.push(param.child, ctx.fr.dur, ctx.fr.speed);
+//}
+//
+//auto as::tree::play_tempo(play_ctx& ctx) const -> void {
+//	const auto& tempo = node<as::tempo>(ctx.fr.node);
+//
+//	// push child node with full duration
+//	ctx.push(tempo.child, ctx.fr.dur, tempo.factor * ctx.fr.speed);
+//}
+//
+//
+//
+//auto as::tree::play_reference(play_ctx& ctx) const -> void {
+//	const auto& refs = node<as::references>(ctx.fr.node);
+//
+//		   auto it = refs.ref_start;
+//		   auto tk = refs.tok_start;
+//	const auto end = refs.ref_start + refs.count;
+//
+//	auto local_time = ctx.fr.dur * ctx.fr.speed;
+//	local_time = ::fmod(local_time, refs.header.duration);
+//
+//	// loop over referenced nodes
+//	for (; it < end; ++it, ++tk) {
+//		const auto node = ref_at(it);
+//		const auto dur  = header(node).duration;
+//
+//		if (local_time < dur) {
+//			// push node and local tick
+//			ctx.push(node, local_time / ctx.fr.speed, ctx.fr.speed);
+//			break;
+//		}
+//		// decrement tick
+//		local_time -= dur;
+//	}
+//
+//	auto tv = tokens->filtered_view(tk);
+//
+//	tv.for_each_chunk(
+//		[](const tk::chunk& ck, std::stringstream& ss) static -> void {
+//			//const char* group = "IncSearch";
+//			const char* group = "Underlined";
+//			const auto& r = ck.range;
+//
+//			ss << "{\"l\":" << r.ln
+//					   << ",\"s\":" << r.cs
+//					   << ",\"e\":" << r.ce
+//					   << ",\"g\":\"" << group << "\"},";
+//		}, ctx.hi
+//	);
+//}
+//
+//
+//
+//
+//
+//
+//auto as::tree::play_track(play_ctx& ctx) const -> void {
+//
+//    const auto& track = node<as::track>(ctx.fr.node);
+//
+//	// track ticks
+//	auto local_time = ctx.fr.dur * ctx.fr.speed;
+//	local_time = ::fmod(local_time, track.header.duration);
+//
+//
+//    // Parcourt chaque param indépendamment
+//    for (mx::usz p = 0; p < pa::max_params; ++p) {
+//
+//        const auto& range = track.ranges[p];
+//        if (range.count == 0)
+//            continue;
+//
+//        // Durée totale du param (avec tempo)
+//        double total = 0;
+//        for (mx::usz j = 0; j < range.count; ++j) {
+//            mx::usz node = remap_index(range.start + j);
+//            total += header(node).duration;
+//        }
+//
+//
+//        auto local_dur = ::fmod(local_time, total);
+//
+//        for (mx::usz j = 0; j < range.count; ++j) {
+//            mx::usz node = remap_index(range.start + j);
+//            double dur  = header(node).duration;
+//
+//            if (local_dur < dur) {
+//                ctx.push(node, local_dur / ctx.fr.speed, ctx.fr.speed);
+//                break;
+//            }
+//            local_dur -= dur;
+//        }
+//    }
+//}
+//
+//

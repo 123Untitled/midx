@@ -4,6 +4,8 @@
 #include "language/ast/node.hpp"
 #include "language/tokens/tokens.hpp"
 
+#include "time/signature.hpp"
+
 
 // -- A S  N A M E S P A C E --------------------------------------------------
 
@@ -58,41 +60,43 @@ namespace as {
 
 			struct frame final {
 				mx::usz node;
-				mx::usz tick;
-				mx::usz num;
-				mx::usz den;
+				double dur;
+				double speed;
+
 				frame(void) noexcept
-				: node{0U}, tick{0U}, num{1U}, den{1U} {
+				: node{0U}, dur{0.0} {
 				}
 
 				frame(const mx::usz nod,
-					  const mx::usz tic,
-					  const mx::usz num,
-					  const mx::usz den) noexcept
-				: node{nod}, tick{tic}, num{num}, den{den} {
+					  const double dur) noexcept
+				: node{nod}, dur{dur}, speed{1.0} {
+				}
+				frame(const mx::usz nod,
+					  const double dur,
+					  const double spd) noexcept
+				: node{nod}, dur{dur}, speed{spd} {
 				}
 			};
 
 			struct play_ctx final {
-				mx::usz absolute;
+				double absolute;
 				std::stringstream& hi;
 				std::vector<frame> stack;
 				frame fr;
 
 
-				play_ctx(std::stringstream& h, const mx::usz ticks)
-				: absolute{ticks}, hi{h}, stack{}, fr{} {
+				play_ctx(std::stringstream& h, const double time)
+				: absolute{time}, hi{h}, stack{}, fr{} {
 				}
 
 				auto push(const mx::usz node,
-						  const mx::usz tick) -> void {
-					stack.emplace_back(node, tick, fr.num, fr.den);
+						  const double dur) -> void {
+					stack.emplace_back(node, dur);
 				}
 				auto push(const mx::usz node,
-						  const mx::usz tick,
-						  const mx::usz num,
-						  const mx::usz den) -> void {
-					stack.emplace_back(node, tick, num, den);
+						  const double dur,
+						  const double speed) -> void {
+					stack.emplace_back(node, dur, speed);
 				}
 
 				auto pop(void) -> void {
@@ -116,7 +120,7 @@ namespace as {
 
 			tk::tokens* tokens;
 
-			auto play(std::stringstream&, const mx::usz) const -> void;
+			auto play(std::stringstream&, const double) const -> void;
 
 
 			// -- public lifecycle --------------------------------------------
@@ -253,14 +257,11 @@ namespace as {
 			   to be flushed later */
 			auto push(const as::remap_range& range) -> void {
 
-				std::cout << "Pushing range start=" << range.start
-						  << " count=" << range.count << '\n';
 				const auto size = _stack.size();
 				_stack.resize(size + range.count);
 
 				for (mx::usz i = 0U; i < range.count; ++i)
 					_stack[size + i] = _remap[range.start + i];
-				std::cout << "Pushed\n";
 			}
 
 			/* clear
@@ -390,25 +391,21 @@ namespace as {
 				_extend_range(range_of(node), elem);
 			}
 
-			auto extend_group(const mx::usz n, const mx::usz elem) -> void {
+			auto extend_group(const mx::usz group, const mx::usz add) -> void {
 
-				if (!is_group(n))
+				if (!is_group(group))
 					throw std::runtime_error{"extend_group: node is not a group"};
 
 				// get group node
-				auto& g = node<as::group>(n);
+				auto& g = node<as::group>(group);
 
 				// get elem header
-				const auto& eh = header(elem);
+				const auto& h = header(add);
 
-				std::cout << "EXTEND GROUP: extending group duration "
-						  << g.header.duration << " + " << eh.duration << '\n';
-				g.header.duration += eh.duration;
+				g.header.steps    += h.steps;
+				g.header.duration += h.duration;
 
-				std::cout << "EXTEND GROUP: new duration " << g.header.duration << '\n';
-
-				_extend_range(g.range, elem);
-				//_extend_range(range_of(n), elem);
+				_extend_range(g.range, add);
 			}
 
 
@@ -420,9 +417,34 @@ namespace as {
 				const as::header* hs[] { &header(nodes)... };
 				mx::usz dur = 0U;
 				for (const auto h : hs)
-					dur += h->duration;
+					dur += h->steps;
 
 				return make_node<as::group>(make_range(nodes...), dur);
+			}
+
+			/* sum steps
+			   sum the steps of all nodes in a range */
+			auto sum_steps(const as::remap_range& range) const -> mx::usz {
+
+				mx::usz sum = 0U;
+
+				for (mx::usz i = 0U; i < range.count; ++i) {
+					const auto& h = remap_header(range.start + i);
+					sum += h.steps;
+				}
+				return sum;
+			}
+
+			/* sum durs
+			   sum the durations of all nodes in a range */
+			auto sum_durs(const as::remap_range& range) const -> double {
+				double sum = 0.0;
+
+				for (mx::usz i = 0U; i < range.count; ++i) {
+					const auto& h = remap_header(range.start + i);
+					sum += h.duration;
+				}
+				return sum;
 			}
 
 
@@ -440,9 +462,22 @@ namespace as {
 				return as::remap_range{start, sizeof...(args) + 1U};
 			}
 
-			auto max_dur_of_range(const as::remap_range& range) const -> mx::usz {
+			auto max_steps_of_range(const as::remap_range& range) const -> mx::usz {
 
 				mx::usz max = 0U;
+
+				for (mx::usz i = 0U; i < range.count; ++i) {
+					const auto& h = remap_header(range.start + i);
+					if (h.steps > max)
+						max = h.steps;
+				}
+
+				return max;
+			}
+
+			auto max_dur_of_range(const as::remap_range& range) const -> double {
+
+				double max = 0.0;
 
 				for (mx::usz i = 0U; i < range.count; ++i) {
 					const auto& h = remap_header(range.start + i);
@@ -467,34 +502,32 @@ namespace as {
 				if (lh.type == as::type::parallel) {
 
 					if (rh.type == as::type::parallel) {
-						std::cout << "Absorbing parallel ranges\n";
 						absorb_range(left, right);
 					}
 					else {
-						std::cout << "Extending left parallel range\n";
 						extend_range_of(left, right); // append right to left
 					}
 
 					const auto& range = range_of(left);
+					lh.steps = max_steps_of_range(range);
 					lh.duration = max_dur_of_range(range);
 					return left;
 				}
 				// right is parallel
 				else if (rh.type == as::type::parallel) {
-					std::cout << "Extending right parallel range\n";
 					extend_range_of(right, left); // append left to right
 					const auto& range = range_of(right);
+					rh.steps = max_steps_of_range(range);
 					rh.duration = max_dur_of_range(range);
 					return right;
 				}
 
-				std::cout << "Creating new parallel node\n";
-
 				const auto range = make_range(left, right);
+				const auto steps = max_steps_of_range(range);
 				const auto dur   = max_dur_of_range(range);
 
 				// create new parallel node
-				return make_node<as::parallel>(range, dur);
+				return make_node<as::parallel>(range, steps, dur);
 			}
 
 			/* absorb range
@@ -512,6 +545,49 @@ namespace as {
 				push(f.range);
 				// flush and update left range
 				t.range = flush();
+			}
+
+
+			/* make group
+			   create a new group node with given arguments */
+			template <typename... Tp>
+			auto make_group(const Tp&... args) -> mx::usz {
+				return this->make_node<as::group>(args...);
+			}
+
+			/* make parameter
+			   create a new parameter node with given arguments */
+			template <typename... Tp>
+			auto make_parameter(const Tp&... args) -> mx::usz {
+				return this->make_node<as::parameter>(args...);
+			}
+
+			/* make tempo
+			   create a new tempo node with given arguments */
+			template <typename... Tp>
+			auto make_tempo(const Tp&... args) -> mx::usz {
+				return this->make_node<as::tempo>(args...);
+			}
+
+			/* make atomics
+			   create a new atomic values node with given arguments */
+			template <typename... Tp>
+			auto make_atomics(const Tp&... args) -> mx::usz {
+				return this->make_node<as::atomic_values>(args...);
+			}
+
+			/* make refs
+			   create a new references node with given arguments */
+			template <typename... Tp>
+			auto make_refs(const Tp&... args) -> mx::usz {
+				return this->make_node<as::references>(args...);
+			}
+
+			/* make crossfade
+			   create a new crossfade node with given arguments */
+			template <typename... Tp>
+			auto make_crossfade(const Tp&... args) -> mx::usz {
+				return this->make_node<as::crossfade>(args...);
 			}
 
 
@@ -736,7 +812,7 @@ namespace as {
 				const auto& n = _tree.node<as::program>(index);
 
 				pad("program ");
-				std::cout << n.header.duration << ":\n";
+				print_time(n.header, '\n');
 
 				indent_guard ig{_indent};
 				print_range(n.range);
@@ -746,7 +822,7 @@ namespace as {
 				const auto& n = _tree.node<as::tempo>(index);
 
 				pad("tempo ");
-				std::cout << n.header.duration << ":\n";
+				print_time(n.header, ' ', n.factor, '\n');
 
 				indent_guard ig{_indent};
 				print_node(n.child);
@@ -757,7 +833,7 @@ namespace as {
 				const auto& n = _tree.node<as::permutation>(index);
 
 				pad("permutation ");
-				std::cout << n.header.duration << ":\n";
+				print_time(n.header, '\n');
 
 				indent_guard ig{_indent};
 				print_range(n.range);
@@ -767,7 +843,7 @@ namespace as {
 				const auto& n = _tree.node<as::track>(index);
 
 				pad("track ");
-				std::cout << n.header.duration << ":\n";
+				print_time(n.header, '\n');
 
 				indent_guard ig{_indent};
 				for (mx::usz i = 0U; i < pa::max_params; ++i) {
@@ -778,8 +854,8 @@ namespace as {
 			auto print_parameter(mx::usz index) -> void {
 				const auto& n = _tree.node<as::parameter>(index);
 
-				pad("");
-				std::cout << n.tv << " " << n.header.duration << ":\n";
+				pad("parameter ");
+				print_time(n.header, ' ', n.tv, '\n');
 
 				indent_guard ig{_indent};
 				print_node(n.child);
@@ -789,7 +865,7 @@ namespace as {
 				const auto& n = _tree.node<as::group>(index);
 
 				pad("group ");
-				std::cout << n.header.duration << ":\n";
+				print_time(n.header, '\n');
 
 				indent_guard ig{_indent};
 				print_range(n.range);
@@ -799,7 +875,7 @@ namespace as {
 				const auto& n = _tree.node<as::parallel>(index);
 
 				pad("parallel ");
-				std::cout << n.header.duration << ":\n";
+				print_time(n.header, '\n');
 
 				indent_guard ig{_indent};
 				print_range(n.range);
@@ -809,7 +885,7 @@ namespace as {
 				const auto& n = _tree.node<as::crossfade>(index);
 
 				pad("crossfade ");
-				std::cout << n.header.duration << ":\n";
+				print_time(n.header, '\n');
 
 				indent_guard ig{_indent};
 				print_node(n.left);
@@ -820,21 +896,29 @@ namespace as {
 				const auto& n = _tree.node<as::atomic_values>(index);
 
 				pad("atomic values ");
-				std::cout << n.header.duration << ": ";
-				for (mx::usz i = 0; i < n.header.duration; ++i) {
-					//const auto vw = _tokens.filtered_view(n.token_start + i);
-					//std::cout << vw << " ";
+				print_time(n.header, " ");
+
+				for (mx::usz i = 0; i < n.header.steps; ++i) {
 					const auto v = _tree.value_at(n.value_start + i);
 					std::cout << static_cast<mx::i32>(v) << " ";
 				}
 				std::cout << "\n";
 			}
 
+			template <typename... Ts>
+			auto print_time(const as::header& h, const Ts&... args) -> void {
+				std::cout << "[\x1b[32m" << h.steps << "\x1b[0m][\x1b[34m"
+						  << h.duration << "\x1b[0m]";
+				((std::cout << args), ...);
+			}
+
+
 			auto print_references(mx::usz index) -> void {
 				const auto& n = _tree.node<as::references>(index);
 
 				pad("references ");
-				std::cout << n.header.duration << ":";
+				print_time(n.header);
+
 				if (n.count != 0U)
 					std::cout << "\n";
 				for (mx::usz i = 0U; i < n.count; ++i) {
@@ -842,7 +926,6 @@ namespace as {
 					indent_guard ig{_indent};
 					print_node(idx);
 				}
-				//std::cout << "\n";
 			}
 
 	};

@@ -6,6 +6,8 @@
 #include "language/diagnostic.hpp"
 #include "language/syntax/parameter.hpp"
 
+#include "language/lexer/char_class.hpp"
+
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
@@ -319,6 +321,66 @@ namespace mx {
 			////}
 			//
 			////value += num;
+
+
+	/* convert integer */
+	inline auto tempo_convert(const lx::lexeme& l, const tk::range& r,
+						an::diagnostic& diag) noexcept -> double {
+
+		const mx::u8* it  = l.data;
+		const mx::u8* end = l.data
+						  + l.size;
+
+		double num = 0.0;
+		constexpr mx::i8 max       = 64;
+		constexpr mx::i8 mul_limit = max / 10U;
+
+
+		while (it < end && cc::is_digit(*it) == true) {
+
+			// check multiplication overflow
+			if (num > mul_limit) {
+				// push error
+				num = 0U;
+				diag.push("value overflow", r);
+				break;
+			}
+
+			num *= 10U;
+			const mx::usz digit = (*it - '0');
+
+			// check subtraction overflow
+			if (num > (max - digit)) {
+				// push error
+				num = 0U;
+				diag.push("value overflow", r);
+				break;
+			}
+			num += digit;
+
+			++it;
+		}
+
+		if (it == end)
+			return num;
+
+		// check fractional part
+		if (*it == '.') {
+			++it;
+			double frac = 0.0;
+			double div  = 10.0;
+			while (it < end && cc::is_digit(*it) == true) {
+				const mx::usz digit = (*it - '0');
+				frac += static_cast<double>(digit) / div;
+				div  *= 10.0;
+				++it;
+			}
+			num += frac;
+		}
+
+
+		return num;
+	}
 }
 
 #endif // language_to_integer_hpp

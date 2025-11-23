@@ -6,33 +6,19 @@
 //#include "language/tokens/def.hpp"
 #include "language/tokens/token_view.hpp"
 
-// max_align_t
-//#include <new>
 
 // -- A S  N A M E S P A C E --------------------------------------------------
 
-namespace tk {
-	class tokens;
-}
 
 namespace as {
 
-	//class tree;
-
-	//struct ctx final {
-	//
-	//	const as::tree& tree;
-	//	const tk::tokens& tokens;
-	//	//std::vector<const as::node*> stack;
-	//};
 
 
 	struct alignas(std::max_align_t) header final {
 		mx::u32 size;
 		as::type type;
-		//as::category category;
-		//as::shape shape;
-		mx::usz duration;
+		mx::usz steps;
+		double duration;
 	};
 
 	struct alignas(std::max_align_t) remap_range final {
@@ -49,7 +35,6 @@ namespace as {
 		auto end(void) const noexcept -> mx::usz {
 			return start + count;
 		}
-
 	};
 
 
@@ -70,7 +55,7 @@ namespace as {
 			return as::header{
 				sizeof(as::program),
 				as::type::program,
-				0U
+				0U, 0.0
 			};
 		}
 
@@ -91,14 +76,14 @@ namespace as {
 
 		mx::usz token_start; // tokens start index
 		mx::usz value_start; // values start index
-		// count is duration in header.duration
+		// count is steps in header
 
 
 		static constexpr auto make_header(const mx::usz count) noexcept -> as::header {
 			return as::header{
 				sizeof(as::atomic_values),
 				as::type::atomic_values,
-				count
+				count, 0.0
 			};
 		}
 
@@ -107,8 +92,11 @@ namespace as {
 
 		atomic_values(const mx::usz tstart,
 					  const mx::usz vstart,
-					  const mx::usz count) noexcept
-		: header{make_header(count)},
+					  const mx::usz count,
+					  const double dur) noexcept
+		: header{sizeof(as::atomic_values),
+		         as::type::atomic_values,
+		         count, dur},
 		  token_start{tstart}, value_start{vstart} {
 		}
 
@@ -127,21 +115,16 @@ namespace as {
 		mx::usz count;     // count of references
 
 
-		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
-			return as::header{
-				sizeof(as::references),
-				as::type::references,
-				dur
-			};
-		}
-
 		references(void) = delete;
 
 		references(const mx::usz tok_start,
 				   const mx::usz ref_start,
 				   const mx::usz count,
-				   const mx::usz dur) noexcept
-		: header{make_header(dur)},
+				   const mx::usz steps,
+				   const mx::f64 dur) noexcept
+		: header{sizeof(as::references),
+		         as::type::references,
+		         steps, dur},
 		  tok_start{tok_start}, ref_start{ref_start}, count{count} {
 		}
 	};
@@ -162,7 +145,7 @@ namespace as {
 			return as::header{
 				sizeof(as::track),
 				as::type::track,
-				0U
+				0U, 0.0
 			};
 		}
 
@@ -186,18 +169,16 @@ namespace as {
 		tk::token_view tv;
 
 
-		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
-			return as::header{
-				sizeof(as::parameter),
-				as::type::parameter,
-				dur
-			};
-		}
-
 		parameter(void) = delete;
 
-		parameter(const mx::usz& child, const tk::token_view& t, const mx::usz dur) noexcept
-		: header{make_header(dur)}, child{child}, tv{t} {
+		parameter(const mx::usz& child,
+				  const tk::token_view& view,
+				  const mx::usz steps,
+				  const double dur) noexcept
+		: header{sizeof(as::parameter),
+		         as::type::parameter,
+		         steps, dur},
+			child{child}, tv{view} {
 		}
 	};
 
@@ -213,19 +194,14 @@ namespace as {
 		as::remap_range range;
 
 
-		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
-			return as::header{
-				sizeof(as::group),
-				as::type::group,
-				dur
-			};
-		}
-
 		group(void) = delete;
 
-		group(const as::remap_range& r, const mx::usz dur) noexcept
-		: header{make_header(dur)},
-		  range{r} {
+		group(const as::remap_range& range,
+			  const mx::usz steps,
+			  const double duration) noexcept
+		: header{sizeof(as::group),
+		         as::type::group,
+		         steps, duration}, range{range} {
 		}
 	};
 
@@ -245,14 +221,18 @@ namespace as {
 			return as::header{
 				sizeof(as::parallel),
 				as::type::parallel,
-				dur
+				dur, 0.0
 			};
 		}
 
 		parallel(void) = delete;
 
-		parallel(const as::remap_range& range, const mx::usz dur) noexcept
-		: header{make_header(dur)},
+		parallel(const as::remap_range& range,
+				 const mx::usz steps,
+				 const double dur) noexcept
+		: header{sizeof(as::parallel),
+		         as::type::parallel,
+		         steps, dur},
 		  range{range} {
 		}
 
@@ -273,22 +253,17 @@ namespace as {
 		mx::usz right;
 
 
-		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
-			return as::header{
-				sizeof(as::crossfade),
-				as::type::crossfade,
-				dur
-			};
-		}
-
 		/* deleted default constructor */
 		crossfade(void) = delete;
 
-		crossfade(const mx::usz l,
-				  const mx::usz r,
-				  const mx::usz d) noexcept
-		: header{make_header(d)},
-		  left{l}, right{r} {
+		crossfade(const mx::usz left,
+				  const mx::usz right,
+				  const mx::usz steps,
+				  const double dur) noexcept
+		: header{sizeof(as::crossfade),
+		         as::type::crossfade,
+		         steps, dur},
+		  left{left}, right{right} {
 		}
 	};
 
@@ -308,7 +283,7 @@ namespace as {
 			return as::header{
 				sizeof(as::permutation),
 				as::type::permutation,
-				0U
+				0U, 0.0
 			};
 		}
 
@@ -325,32 +300,22 @@ namespace as {
 		/* header */
 		as::header header;
 
-		/* numerator */
-		mx::usz num;
-
-		/* denominator */
-		mx::usz den;
+		/* factor */
+		double factor;
 
 		/* child node */
 		mx::usz child;
 
-
-		static constexpr auto make_header(const mx::usz dur) noexcept -> as::header {
-			return as::header{
-				sizeof(as::tempo),
-				as::type::tempo,
-				dur
-			};
-		}
-
 		tempo(void) = delete;
 
-		tempo(const mx::usz num,
-			  const mx::usz den,
+		tempo(const double factor,
 			  const mx::usz child,
-			  const mx::usz dur) noexcept
-		: header{make_header(dur)},
-		  num{num}, den{den}, child{child} {
+			  const mx::usz steps,
+			  const double dur) noexcept
+		: header{sizeof(as::tempo),
+		         as::type::tempo,
+		         steps, dur},
+		  factor{factor}, child{child} {
 		}
 	};
 

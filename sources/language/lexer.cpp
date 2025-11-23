@@ -416,10 +416,10 @@ auto lx::lexer::lex_tempo(const tk::id id) -> void {
 	const auto eoc = _it;
 
 	// skip ignored
-	self::skip_ignored();
+	skip_ignored();
 
 	if (_it >= _end || !cc::is_digit(*_it)) {
-		self::error("expected tempo number", ck);
+		error("expected tempo number", ck);
 		return;
 	}
 
@@ -429,21 +429,28 @@ auto lx::lexer::lex_tempo(const tk::id id) -> void {
 		++_it;
 	} while (_it < _end && cc::is_digit(*_it));
 
-	// check if we have skipped something
-	if (mark != eoc) {
-		_tokens->push_filtered_token(
-			id, ck, self::new_chunk(mark)
-		);
-		return;
+	if (_it < _end && *_it == '.') {
+		do {
+			++_it;
+		} while (_it < _end && cc::is_digit(*_it));
 	}
 
-	// we can extend the previous chunk
-	const auto gap = static_cast<mx::usz>(_it - mark);
-	ck.lexeme.size += gap;
-	ck.range.ce    += gap;
-	_column        += gap;
 
-	_tokens->push_filtered_token(id, ck);
+	// check if we have skipped something
+	//if (mark != eoc) {
+		_tokens->push_filtered_token(
+			id, ck, new_chunk(mark) // always slip the chunk to parse the number
+		);
+		//return;
+	//}
+
+	// we can extend the previous chunk
+	//const auto gap = static_cast<mx::usz>(_it - mark);
+	//ck.lexeme.size += gap;
+	//ck.range.ce    += gap;
+	//_column        += gap;
+	//
+	//_tokens->push_filtered_token(id, ck);
 }
 
 

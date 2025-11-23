@@ -71,3 +71,11 @@ world ::
 
 # ----
 when multiple highlights on same slot, generate different colors
+
+
+
+# ----
+not work because reference are not copied
+&bass (\8 &bass)
+
+

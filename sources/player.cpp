@@ -69,6 +69,7 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 
 	static mx::u64 tick_count = 0U;
 
+	//std::cout << (double)tick_count / (double)MIDI_PPQN << " beats\n";
 
 	const mx::signature ppqn_24{1, 16};
 
@@ -88,7 +89,7 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 	//_engine.off_pass();
 	//_model->play(ss, _engine, ppqn_24.count(tick_count));
 	//_tree->play(ss, ppqn_24.count(tick_count));
-	_tree->play(ss, tick_count);
+	_tree->play(ss, (double)tick_count / (double)MIDI_PPQN);
 
 	//std::cout << ppqn_24.count(tick_count) << "\n";
 	//_model->play(ss, _engine, tick_count);

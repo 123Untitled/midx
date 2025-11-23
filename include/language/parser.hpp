@@ -61,7 +61,7 @@ namespace pr {
 			/* identifiers */
 			sx::identifier_map _idents;
 
-			float _tempo;
+			double _factor;
 
 		public:
 
