@@ -4,12 +4,38 @@
 #include "language/ast/node.hpp"
 #include "language/tokens/tokens.hpp"
 
-#include "time/signature.hpp"
+
+#include <unordered_set>
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
 
 namespace as {
+
+
+	struct event final {
+
+		/* values */
+		mx::usz values[pa::max_params];
+
+		event(void) noexcept
+		:
+		  values{
+			  0, // trig
+			  60, // note
+			  50, // gate
+			  100, // velo
+			  0, // octa
+			  0, // semi
+			  0, // chan
+			  100, // prob
+		  } {
+		}
+
+		auto has_trig(void) const noexcept -> bool {
+			return values[pa::trig] != 0U;
+		}
+	};
 
 
 	// -- T R E E -------------------------------------------------------------
@@ -60,43 +86,38 @@ namespace as {
 
 			struct frame final {
 				mx::usz node;
-				double dur;
-				double speed;
+				mx::frac time;
+				mx::frac speed;
 
 				frame(void) noexcept
-				: node{0U}, dur{0.0} {
+				: node{0U}, time{}, speed{1U, 1U} {
 				}
 
 				frame(const mx::usz nod,
-					  const double dur) noexcept
-				: node{nod}, dur{dur}, speed{1.0} {
-				}
-				frame(const mx::usz nod,
-					  const double dur,
-					  const double spd) noexcept
-				: node{nod}, dur{dur}, speed{spd} {
+					  const mx::frac& time,
+					  const mx::frac& speed) noexcept
+				: node{nod}, time{time}, speed{speed} {
 				}
 			};
 
 			struct play_ctx final {
-				double absolute;
+
 				std::stringstream& hi;
 				std::vector<frame> stack;
+				mx::usz mark;
+
+				std::vector<as::event> events;
 				frame fr;
 
 
-				play_ctx(std::stringstream& h, const double time)
-				: absolute{time}, hi{h}, stack{}, fr{} {
+				play_ctx(std::stringstream& h) noexcept
+				: hi{h}, stack{}, mark{(mx::usz)-1}, fr{} {
 				}
 
 				auto push(const mx::usz node,
-						  const double dur) -> void {
-					stack.emplace_back(node, dur);
-				}
-				auto push(const mx::usz node,
-						  const double dur,
-						  const double speed) -> void {
-					stack.emplace_back(node, dur, speed);
+						  const mx::frac& time,
+						  const mx::frac& speed) -> void {
+					stack.emplace_back(node, time, speed);
 				}
 
 				auto pop(void) -> void {
@@ -106,21 +127,21 @@ namespace as {
 			};
 
 
-			auto play_parallel(play_ctx&) const -> void;
-			auto play_crossfade(play_ctx&) const -> void;
-			auto play_track(play_ctx&) const -> void;
-			auto play_atomic(play_ctx&) const -> void;
-			auto play_tempo(play_ctx&) const -> void;
-			auto play_group(play_ctx&) const -> void;
-			auto play_parameter(play_ctx&) const -> void;
-			auto play_reference(play_ctx&) const -> void;
+			auto play_parallel(play_ctx&) -> void;
+			auto play_crossfade(play_ctx&) -> void;
+			auto play_track(play_ctx&) -> void;
+			auto play_atomic(play_ctx&) -> void;
+			auto play_tempo(play_ctx&) -> void;
+			auto play_group(play_ctx&) -> void;
+			auto play_parameter(play_ctx&) -> void;
+			auto play_reference(play_ctx&) -> void;
 
 
 		public:
 
 			tk::tokens* tokens;
 
-			auto play(std::stringstream&, const double) const -> void;
+			auto play(std::stringstream&, const mx::frac&) -> void;
 
 
 			// -- public lifecycle --------------------------------------------
@@ -369,14 +390,14 @@ namespace as {
 			/* extend range
 			   append an element to a contiguous range */
 			auto _extend_range(as::remap_range& range,
-							   const mx::usz elem) -> void {
+							   const mx::usz node) -> void {
 
 				mark();
 
 				// push all children of to range
 				push(range);
-				// push new element
-				push(elem);
+				// push new node
+				push(node);
 
 				// flush and update range
 				range = flush();
@@ -391,6 +412,8 @@ namespace as {
 				_extend_range(range_of(node), elem);
 			}
 
+			/* extend group
+			   extend a group node by another node */
 			auto extend_group(const mx::usz group, const mx::usz add) -> void {
 
 				if (!is_group(group))
@@ -403,10 +426,39 @@ namespace as {
 				const auto& h = header(add);
 
 				g.header.steps    += h.steps;
-				g.header.duration += h.duration;
+				g.header.dur      += h.dur;
+
+				// reduce duration
+				g.header.dur.reduce();
 
 				_extend_range(g.range, add);
 			}
+
+			/* extend parameter
+			   extend a parameter node by another node */
+			auto extend_parameter(const mx::usz parameter, const mx::usz add) -> void {
+
+				if (!is_parameter(parameter))
+					throw std::runtime_error{"extend_parameter: node is not a parameter"};
+
+				// get parameter node
+				auto& p = node<as::parameter>(parameter);
+
+				// get elem header
+				const auto& h = header(add);
+
+				p.header.steps += h.steps;
+				p.header.dur   += h.dur;
+
+				// reduce duration
+				p.header.dur.reduce();
+
+				_extend_range(p.range, add);
+			}
+
+			/* sum fracs
+			   sum the fracs of all nodes in a range */
+			//auto sum_fracs(const as::remap_range& range) const -> mx::frac
 
 
 			/* make group with
@@ -435,14 +487,15 @@ namespace as {
 				return sum;
 			}
 
-			/* sum durs
+			/* sum duration
 			   sum the durations of all nodes in a range */
-			auto sum_durs(const as::remap_range& range) const -> double {
-				double sum = 0.0;
+			auto sum_duration(const as::remap_range& range) const -> mx::frac {
+
+				mx::frac sum;
 
 				for (mx::usz i = 0U; i < range.count; ++i) {
 					const auto& h = remap_header(range.start + i);
-					sum += h.duration;
+					sum += h.dur;
 				}
 				return sum;
 			}
@@ -475,18 +528,19 @@ namespace as {
 				return max;
 			}
 
-			auto max_dur_of_range(const as::remap_range& range) const -> double {
+			auto max_duration_of_range(const as::remap_range& range) const -> mx::frac {
 
-				double max = 0.0;
+				mx::frac max;
 
 				for (mx::usz i = 0U; i < range.count; ++i) {
 					const auto& h = remap_header(range.start + i);
-					if (h.duration > max)
-						max = h.duration;
+					if (h.dur > max)
+						max = h.dur;
 				}
 
 				return max;
 			}
+
 
 
 			/* make parallel */
@@ -503,28 +557,35 @@ namespace as {
 
 					if (rh.type == as::type::parallel) {
 						absorb_range(left, right);
+						const auto& range = range_of(left);
+						lh.steps = max_steps_of_range(range);
+						lh.dur  = max_duration_of_range(range);
+						return left;
 					}
 					else {
 						extend_range_of(left, right); // append right to left
+						lh.steps = rh.steps > lh.steps ? rh.steps : lh.steps;
+						lh.dur  = rh.dur   > lh.dur   ? rh.dur   : lh.dur;
+						return left;
 					}
-
-					const auto& range = range_of(left);
-					lh.steps = max_steps_of_range(range);
-					lh.duration = max_dur_of_range(range);
-					return left;
 				}
+
 				// right is parallel
-				else if (rh.type == as::type::parallel) {
+				if (rh.type == as::type::parallel) {
 					extend_range_of(right, left); // append left to right
-					const auto& range = range_of(right);
-					rh.steps = max_steps_of_range(range);
-					rh.duration = max_dur_of_range(range);
+					rh.steps = lh.steps > rh.steps ? lh.steps : rh.steps;
+					rh.dur  = lh.dur   > rh.dur   ? lh.dur   : rh.dur;
+					//const auto& range = range_of(right);
+					//rh.steps = max_steps_of_range(range);
+					//rh.dur  = max_duration_of_range(range);
 					return right;
 				}
 
 				const auto range = make_range(left, right);
-				const auto steps = max_steps_of_range(range);
-				const auto dur   = max_dur_of_range(range);
+				auto steps = lh.steps > rh.steps ? lh.steps : rh.steps;
+				auto dur   = lh.dur   > rh.dur   ? lh.dur   : rh.dur;
+				//const auto steps = max_steps_of_range(range);
+				//const auto dur   = max_duration_of_range(range);
 
 				// create new parallel node
 				return make_node<as::parallel>(range, steps, dur);
@@ -569,6 +630,7 @@ namespace as {
 				return this->make_node<as::tempo>(args...);
 			}
 
+
 			/* make atomics
 			   create a new atomic values node with given arguments */
 			template <typename... Tp>
@@ -596,6 +658,11 @@ namespace as {
 			/* is group */
 			auto is_group(const mx::usz index) /*noexcept*/ -> bool {
 				return header(index).type == as::type::group;
+			}
+
+			/* is parameter */
+			auto is_parameter(const mx::usz index) /*noexcept*/ -> bool {
+				return header(index).type == as::type::parameter;
 			}
 
 			/* is collapsable */
@@ -776,6 +843,7 @@ namespace as {
 						print_tempo(index);
 						break;
 
+
 					default:
 						pad("unknown");
 						break;
@@ -847,7 +915,8 @@ namespace as {
 
 				indent_guard ig{_indent};
 				for (mx::usz i = 0U; i < pa::max_params; ++i) {
-					print_range(n.ranges[i]);
+					if (n.params[i] != 0U)
+						print_parameter(n.params[i]);
 				}
 			}
 
@@ -855,10 +924,10 @@ namespace as {
 				const auto& n = _tree.node<as::parameter>(index);
 
 				pad("parameter ");
-				print_time(n.header, ' ', n.tv, '\n');
+				print_time(n.header, '\n');
 
 				indent_guard ig{_indent};
-				print_node(n.child);
+				print_range(n.range);
 			}
 
 			auto print_group(mx::usz index) -> void {
@@ -908,7 +977,7 @@ namespace as {
 			template <typename... Ts>
 			auto print_time(const as::header& h, const Ts&... args) -> void {
 				std::cout << "[\x1b[32m" << h.steps << "\x1b[0m][\x1b[34m"
-						  << h.duration << "\x1b[0m]";
+						  << h.dur << "\x1b[0m] ";
 				((std::cout << args), ...);
 			}
 

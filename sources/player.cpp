@@ -57,7 +57,7 @@ auto mx::player::stop(void) -> void {
 }
 
 /* switch tree */
-auto mx::player::switch_tree(const as::tree& tree) noexcept -> void {
+auto mx::player::switch_tree(as::tree& tree) noexcept -> void {
 	_tree = &tree;
 }
 
@@ -69,31 +69,30 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 
 	static mx::u64 tick_count = 0U;
 
-	//std::cout << (double)tick_count / (double)MIDI_PPQN << " beats\n";
-
-	const mx::signature ppqn_24{1, 16};
-
-	//if (_tree && ppqn_24.is_time(tick_count) == false) {
-	//	++tick_count;
-	//	return;
-	//}
-
 	if (_tree == nullptr) {
 		++tick_count;
 		return;
 	}
+	//if (tick_count % 24 != 0) {
+	//	++tick_count;
+	//	return;
+	//}
+
+	//std::cout << (double)tick_count / (double)MIDI_PPQN << " beats\n";
+
+	// make fractional time
+	mx::frac time{tick_count, MIDI_PPQN};
+	time.reduce();
+	//std::cout << "Time: " << time << " (" << (double)time.value() << ")\n";
+
 
 	std::stringstream ss;
 	ss << "{\"type\":\"animation\",\"highlights\":[";
 
 	//_engine.off_pass();
 	//_model->play(ss, _engine, ppqn_24.count(tick_count));
-	//_tree->play(ss, ppqn_24.count(tick_count));
-	_tree->play(ss, (double)tick_count / (double)MIDI_PPQN);
-
-	//std::cout << ppqn_24.count(tick_count) << "\n";
-	//_model->play(ss, _engine, tick_count);
-	// send and clear events
+	//_tree->play(ss, (double)tick_count / (double)MIDI_PPQN);
+	_tree->play(ss, time);
 	//_engine.flush();
 
 	auto str = ss.str();

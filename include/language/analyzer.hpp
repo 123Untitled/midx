@@ -75,7 +75,7 @@ namespace mx {
 			}
 
 			/* tree */
-			auto tree(void) noexcept -> const as::tree& {
+			auto tree(void) noexcept -> as::tree& {
 				return _tree;
 			}
 

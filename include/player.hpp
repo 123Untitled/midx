@@ -38,7 +38,7 @@ namespace mx {
 			mx::clock _clock;
 
 			/* tree reference */
-			const as::tree* _tree;
+			as::tree* _tree;
 
 			/* midi engine */
 			mx::midi_engine _engine;
@@ -64,7 +64,7 @@ namespace mx {
 			auto stop(void) -> void;
 
 			/* switch tree */
-			auto switch_tree(const as::tree&) noexcept -> void;
+			auto switch_tree(as::tree&) noexcept -> void;
 
 
 			// -- public overrides --------------------------------------------

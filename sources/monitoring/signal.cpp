@@ -47,6 +47,14 @@ mx::signal::signal(const mx::monitor& monitor)
 	}
 }
 
+/* destructor */
+mx::signal::~signal(void) noexcept {
+	if (_fds[0U] != -1)
+		static_cast<void>(::close(_fds[0U]));
+	if (_fds[1U] != -1)
+		static_cast<void>(::close(_fds[1U]));
+}
+
 
 static auto signal_str(const int sig) -> const char* {
 	switch (sig) {
@@ -87,6 +95,10 @@ static auto signal_str(const int sig) -> const char* {
 }
 
 
+/* ident */
+auto mx::signal::ident(void) const noexcept -> int {
+	return _fds[0U];
+}
 
 
 // -- public overrides --------------------------------------------------------
@@ -94,6 +106,7 @@ static auto signal_str(const int sig) -> const char* {
 /* on event */
 auto mx::signal::on_event(mx::application& app, const struct ::kevent& ev) -> void {
 
+	std::cout << "event filter: " << ev.filter << std::endl;
 	if ((ev.filter != EVFILT_READ))
 		return;
 
@@ -152,7 +165,3 @@ auto mx::signal::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 		//case SIGIO:
 }
 
-/* ident */
-auto mx::signal::ident(void) const noexcept -> int {
-	return _fds[0U];
-}

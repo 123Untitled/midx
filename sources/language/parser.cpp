@@ -19,7 +19,11 @@ pr::parser::parser(void)
   _tokens{nullptr},
   _diag{nullptr},
   _it{},
-  _end{}
+  _end{},
+  _depth{0U},
+  _back{false},
+  _last_param{pa::invalid},
+  _tempo{}
 {
 }
 
@@ -45,7 +49,8 @@ auto pr::parser::parse(tk::tokens&   tokens,
 	_end = fi.end();
 
 	_depth = 0U;
-	_factor = 1.0;
+	//_factor = 1.0;
+	_tempo.reset();
 	_back = false;
 
 	// parse scope
@@ -137,17 +142,18 @@ auto pr::parser::_parse(void) -> mx::usz {
 
 	// compute max duration
 	mx::usz steps = 0U;
-	double dur = 0.0;
+	mx::frac dur;
+
 	mx::usz it  = program.range.start;
 	mx::usz end = it + program.range.count;
 
 	for (; it < end; ++it) {
 		const auto& h = _tree->remap_header(it);
 		steps = steps < h.steps ? h.steps : steps;
-		dur   = dur   < h.duration ? h.duration : dur;
+		dur   = dur   < h.dur   ? h.dur   : dur;
 	}
 	program.header.steps = steps;
-	program.header.duration = dur;
+	program.header.dur   = dur;
 
 	return p;
 }
@@ -262,7 +268,7 @@ auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
 
 	const auto tok_start = _it.index();
 	const auto val_start = _tree->value_start();
-	   mx::usz count     = 0U;
+	   mx::usz steps     = 0U;
 
 
 	do {
@@ -280,28 +286,28 @@ auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
 				_tree->push_value(
 					mx::convert_bin<false>[_last_param](tv, *_diag)
 				);
-				++count;
+				++steps;
 				continue;
 
 			case tk::octal:
 				_tree->push_value(
 					mx::convert_oct<false>[_last_param](tv, *_diag)
 				);
-				++count;
+				++steps;
 				continue;
 
 			case tk::decimal:
 				_tree->push_value(
 					mx::convert_dec<false>[_last_param](tv, *_diag)
 				);
-				++count;
+				++steps;
 				continue;
 
 			case tk::hexadecimal:
 				_tree->push_value(
 					mx::convert_hex<false>[_last_param](tv, *_diag)
 				);
-				++count;
+				++steps;
 				continue;
 		}
 
@@ -309,16 +315,17 @@ auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
 
 	} while (++_it != _end);
 
-	if (count == 0U) // not necessarily, because nud called on valid token
+	if (steps == 0U) // not necessarily, because nud called on valid token
 		return left; // just only for temporary not implemented 'note' case
 
-	// duration
-	const auto dur = count / _factor;
+
+	// make duration
+	auto dur = apply_tempo(steps).reduce();
 
 	// make atomic values node
-	const auto values = _tree->make_atomics(tok_start, val_start,
-											count, dur);
-
+	const auto values = _tree->make_atomics(_last_param,
+											tok_start, val_start,
+											steps, dur);
 
 	if (!left)
 		return values;
@@ -334,10 +341,10 @@ auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
 
 	// make new group
 	const auto range = _tree->make_range(left, values);
-	const auto steps = lh.steps + count;
-	const auto dura  = lh.duration + dur;
+	steps += lh.steps;
+	dur   += lh.dur;
 
-	return _tree->make_group(range, steps, dura);
+	return _tree->make_group(range, steps, dur.reduce());
 }
 
 
@@ -354,8 +361,8 @@ auto pr::parser::nud_references(const mx::usz left) -> mx::usz {
 	debug("NUD references", _it);
 
 	mx::usz steps = 0U;
-	mx::f64   dur = 0U;
 	mx::usz count = 0U;
+	mx::frac dur;
 	const auto ref_start = _tree->ref_start();
 	const auto tok_start = _it.index();
 
@@ -376,7 +383,7 @@ auto pr::parser::nud_references(const mx::usz left) -> mx::usz {
 			// get header to accumulate duration
 			const auto& h = _tree->header(found.index);
 			steps += h.steps;
-			  dur += h.duration;
+			dur   += h.dur; // HERE CHECK OVERFLOW ??
 			continue;
 		}
 
@@ -387,13 +394,16 @@ auto pr::parser::nud_references(const mx::usz left) -> mx::usz {
 		&& _it.token().id == tk::reference);
 
 
+	// no references found
 	if (!count)
 		return left;
 
+	//dur *= _tempo;
+	dur.reduce();
+
 	// create new references node
 	const auto refs = _tree->make_refs(tok_start, ref_start,
-									count, steps, dur);
-
+										count, steps, dur);
 
 	if (!left)
 		return refs;
@@ -410,8 +420,8 @@ auto pr::parser::nud_references(const mx::usz left) -> mx::usz {
 	// else make new group
 	const auto range = _tree->make_range(left, refs);
 	steps += lh.steps;
-	dur   += lh.duration;
-	return _tree->make_group(range, steps, dur);
+	dur   += lh.dur;
+	return _tree->make_group(range, steps, dur.reduce());
 }
 
 
@@ -457,10 +467,15 @@ auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 		return left;
 	}
 
+	// get left header
+	const auto& lh = _tree->header(left);
+	const auto& ih = _tree->header(inside);
+
 	const auto range = _tree->make_range(left, inside);
-	const auto steps = _tree->sum_steps(range);
-	const auto dura  = _tree->sum_durs(range);
-	return _tree->make_group(range, steps, dura);
+	const auto steps = lh.steps + ih.steps;
+		  auto dur   = lh.dur   + ih.dur;
+
+	return _tree->make_group(range, steps, dur.reduce());
 }
 
 
@@ -505,7 +520,7 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 
 	else {
 		// need remap index here
-		pref.range = as::remap_range(_tree->new_remap(inside), 1U);
+		pref.range = as::remap_range{_tree->new_remap(inside), 1U};
 	}
 
 	if (!left)
@@ -520,9 +535,9 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 	// else make new group
 	const auto range = _tree->make_range(left, perm);
 	const auto steps = _tree->sum_steps(range);
-	const auto dura  = _tree->sum_durs(range);
+		  auto dur   = _tree->sum_duration(range);
 
-	return _tree->make_group(range, steps, dura);
+	return _tree->make_group(range, steps, dur.reduce());
 }
 
 
@@ -531,9 +546,7 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 	debug("NUD parameter", _it);
 
-	static std::vector<mx::usz> params[pa::max_params];
-	for (mx::usz i = 0U; i < pa::max_params; ++i)
-		params[i].clear();
+	mx::usz params[pa::max_params]{};
 	bool has_params = false;
 
 
@@ -548,14 +561,12 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 			&& _it.token().id == tk::parameter);
 
 
-
-		// here check parameter name !
+		// here check parameter name
 		_last_param = pa::to_id(*it);
 
 		if (_last_param == pa::invalid) {
 			error("Invalid parameter name", it);
-			abord();
-			break;
+			continue;
 		}
 
 
@@ -565,17 +576,26 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 		if (seq) {
 
+			// get header
+			const auto& h = _tree->header(seq);
+
 			// get steps
-			const auto steps = _tree->header(seq).steps;
-			const auto dur   = _tree->header(seq).duration;
+			const auto steps = h.steps;
+			const auto dur   = h.dur;
+
+			// check if already parameter of same type
+			if (params[_last_param]) {
+
+				// extend existing parameter
+				_tree->extend_parameter(params[_last_param], seq);
+				continue;
+			}
 
 			// create new parameter
-			const auto param = _tree->make_parameter(seq, *it, steps, dur);
-				//as::make_node<as::parameter>(*_tree, seq, *it, steps, dur);
-
-			//_tree.push(param.index);
-			params[_last_param].push_back(param);
+			params[_last_param] = _tree->make_parameter(_tree->make_range(seq),
+														steps, dur);
 			has_params = true;
+			continue;
 		}
 
 		if (_back == true) {
@@ -593,106 +613,55 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 
 	// make track node
-	const auto track = as::make_node<as::track>(*_tree);
-
-	// loop over parameters and extend ranges
-	for (mx::usz i = 0U; i < pa::max_params; ++i) {
-
-		if (params[i].empty() == true)
-			continue;
-
-		// mark
-		_tree->mark();
-		// push all parameter nodes
-		for (const auto p : params[i])
-			_tree->push(p);
-		// flush and set range
-		track.ref.ranges[i] = _tree->flush();
-	}
-
+	const auto track = as::make_node<as::track>(*_tree, params);
 
 
 	{
-		const auto count = track.ref.ranges[pa::dura].count;
-		mx::usz steps = 0U;
-		if (false /*count > 0U*/) {
-			// for each child in duration parameter
-			// accumulate duration
-			for (mx::usz i = 0U; i < count; ++i) {
-				const auto& h =
-					_tree->remap_header(
-							track.ref.ranges[pa::dura].start + i);
-				steps += h.steps;
-			}
-			track.ref.header.steps = steps;
-			track.ref.header.duration = steps / _factor;
+		const auto dura = params[pa::dura];
+
+		if (false /* dura */) {
+
+			// get dura header
+			const auto& h = _tree->header(dura);
+
+			track.ref.header.steps = h.steps;
+			track.ref.header.dur   = h.dur;
 		}
 		else {
 
-			const auto& ranges = track.ref.ranges;
-
-			double dur = 0.0;
-			steps = 0U;
-
-			// no dura param, choose longest sequence
-			for (mx::usz i = 0U; i < pa::max_params; ++i) {
-
-				const auto& range = ranges[i];
-				if (range.count == 0U)
-					continue;
-
-				double total = 0.0;
-				mx::usz steps_p = 0U;
-				// for each child in parameter
-				for (mx::usz j = 0U; j < range.count; ++j) {
-					const auto& h = _tree->remap_header(range.start + j);
-					total += h.duration;
-					steps_p += h.steps;
-				}
-
-				if (total > dur) {
-					dur = total;
-					steps = steps_p;
-				}
-			}
-
-			track.ref.header.steps = steps;
-			track.ref.header.duration = dur;
-
-
-
 			// no duration parameter, compute polyrythmic cycle duration
 
+			mx::frac dur = mx::frac{0,1};
+			mx::usz steps = 0U;
 
-			//for (mx::usz i = 0U; i < pa::max_params; ++i) {
-			//
-			//	const auto& range = ranges[i];
-			//	if (range.count == 0U)
-			//		continue;
-			//
-			//	mx::usz p_dur = 0U;
-			//	// for each child in parameter
-			//	for (mx::usz j = 0U; j < range.count; ++j) {
-			//		const auto& h = _tree->remap_header(range.start + j);
-			//		p_dur += h.steps;
-			//	}
-			//	if (steps == 0U)
-			//		steps = p_dur;
-			//	else
-			//		steps = mx::lcm(steps, p_dur);
-			//}
-			//track.ref.header.steps = steps;
-			//track.ref.header.duration = steps / _factor; // BAD VALUE !!!
+			for (int p = 0; p < pa::max_params; ++p) {
+
+				const auto pnode = params[p];
+				if (!pnode)
+					continue;
+
+				const auto& h = _tree->header(pnode);
+
+				if (dur.num == 0)
+					dur = h.dur;
+				else
+					dur = mx::lcm_frac(dur, h.dur);
+
+				if (steps == 0U)
+					steps = h.steps;
+				else
+					steps = mx::lcm(steps, h.steps);
+			}
+
+			dur.reduce();
+			track.ref.header.steps = steps;
+			track.ref.header.dur = dur;
 		}
 	}
-
-
-
 
 
 	if (!left)
 		return track.index;
-
 
 	// extend existing group
 	if (_tree->is_group(left)) {
@@ -706,9 +675,9 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 	// else make new group
 	const auto range = _tree->make_range(left, track.index);
 	const auto steps = lh.steps + track.ref.header.steps;
-	const auto dura  = lh.duration + track.ref.header.duration;
+		  auto dur   = lh.dur   + track.ref.header.dur;
 
-	return _tree->make_group(range, steps, dura);
+	return _tree->make_group(range, steps, dur.reduce());
 }
 
 
@@ -716,8 +685,11 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 template <pr::level L>
 auto pr::parser::nud_tempo(mx::usz left) -> mx::usz {
 
-	// save factor
-	double old = _factor;
+	// save tempo
+	auto old = _tempo;
+
+	mx::frac temp{1, 1};
+
 
 	do { // accumulate consecutive tempo changes
 
@@ -726,21 +698,19 @@ auto pr::parser::nud_tempo(mx::usz left) -> mx::usz {
 
 			case tk::tempo_fast: {
 				const auto& ck = tv.last_chunk();
-
-				// conversion will be implemented later...
-				const auto f = mx::tempo_convert(ck.lexeme, ck.range, *_diag);
-				_factor *= f > 0.0 ? f : 1.0;
-				std::cout << "\x1b[33mTEMPO FAST\x1b[0m: factor=" << _factor << '\n';
+				//_tempo *= mx::to_fraction(ck, *_diag).fix();
+				auto f = mx::to_fraction(ck, *_diag).fix();
+				temp *= f;
+				_tempo *= f;
 				break;
 			}
 
 			case tk::tempo_slow: {
 				const auto& ck = tv.last_chunk();
-
-				// conversion will be implemented later...
-				const auto f = mx::tempo_convert(ck.lexeme, ck.range, *_diag);
-				_factor /= f > 0.0 ? f : 1.0;
-				std::cout << "\x1b[33mTEMPO SLOW\x1b[0m: factor=" << _factor << '\n';
+				//_tempo *= mx::to_fraction(ck, *_diag).fix().invert();
+				auto f = mx::to_fraction(ck, *_diag).fix().invert();
+				temp *= f;
+				_tempo *= f;
 				break;
 			}
 
@@ -751,23 +721,46 @@ auto pr::parser::nud_tempo(mx::usz left) -> mx::usz {
 	} while (++_it != _end && (_it.token().id == tk::tempo_fast
 						    || _it.token().id == tk::tempo_slow));
 
+	// reduce tempo frac
+	_tempo.reduce();
+	// reduce temp frac
+	temp.reduce();
+
+	//mx::frac temp = _tempo;
+
+
+	std::cout << "\x1b[32mTEMPO\x1b[0m: frac=" << _tempo << '\n';
+
+
 	// recurse right expression
 	const auto right = parse_expr<L>(pr::precedence::none);
 
-	// copy factor
-	const auto factor = _factor;
-
-	// restore old factor
-	_factor = old;
+	// restore old tempo
+	_tempo = old;
 
 	if (!right)
 		return left;
 
-	auto steps = _tree->header(right).steps;
-	auto dur   = _tree->header(right).duration;
+	// get right header
+	const auto rh = _tree->header(right);
+
+	auto dur   = rh.dur;
+	auto steps = rh.steps;
+
+
+	bool runtime;
+
+	if constexpr (L == pr::level::seq) {
+		runtime = false;
+	}
+	else {
+		dur /= temp; // SOLUTION HERE
+		runtime = true;
+	}
+
 
 	// make tempo node
-	const auto tempo = _tree->make_tempo(factor, right, steps, dur);
+	const auto tempo = _tree->make_tempo(temp, runtime, right, steps, dur);
 
 	if (!left)
 		return tempo;
@@ -779,8 +772,9 @@ auto pr::parser::nud_tempo(mx::usz left) -> mx::usz {
 	// else make new group
 	const auto range = _tree->make_range(left, tempo);
 	steps += lh.steps;
-	dur   += lh.duration;
-	return _tree->make_group(range, steps, dur);
+	dur   += lh.dur;
+
+	return _tree->make_group(range, steps, dur.reduce());
 }
 
 
@@ -820,6 +814,16 @@ auto pr::parser::led_parallel(const mx::usz left) -> mx::usz {
 
 	// recurse right expression
     auto right = parse_expr<L>(pr::pre_of<L>(tk));
+
+	if (!right)
+		std::cout << "LED parallel: right is 0U\n";
+	else
+		std::cout << "LED parallel: right is " << _tree->what_is(right) << " node\n";
+
+	if (!left)
+		std::cout << "LED parallel: left is 0U\n";
+	else
+		std::cout << "LED parallel: left is " << _tree->what_is(left) << " node\n";
 
 	return  left == 0U ? right 
 		: (right == 0U ? left
@@ -862,9 +866,8 @@ auto pr::parser::led_crossfade(const mx::usz left) -> mx::usz {
 	const auto& rh = _tree->header(right);
 
 	const auto steps = lh.steps > rh.steps ? lh.steps : rh.steps;
-	const auto dur   = lh.duration > rh.duration ? lh.duration : rh.duration;
 
-	return _tree->make_crossfade(left, right, steps, dur);
+	return _tree->make_crossfade(left, right, steps);
 }
 
 

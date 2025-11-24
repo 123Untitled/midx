@@ -47,8 +47,9 @@ auto mx::application::exit(void) noexcept -> void {
 /* run */
 auto mx::application::_run(void) -> void {
 
-	while (_running == true)
+	while (_running == true) {
 		_monitor.wait(*this);
+	}
 
 	_player.stop();
 }

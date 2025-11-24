@@ -11,6 +11,8 @@
 #include "language/syntax/parameter.hpp"
 #include "language/identifier_map.hpp"
 
+#include "math.hpp"
+
 
 // -- forward declarations ----------------------------------------------------
 
@@ -61,7 +63,8 @@ namespace pr {
 			/* identifiers */
 			sx::identifier_map _idents;
 
-			double _factor;
+			mx::frac _tempo;
+			//double _factor;
 
 		public:
 
@@ -76,6 +79,12 @@ namespace pr {
 			/* parse */
 			auto parse(tk::tokens&, as::tree&, an::diagnostic&) -> void;
 
+
+
+			auto apply_tempo(const mx::usz steps) noexcept -> mx::frac {
+				return mx::frac{steps * _tempo.den,
+								_tempo.num};
+			}
 
 
 			// -- private methods ---------------------------------------------

@@ -56,6 +56,9 @@ namespace mx {
 			/* monitor constructor */
 			signal(const mx::monitor&);
 
+			/* destructor */
+			~signal(void) noexcept;
+
 
 
 			// -- public overrides --------------------------------------------

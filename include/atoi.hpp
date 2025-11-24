@@ -8,6 +8,8 @@
 
 #include "language/lexer/char_class.hpp"
 
+#include "math.hpp"
+
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
@@ -381,6 +383,80 @@ namespace mx {
 
 		return num;
 	}
+
+
+	/* convert integer */
+	inline auto to_fraction(const tk::chunk& ck,
+							an::diagnostic& diag) noexcept -> mx::frac {
+
+		const mx::u8* it  = ck.lexeme.data;
+		const mx::u8* end = ck.lexeme.data
+						  + ck.lexeme.size;
+
+		constexpr mx::usz max       = std::numeric_limits<mx::usz>::max();
+		constexpr mx::usz mul_limit = max / 10U;
+
+		mx::usz num = 0U;
+		mx::usz den = 0U;
+		mx::usz pow = 1U;
+
+		for (; it < end && cc::is_digit(*it) == true; ++it) {
+
+			// check multiplication overflow
+			if (num > mul_limit)
+				goto overflow;
+
+			num *= 10U;
+			const mx::usz digit = (*it - '0');
+
+			// check subtraction overflow
+			if (num > (max - digit))
+				goto overflow;
+
+			num += digit;
+		}
+
+		if (it == end || *it != '.')
+			return mx::frac{num, 1U};
+
+
+		// check fractional part
+		while (++it < end && cc::is_digit(*it) == true) {
+
+			// check multiplication overflow
+			if (den > mul_limit)
+				goto overflow;
+
+			den *= 10U;
+			pow *= 10U;
+			const mx::usz digit = (*it - '0');
+
+			// check subtraction overflow
+			if (den > (max - digit))
+				goto overflow;
+
+			den += digit;
+		}
+
+		// check final multiplication overflow
+		if (num > (max / pow))
+			goto overflow;
+
+		num *= pow;
+
+		// check final addition overflow
+		if (num > (max - den))
+			goto overflow;
+
+		std::cout << ck.lexeme << " -> " << mx::frac{num + den, pow} << "\n";
+		return mx::frac{num + den, pow};
+
+		// overflow handler
+		overflow:
+			diag.push("value overflow", ck.range);
+			return mx::frac{1U, 1U};
+	}
+
 }
 
 #endif // language_to_integer_hpp
