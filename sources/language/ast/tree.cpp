@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+#include <numeric>
 
 auto highlight(std::stringstream& ss,
 			   const tk::const_token_view& tv,
@@ -21,275 +22,344 @@ auto highlight(std::stringstream& ss,
 	);
 }
 
-
-auto as::tree::play_atomic(play_ctx& ctx) -> void {
+auto as::tree::play_atomic(play_ctx& ctx) const -> void {
 	auto& atomic = node<as::atomic_values>(ctx.fr.node);
 
-	const auto local = ctx.fr.time * ctx.fr.speed;
+	const auto time = ctx.fr.time * ctx.fr.speed;
+	const auto step = atomic.step_from_time(time);
 
-	// compute step
-    mx::frac ratio = local / atomic.header.dur;
-    mx::usz  step  = (ratio.num * atomic.header.steps) / ratio.den;
+	bool edge = true;
 
-
-	if (step != atomic.step) {
-		atomic.step = step;
-
-		const auto value = value_at(atomic.value_start + step);
-		//ctx.events.back().values[atomic.param_id] = value;
+	if (!ctx.fr.diverged) {
+		const auto prev      = ctx.fr.prev * ctx.fr.speed;
+		const auto prev_step = atomic.step_from_time(prev);
+		edge = (step != prev_step);
 	}
 
+	const auto value = value_at(atomic.value_start + step);
 
+	if (atomic.param_id == pa::trig) {
+		if (edge && value != 0) {
+			ctx.events.back().edges[atomic.param_id]  = true;
+			ctx.events.back().values[atomic.param_id] = value;
+		}
+	}
+	else {
+		ctx.events.back().edges[atomic.param_id]  = edge;
+		ctx.events.back().values[atomic.param_id] = value;
+	}
+
+	//if (edge) {
 	auto tv = tokens->filtered_view(
-		atomic.token_start + step);
-
-	highlight(ctx.hi, tv, "IncSearch");
+			atomic.token_start + step);
+		highlight(ctx.hi, tv, "IncSearch");
+	//}
 }
 
 
 
 
-auto as::tree::play_group(play_ctx& ctx) -> void {
+auto as::tree::play_group(play_ctx& ctx) const -> void {
 
-	const auto& group = node<as::group>(ctx.fr.node);
+	const auto& g = node<as::group>(ctx.fr.node);
 
-	std::cout << "Before group frac_mod: ctx.fr.time=" << ctx.fr.time
-			  << ", ctx.fr.speed=" << ctx.fr.speed << "\n";
-	auto local = mx::frac_mod(ctx.fr.time * ctx.fr.speed,
-			group.header.dur);
-	std::cout << "After group frac_mod: local=" << local << "\n";
+	auto time = g.header.mod(ctx.fr.time * ctx.fr.speed);
+	auto prev = g.header.mod(ctx.fr.prev * ctx.fr.speed);
 
-    auto it  = group.range.start;
-    auto end = group.range.end();
+		  auto it  = g.range.start;
+    const auto end = g.range.end();
 
-	int i = 0;
+	bool diverged = false;
     for (; it < end; ++it) {
-        mx::usz child = remap_index(it);
-        const auto& dur = header(child).dur;
+		   mx::usz node = remap_index(it);
+        const auto& dur = header(node).dur;
 
-        if (local < dur) {
-            ctx.push(child, local / ctx.fr.speed, ctx.fr.speed);
-            return;
-        }
-		local -= dur;
-    }
+		if (time < dur) {
+			// push node and local tick
+			ctx.push(node,
+					(time / ctx.fr.speed),
+					(prev / ctx.fr.speed),
+					ctx.fr.speed, diverged);
+			return;
+		}
+		time -= dur;
+		if (prev < dur) {
+			diverged = true;
+		}
+		else {
+			prev -= dur;
+		}
+	}
 }
 
-auto as::tree::play_tempo(play_ctx& ctx) -> void {
-	const auto& tempo = node<as::tempo>(ctx.fr.node);
 
+auto as::tree::play_tempo(play_ctx& ctx) const -> void {
+	const auto& t = node<as::tempo>(ctx.fr.node);
+
+	const auto speed = (t.runtime == true)
+					 ? (ctx.fr.speed * t.factor)
+					 :  ctx.fr.speed;
 
 	// push child node with full duration
-	if (!tempo.runtime) {
-		ctx.push(tempo.child, ctx.fr.time, ctx.fr.speed);
-		return;
-	}
-
-	ctx.push(tempo.child,
+	ctx.push(t.child,
 			ctx.fr.time,
-			ctx.fr.speed * tempo.factor);
+			ctx.fr.prev,
+			speed);
 }
 
 
 
-auto as::tree::play_reference(play_ctx& ctx) -> void {
-	const auto& refs = node<as::references>(ctx.fr.node);
+auto as::tree::play_reference(play_ctx& ctx) const -> void {
+	const auto& r = node<as::references>(ctx.fr.node);
 
-		   auto it = refs.ref_start;
-		   auto tk = refs.tok_start;
-	const auto end = refs.ref_start + refs.count;
+		   auto it = r.ref_start;
+		   auto tk = r.tok_start;
+	const auto end = r.ref_start + r.count;
 
-	std::cout << "Before reference frac_mod: ctx.fr.time=" << ctx.fr.time
-			  << ", ctx.fr.speed=" << ctx.fr.speed << "\n";
-	auto local = mx::frac_mod(ctx.fr.time * ctx.fr.speed,
-								refs.header.dur);
-	std::cout << "After reference frac_mod: local=" << local << "\n";
+	auto time = r.header.mod(ctx.fr.time * ctx.fr.speed);
+	auto prev = r.header.mod(ctx.fr.prev * ctx.fr.speed);
 
 
+	bool diverged = false;
 	// loop over referenced nodes
 	for (; it < end; ++it, ++tk) {
 		const auto node = ref_at(it);
 		const auto& dur = header(node).dur;
 
-		if (local < dur) {
+		if (time < dur) {
 			// push node and local tick
-			ctx.push(node, local / ctx.fr.speed, ctx.fr.speed);
+			ctx.push(node,
+					(time / ctx.fr.speed),
+					(prev / ctx.fr.speed),
+					ctx.fr.speed, diverged);
 			break;
 		}
-		// decrement tick
-		local -= dur;
+		time -= dur;
+		if (prev < dur) {
+			diverged = true;
+		}
+		else {
+			prev -= dur;
+		}
 	}
 
-	return;
 	auto tv = tokens->filtered_view(tk);
-
 	highlight(ctx.hi, tv, "Underlined");
 }
 
-auto as::tree::play_parallel(play_ctx& ctx) -> void {
 
-	const auto& parallel = node<as::parallel>(ctx.fr.node);
+auto as::tree::play_track(play_ctx& ctx) const -> void {
 
-		   auto it = parallel.range.start;
-	const auto end = parallel.range.end();
+    const auto& tr = node<as::track>(ctx.fr.node);
+	const auto& fr = ctx.fr;
 
-	std::cout << "Before parallel frac_mod: ctx.fr.time=" << ctx.fr.time
-			  << ", ctx.fr.speed=" << ctx.fr.speed << "\n";
-	auto local = mx::frac_mod(ctx.fr.time * ctx.fr.speed,
-								parallel.header.dur);
-	std::cout << "After parallel frac_mod: local=" << local << "\n";
+	const auto time = tr.header.mod(fr.time * fr.speed);
+	const auto prev = tr.header.mod(fr.prev * fr.speed);
 
-	// loop over child nodes
-	for (; it < end; ++it) {
-		const auto node = remap_index(it);
-		const auto& dur = header(node).dur;
+	ctx.events.emplace_back();
+	const auto mark = ctx.stack.size();
 
-		// time inside this child's cycle
-		std::cout << "Before child frac_mod: local=" << local
-				  << ", dur=" << dur << "\n";
-        mx::frac child_time = mx::frac_mod(local, dur);
-		std::cout << "After child frac_mod: child_time=" << child_time << "\n";
-		// push child node and local tick
-		ctx.push(node, child_time / ctx.fr.speed, ctx.fr.speed);
+    for (mx::usz i = 0U; i < pa::max_params; ++i) {
+
+        const auto n = tr.params[i];
+        if (!n)
+            continue;
+
+		const auto& p = node<as::parameter>(n);
+
+        auto pt  = p.header.mod(time);
+		auto pp  = p.header.mod(prev);
+
+        auto it  = p.range.start;
+        auto end = p.range.end();
+
+		bool diverged = false;
+        for (; it < end; ++it) {
+            const auto node = remap_index(it);
+            const auto& dur = header(node).dur;
+
+            if (pt < dur) {
+				ctx.push(node, (pt / fr.speed),
+							   (pp / fr.speed), fr.speed, diverged);
+				break;
+			}
+
+			pt -= dur;
+			if (pp < dur) {
+				diverged = true;
+			}
+			else {
+				pp -= dur;
+			}
+        }
+    }
+
+	while (ctx.next_until(mark))
+		dispatch_play(ctx);
+
+	// finalize events
+	if (!ctx.events.back().has_trig()) {
+		ctx.events.pop_back();
+		return;
+	}
+	else {
+		mx::i8 ch   = ctx.events.back().values[pa::chan];
+		mx::i8 note = ctx.events.back().values[pa::note];
+		mx::i8 velo = ctx.events.back().values[pa::velo];
+
+		ctx.engine.note_on(ch, note, velo, 10);
+		//static mx::usz count = 0U;
+		//std::cout << "Track Event: " << count++ << '\n';
 	}
 }
 
 
 
-auto as::tree::play_track(play_ctx& ctx) -> void {
+auto as::tree::play(std::stringstream& hi,
+					mx::midi_engine& engine,
+					const mx::frac& time,
+						  mx::frac& prev) const -> void {
 
-	//ctx.mark = ctx.stack.size();
-	//ctx.events.emplace_back();
-
-    auto& track = node<as::track>(ctx.fr.node);
-
-	std::cout << "Before track frac_mod: ctx.fr.time=" << ctx.fr.time
-			  << ", ctx.fr.speed=" << ctx.fr.speed << "\n";
-	auto local = mx::frac_mod(ctx.fr.time * ctx.fr.speed,
-							  track.header.dur);
-	std::cout << "After track frac_mod: local=" << local << "\n";
-
-
-    for (mx::usz p = 0U; p < pa::max_params; ++p) {
-
-        const auto pnode = track.params[p];
-        if (!pnode)
-            continue;
-
-		const auto& param = node<as::parameter>(pnode);
-
-        const auto& total = param.header.dur;
-
-		std::cout << "Before parameter frac_mod: local=" << local
-				  << ", total=" << total << "\n";
-        auto time = mx::frac_mod(local, total);
-		std::cout << "After parameter frac_mod: time=" << time << "\n";
-
-        auto it  = param.range.start;
-        auto end = param.range.end();
-
-        for (; it < end; ++it) {
-            mx::usz child = remap_index(it);
-            const auto& dur = header(child).dur;
-
-            if (time < dur) {
-                ctx.push(child, time / ctx.fr.speed, ctx.fr.speed);
-                break;
-            }
-            time -= dur;
-        }
-    }
-}
-
-
-auto as::tree::play(std::stringstream& hi, const mx::frac& time) -> void {
-
-	play_ctx ctx{hi};
+	as::play_ctx ctx{hi, engine};
 
 	// get root node
 	const auto& root = node<as::program>(0U);
 
+	if (prev.num == 0 && prev.den == 0) {
+		//prev = root.header.dur - mx::frac{1U, 1U};
+		prev = mx::frac{root.header.dur.num
+					  * root.header.dur.den - 1,
+						root.header.dur.den }.reduce();
+
+	}
+
 		   auto it = root.range.start;
 	const auto end = root.range.end();
 
+	// loop over child nodes
+	for (; it < end; ++it) {
+		const auto node = remap_index(it);
+		const auto& h   = header(node);
+
+		// push node and local tick
+		ctx.push(node, h.mod(time), h.mod(prev), mx::frac{1U, 1U});
+
+		while (ctx.next())
+			dispatch_play(ctx);
+	}
+}
+
+
+auto as::tree::dispatch_play(play_ctx& ctx) const -> void {
+
+	// get type of node
+	const auto type = header(ctx.fr.node).type;
+
+	switch (type) {
+
+		case as::type::atomic_values:
+			play_atomic(ctx);
+			break;
+
+		case as::type::group:
+			play_group(ctx);
+			break;
+
+		case as::type::parallel:
+			play_parallel(ctx);
+			break;
+
+		//case as::type::crossfade:
+			// not implemented...
+			//break;
+
+		case as::type::track:
+			play_track(ctx);
+			break;
+
+		case as::type::references:
+			play_reference(ctx);
+			break;
+
+		case as::type::tempo:
+			play_tempo(ctx);
+			break;
+
+		case as::type::permutation:
+			// not implemented...
+			break;
+
+		default:
+			throw std::runtime_error("Unhandled node type in dispatch_play");
+	}
+}
+
+auto as::tree::play_parallel(play_ctx& ctx) const -> void {
+
+	const auto& p = node<as::parallel>(ctx.fr.node);
+
+		   auto it = p.range.start;
+	const auto end = p.range.end();
+
+	auto time = p.header.mod(ctx.fr.time * ctx.fr.speed);
+	auto prev = p.header.mod(ctx.fr.prev * ctx.fr.speed);
 
 	// loop over child nodes
 	for (; it < end; ++it) {
-		const auto node  = remap_index(it);
-		const auto& dur = header(node).dur;
+		const auto node = remap_index(it);
+		const auto& h   = header(node);
 
-		// push node and local tick
+		// time inside this child's cycle
+        const auto ti = h.mod(time);
+		const auto pr = h.mod(prev);
 
-		std::cout << "before frac_mod play: time=" << time << ", dur=" << dur << "\n";
-		ctx.push(node, mx::frac_mod(time, dur), {1U, 1U});
-		std::cout << "after frac_mod play: ctx.fr.time=" << ctx.fr.time << "\n";
-
-		while (ctx.stack.empty() == false) {
-
-			ctx.pop();
-
-			//if (ctx.mark == ctx.stack.size()) {
-			//	std::cout << "At mark, checking events\n";
-			//	if (!ctx.events.back().has_trig()) {
-			//		//ctx.events.pop_back();
-			//		std::cout << "No event triggered, popping event\n";
-			//	}
-			//	ctx.mark = (mx::usz)-1;
-			//}
-
-
-			// get type of node
-			const auto type = header(ctx.fr.node).type;
-
-			switch (type) {
-
-				case as::type::atomic_values:
-                    play_atomic(ctx);
-                    break;
-
-                case as::type::group:
-                    play_group(ctx);
-                    break;
-
-                case as::type::parallel:
-                    play_parallel(ctx);
-                    break;
-
-				case as::type::crossfade:
-					continue;
-					play_crossfade(ctx);
-					break;
-
-                case as::type::track:
-                    play_track(ctx);
-                    break;
-
-                case as::type::parameter:
-					//play_parameter(ctx);
-					std::cout << "Parameter play is handled in track\n";
-                    break;
-
-                case as::type::references:
-					play_reference(ctx);
-                    break;
-
-                case as::type::tempo:
-                    play_tempo(ctx);
-                    break;
-
-				default:
-					throw std::runtime_error("Unhandled node type in play");
-			}
-
-		}
+		// push child node and local tick
+		ctx.push(node,
+				ti / ctx.fr.speed,
+				pr / ctx.fr.speed,
+				ctx.fr.speed);
 	}
-
-	if (ctx.events.empty())
-		return;
-
-	//for (auto& ev : ctx.events) {
-	//	std::cout << "Event Triggered:\n";
-	//}
-	//
-	//std::cout << "\n\n";
 }
+
+
+
+//auto as::tree::play_permutation(play_ctx& ctx) const -> void {
+//
+//	const auto& perm = node<as::permutation>(ctx.fr.node);
+//
+//	auto local = mx::frac_mod(ctx.fr.time * ctx.fr.speed,
+//							  perm.local);
+//							  //perm.header.dur);
+//
+//		  auto it  = perm.range.start;
+//    const auto end = perm.range.end();
+//
+//    for (; it < end; ++it) {
+//        mx::usz child   = remap_index(it);
+//        const auto& dur = header(child).dur;
+//
+//        if (local < dur) {
+//            ctx.push(child, (local / ctx.fr.speed), ctx.fr.speed);
+//            return;
+//        }
+//		local -= dur;
+//    }
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// GOOD IMPLEMENTATION FOR REFERENCE PLAYBACK
+
+

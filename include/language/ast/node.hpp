@@ -16,6 +16,7 @@
 namespace as {
 
 
+	// -- H E A D E R ---------------------------------------------------------
 
 	struct alignas(std::max_align_t) header final {
 		as::type type;
@@ -27,7 +28,15 @@ namespace as {
 			   const mx::frac& dur) noexcept
 		: type{type}, steps{steps}, dur{dur} {
 		}
+
+
+		auto mod(const mx::frac& time) const noexcept -> mx::frac {
+			return mx::frac_mod(time, dur);
+		}
 	};
+
+
+	// -- R E M A P  R A N G E ------------------------------------------------
 
 	struct alignas(std::max_align_t) remap_range final {
 		mx::usz start; // start index in arena
@@ -81,8 +90,6 @@ namespace as {
 
 		pa::id param_id; // associated parameter id
 
-		mutable mx::usz step;
-
 
 		atomic_values(void) = delete;
 
@@ -94,8 +101,20 @@ namespace as {
 		: header{as::type::atomic_values,
 		         steps, dur},
 		  token_start{tstart}, value_start{vstart},
-		  param_id{pid},
-		  step{steps} {
+		  param_id{pid} {
+		}
+
+
+		auto step_from_time(const mx::frac& time) const -> mx::usz {
+
+			// compute ratio
+			const auto ratio = time / header.dur;
+
+			mx::usz res;
+			if (__builtin_mul_overflow(ratio.num, header.steps, &res))
+				throw std::overflow_error{"play_atomic: step computation overflow"};
+
+			return res / ratio.den;
 		}
 
 	}; // struct atomic_values
@@ -274,6 +293,7 @@ namespace as {
 		/* range */
 		as::remap_range range;
 
+		mx::frac local;
 
 		permutation(void) noexcept
 		: header{as::type::permutation,

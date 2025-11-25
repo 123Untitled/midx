@@ -38,6 +38,14 @@ namespace mx {
 	}
 
 
+	inline auto safe_mul(mx::usz a, mx::usz b) noexcept -> mx::usz {
+		mx::usz res;
+		while (__builtin_mul_overflow(a, b, &res))
+			a >>= 1, b >>= 1;
+		return res;
+	}
+
+
 	// -- F R A C T -----------------------------------------------------------
 
 	struct frac final {
@@ -77,6 +85,8 @@ namespace mx {
 			/* full constructor */
 			constexpr frac(value_type n, value_type d) noexcept
 			: num{n}, den{d} {
+
+				reduce();
 			}
 
 			/* integer constructor */
@@ -84,6 +94,11 @@ namespace mx {
 			: num{num}, den{1U} {
 			}
 
+			//static constexpr auto sqrt(void) noexcept -> value_type {
+			//	// compute compile time square root of mx::usz max
+			//	constexpr value_type x = mx::usz(-1);
+			//	return 0;
+			//}
 
 			/* reduce
 			   reduce the fraction to its simplest form */
@@ -93,7 +108,13 @@ namespace mx {
 				num /= g;
 				den /= g;
 
+				// racine carre de mx::usz max
+
 				// OPTIMISATION POSSIBLE
+				while (num > 1000000U || den > 1000000U) {
+					num >>= 1U;
+					den >>= 1U;
+				}
 
 				return *this;
 			}
@@ -142,58 +163,29 @@ namespace mx {
 
 			/* add operator */
 			constexpr auto operator+(const self& other) const noexcept -> self {
+				return self{safe_mul(num, other.den) + safe_mul(other.num, den),
+							safe_mul(den, other.den)};
+			}
 
-				// check overflow?
-				return self{(num * other.den) + (other.num * den),
-							 den * other.den};
+			/* subtract operator */
+			constexpr auto operator-(const self& other) const noexcept -> self {
+				return self{safe_mul(num, other.den) - safe_mul(other.num, den),
+							safe_mul(den, other.den)};
 			}
 
 
 			/* multiply operator */
 			 auto operator*(const self& other) const /*noexcept*/-> self {
-				//std::cout os << f.num << "/" << f.den;
-					self r{num * other.num,
-							den * other.den};
-
-				mx::usz a;
-				mx::usz b;
-
-				//if (__builtin_mul_overflow(num, other.num, &a))
-				//	throw std::overflow_error("Fraction numerator overflow");
-				//if (__builtin_mul_overflow(den, other.den, &b))
-				//	throw std::overflow_error("Fraction denominator overflow");
-
-				if (!(other.num == 1U && other.den == 1U)) {
-					 //std::cout << "MULTIPLYING " << *this << " * " << other << "\n";
-					 //std::cout << "RESULT: " << r << "\n";
-				 }
-
-				return r;
+				 return self{safe_mul(num, other.num),
+							 safe_mul(den, other.den)};
 			}
 
 
 			/* divide operator */
 			constexpr auto operator/(const frac& other) const -> frac {
 
-
-
-				self r{num * other.den, den * other.num};
-
-				mx::usz a;
-				mx::usz b;
-
-				//if (__builtin_mul_overflow(num, other.den, &a))
-				//	throw std::overflow_error("Fraction numerator overflow");
-				//
-				//if (__builtin_mul_overflow(den, other.num, &b))
-				//	throw std::overflow_error("Fraction denominator overflow");
-
-
-				if (!(other.num == 1U && other.den == 1U)) {
-					 //std::cout << "MULTIPLYING " << *this << " * " << other << "\n";
-					 //std::cout << "RESULT: " << r << "\n";
-				}
-				return r;
+				return self{safe_mul(num, other.den),
+							safe_mul(den, other.num)};
 			}
 
 
@@ -202,26 +194,30 @@ namespace mx {
 
 			/* self add operator */
 			constexpr auto operator+=(const self& other) noexcept -> void {
-				num = (num * other.den) + (other.num * den);
-				den = den * other.den;
+				num = safe_mul(num, other.den) + safe_mul(other.num, den);
+				den = safe_mul(den, other.den);
+				reduce();
 			}
 
 			/* self subtract operator */
 			constexpr auto operator-=(const self& other) noexcept -> void {
-				num = (num * other.den) - (other.num * den);
-				den = den * other.den;
+				num = safe_mul(num, other.den) - safe_mul(other.num, den);
+				den = safe_mul(den, other.den);
+				reduce();
 			}
 
 			/* self multiply operator */
 			constexpr auto operator*=(const self& other) noexcept -> void {
-				num = num * other.num;
-				den = den * other.den;
+				num = safe_mul(num, other.num);
+				den = safe_mul(den, other.den);
+				reduce();
 			}
 
 			/* self divide operator */
 			constexpr auto operator/=(const self& other) -> void {
-				num = num * other.den;
-				den = den * other.num;
+				num = safe_mul(num, other.den);
+				den = safe_mul(den, other.num);
+				reduce();
 			}
 
 
@@ -237,22 +233,22 @@ namespace mx {
 
 			/* less than operator */
 			constexpr auto operator<(const self& other) const noexcept -> bool {
-				return (num * other.den) < (other.num * den);
+				return safe_mul(num, other.den) < safe_mul(other.num, den);
 			}
 
 			/* greater than operator */
 			constexpr auto operator>(const self& other) const noexcept -> bool {
-				return (num * other.den) > (other.num * den);
+				return safe_mul(num, other.den) > safe_mul(other.num, den);
 			}
 
 			/* less than or equal operator */
 			constexpr auto operator<=(const self& other) const noexcept -> bool {
-				return (num * other.den) <= (other.num * den);
+				return safe_mul(num, other.den) <= safe_mul(other.num, den);
 			}
 
 			/* greater than or equal operator */
 			constexpr auto operator>=(const self& other) const noexcept -> bool {
-				return (num * other.den) >= (other.num * den);
+				return safe_mul(num, other.den) >= safe_mul(other.num, den);
 			}
 
 		}; // struct frac
@@ -260,39 +256,83 @@ namespace mx {
 
 		/* frac mod
 		   compute the modulus of two fractions */
-		inline auto frac_mod(const mx::frac& a,
-							 const mx::frac& b) /*noexcept*/ -> mx::frac {
+		//inline auto frac_mod(const mx::frac& a,
+		//					 const mx::frac& b) /*noexcept*/ -> mx::frac {
+		//
+		//	mx::usz ar;
+		//	mx::usz br;
+		//
+		//	if (__builtin_mul_overflow(a.num, b.den, &ar)) {
+		//		std::cout << "Overflow: " << a.num << " * " << b.den << "\n";
+		//		std::cout << "Result would be: " << a.num * b.den << "\n";
+		//		throw std::overflow_error("FRAC_MOD Fraction modulus overflow");
+		//	}
+		//	if (__builtin_mul_overflow(b.num, a.den, &br)) {
+		//		std::cout << "Overflow: " << b.num << " * " << a.den << "\n";
+		//		std::cout << "Result would be: " << b.num * a.den << "\n";
+		//		throw std::overflow_error("FRAC_MOD Fraction modulus overflow");
+		//	}
+		//
+		//	auto lhs = a.num * b.den;
+		//	auto rhs = b.num * a.den;
+		//
+		//	if (lhs < rhs)
+		//		return a;
+		//
+		//	double q = static_cast<double>(lhs)
+		//			 / static_cast<double>(rhs);
+		//
+		//	mx::usz k = static_cast<mx::usz>(::floor(q));
+		//
+		//	mx::frac kb{k * b.num, b.den};
+		//
+		//	// res = a - kb
+		//	mx::frac res{(a.num * kb.den) - (kb.num * a.den),
+		//					a.den * kb.den};
+		//	res.reduce();
+		//	return res;
+		//}
 
-			mx::usz ar;
-			mx::usz br;
 
-			if (__builtin_mul_overflow(a.num, b.den, &ar)) {
-				std::cout << "Overflow: " << a.num << " * " << b.den << "\n";
-				std::cout << "Result would be: " << a.num * b.den << "\n";
-				throw std::overflow_error("FRAC_MOD Fraction modulus overflow");
-			}
-			if (__builtin_mul_overflow(b.num, a.den, &br)) {
-				std::cout << "Overflow: " << b.num << " * " << a.den << "\n";
-				std::cout << "Result would be: " << b.num * a.den << "\n";
-				throw std::overflow_error("FRAC_MOD Fraction modulus overflow");
-			}
 
-			auto lhs = a.num * b.den;
-			auto rhs = b.num * a.den;
 
-			if (lhs < rhs)
+		inline auto frac_mod(const mx::frac& a, const mx::frac& b) noexcept -> mx::frac
+		{
+			if ((mx::usz)a.num * b.den < (mx::usz)b.num * a.den)
 				return a;
 
-			double q = static_cast<double>(lhs)
-					 / static_cast<double>(rhs);
+			mx::usz lhs_num = a.num;
+			mx::usz lhs_den = a.den;
+			mx::usz rhs_num = b.num;
+			mx::usz rhs_den = b.den;
 
-			mx::usz k = static_cast<mx::usz>(::floor(q));
 
-			mx::frac kb{k * b.num, b.den};
+			mx::usz g1 = mx::gcd(lhs_num, lhs_den);
+			lhs_num /= g1;
+			lhs_den /= g1;
 
-			// res = a - kb
-			mx::frac res{(a.num * kb.den) - (kb.num * a.den),
-							a.den * kb.den};
+			mx::usz g2 = mx::gcd(rhs_num, rhs_den);
+			rhs_num /= g2;
+			rhs_den /= g2;
+
+			// floor(a/b) = floor((a.num*b.den)/(b.num*a.den))
+			mx::usz num_scaled = safe_mul(lhs_num, rhs_den);
+			mx::usz den_scaled = safe_mul(rhs_num, lhs_den);
+
+			if (den_scaled == 0)
+				den_scaled = 1;
+
+			mx::usz q = num_scaled / den_scaled;
+
+			// q*b
+			mx::usz kb_num = safe_mul(q, b.num);
+			mx::usz kb_den = b.den;
+
+			// result = a - q*b
+			mx::usz res_num = safe_mul(a.num, kb_den) - safe_mul(kb_num, a.den);
+			mx::usz res_den = safe_mul(a.den, kb_den);
+
+			mx::frac res{res_num, res_den};
 			res.reduce();
 			return res;
 		}
@@ -323,6 +363,14 @@ namespace mx {
 			const auto D = d1 * d2;         // den
 
 			return mx::frac{N, D};
+		}
+
+
+		inline auto make_reduced_frac(const mx::usz n,
+									  const mx::usz d) noexcept -> mx::frac {
+			mx::frac f{n, d};
+			f.reduce();
+			return f;
 		}
 
 } // namespace mx

@@ -439,8 +439,8 @@ function _test() {
 	tmux send-keys -t "$session"':0.0' 'nvim hello.midx; tmux kill-pane' C-m
 
 	# send second command
-	#tmux send-keys -t "$session"':0.1' "$executable"' && tmux kill-pane' C-m
-	tmux send-keys -t "$session"':0.1' "timeout 10 $executable" C-m
+	tmux send-keys -t "$session"':0.1' "$executable"' && tmux kill-pane' C-m
+	#tmux send-keys -t "$session"':0.1' "timeout 10 $executable" C-m
 
 	# select second pane
 	tmux select-pane -t "$session"':0.0'

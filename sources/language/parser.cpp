@@ -467,7 +467,7 @@ auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 		return left;
 	}
 
-	// get left header
+	// get headers
 	const auto& lh = _tree->header(left);
 	const auto& ih = _tree->header(inside);
 
@@ -507,7 +507,7 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 	}
 	else error("Unclosed permutation", it);
 
-	if (!inside) // 0 []
+	if (!inside)
 		return left;
 
 	 // make permutation node
@@ -515,12 +515,23 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 	auto& pref = _tree->node<as::permutation>(perm);
 
 	// check for collapse
-	if (_tree->is_collapsable(inside))
+	if (_tree->is_collapsable(inside)) {
 		pref.range = _tree->range_of(inside);
-
+		pref.header.dur = _tree->product_duration(pref.range);
+		pref.header.steps = _tree->product_steps(pref.range);
+		pref.local = _tree->header(inside).dur;
+	}
 	else {
+
+		//if (_tree->is_atomic_values(inside)) {
+		//}
+
 		// need remap index here
+		//perm = inside;
 		pref.range = as::remap_range{_tree->new_remap(inside), 1U};
+		pref.header.dur   = _tree->header(inside).dur;
+		pref.header.steps = _tree->header(inside).steps;
+		pref.local = _tree->header(inside).dur;
 	}
 
 	if (!left)
@@ -532,10 +543,15 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 		return left;
 	}
 
+	// get headers
+	const auto& lh = _tree->header(left);
+	const auto& ph = _tree->header(perm);
+
+
 	// else make new group
 	const auto range = _tree->make_range(left, perm);
-	const auto steps = _tree->sum_steps(range);
-		  auto dur   = _tree->sum_duration(range);
+	const auto steps = lh.steps + ph.steps;
+		  auto dur   = lh.dur   + ph.dur;
 
 	return _tree->make_group(range, steps, dur.reduce());
 }

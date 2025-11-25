@@ -4,6 +4,7 @@
 #include "language/ast/node.hpp"
 #include "language/tokens/tokens.hpp"
 
+#include "midi/midi_engine.hpp"
 
 #include <unordered_set>
 
@@ -17,6 +18,7 @@ namespace as {
 
 		/* values */
 		mx::usz values[pa::max_params];
+		bool edges[pa::max_params];
 
 		event(void) noexcept
 		:
@@ -29,12 +31,79 @@ namespace as {
 			  0, // semi
 			  0, // chan
 			  100, // prob
-		  } {
+		  },
+			edges{} {
 		}
 
 		auto has_trig(void) const noexcept -> bool {
-			return values[pa::trig] != 0U;
+			return values[pa::trig] != 0U && edges[pa::trig];
 		}
+	};
+
+	struct frame final {
+		mx::usz node;
+		mx::frac time;
+		mx::frac prev;
+		mx::frac speed;
+		bool diverged;
+
+		frame(void) noexcept
+		: node{0U},
+		  time{},
+		  prev{},
+		  speed{1U, 1U},
+		  diverged{false} {
+		}
+
+		frame(const mx::usz node,
+			  const mx::frac& time,
+			  const mx::frac& prev,
+			  const mx::frac& speed,
+			  const bool diverged = false
+			  ) noexcept
+		: node{node},
+		  time{time},
+		  prev{prev},
+		  speed{speed},
+		  diverged{diverged} {
+		}
+	};
+
+
+	struct play_ctx final {
+
+		std::stringstream& hi;
+		mx::midi_engine& engine;
+		std::vector<frame> stack;
+
+		std::vector<as::event> events;
+		as::frame fr;
+
+
+		play_ctx(std::stringstream& h, mx::midi_engine& e) noexcept
+		: hi{h}, engine{e}, stack{}, fr{} {
+		}
+
+		template <typename... Ts>
+		auto push(const Ts&... args) -> void {
+			stack.emplace_back(args...);
+		}
+
+		auto next(void) -> bool {
+			if (stack.empty() == true)
+				return false;
+			fr = stack.back();
+			stack.pop_back();
+			return true;
+		}
+		auto next_until(const mx::usz mark) -> bool {
+			if (!(stack.size() > mark))
+				return false;
+			fr = stack.back();
+			stack.pop_back();
+			return true;
+		}
+
 	};
 
 
@@ -84,64 +153,30 @@ namespace as {
 			}
 
 
-			struct frame final {
-				mx::usz node;
-				mx::frac time;
-				mx::frac speed;
-
-				frame(void) noexcept
-				: node{0U}, time{}, speed{1U, 1U} {
-				}
-
-				frame(const mx::usz nod,
-					  const mx::frac& time,
-					  const mx::frac& speed) noexcept
-				: node{nod}, time{time}, speed{speed} {
-				}
-			};
-
-			struct play_ctx final {
-
-				std::stringstream& hi;
-				std::vector<frame> stack;
-				mx::usz mark;
-
-				std::vector<as::event> events;
-				frame fr;
 
 
-				play_ctx(std::stringstream& h) noexcept
-				: hi{h}, stack{}, mark{(mx::usz)-1}, fr{} {
-				}
+			auto play_permutation(play_ctx&) const -> void;
+			auto play_parallel(play_ctx&) const -> void;
+			auto play_crossfade(play_ctx&) const -> void;
+			auto play_track(play_ctx&) const -> void;
+			auto play_atomic(play_ctx&) const -> void;
+			auto play_tempo(play_ctx&) const -> void;
+			auto play_group(play_ctx&) const -> void;
+			auto play_group2(play_ctx&) const -> void;
+			auto play_reference(play_ctx&) const -> void;
 
-				auto push(const mx::usz node,
-						  const mx::frac& time,
-						  const mx::frac& speed) -> void {
-					stack.emplace_back(node, time, speed);
-				}
+			auto play_parameter(play_ctx&) const -> void;
 
-				auto pop(void) -> void {
-					fr = stack.back();
-					stack.pop_back();
-				}
-			};
-
-
-			auto play_parallel(play_ctx&) -> void;
-			auto play_crossfade(play_ctx&) -> void;
-			auto play_track(play_ctx&) -> void;
-			auto play_atomic(play_ctx&) -> void;
-			auto play_tempo(play_ctx&) -> void;
-			auto play_group(play_ctx&) -> void;
-			auto play_parameter(play_ctx&) -> void;
-			auto play_reference(play_ctx&) -> void;
+			auto dispatch_play(play_ctx&) const -> void;
 
 
 		public:
 
 			tk::tokens* tokens;
 
-			auto play(std::stringstream&, const mx::frac&) -> void;
+			auto play(std::stringstream&, mx::midi_engine&,
+										  const mx::frac&,
+										  mx::frac&) const -> void;
 
 
 			// -- public lifecycle --------------------------------------------
@@ -500,6 +535,30 @@ namespace as {
 				return sum;
 			}
 
+			/* product duration
+			   compute the product of durations of all nodes in a range */
+			auto product_duration(const as::remap_range& range) const -> mx::frac {
+				mx::frac prod{1,1};
+
+				for (mx::usz i = 0U; i < range.count; ++i) {
+					const auto& h = remap_header(range.start + i);
+					prod *= h.dur;
+				}
+				return prod;
+			}
+
+			/* product steps
+			   compute the product of steps of all nodes in a range */
+			auto product_steps(const as::remap_range& range) const -> mx::usz {
+				mx::usz prod = 1U;
+
+				for (mx::usz i = 0U; i < range.count; ++i) {
+					const auto& h = remap_header(range.start + i);
+					prod *= h.steps;
+				}
+				return prod;
+			}
+
 
 			/* make range
 			   create a new remap range with given nodes */
@@ -670,6 +729,11 @@ namespace as {
 				const auto t = header(index).type;
 				return t == as::type::group
 					|| t == as::type::permutation;
+			}
+
+			/* is atomic */
+			auto is_atomic_values(const mx::usz index) /*noexcept*/ -> bool {
+				return header(index).type == as::type::atomic_values;
 			}
 
 			template <typename F, typename... Ts>
