@@ -125,7 +125,7 @@ auto pr::parser::_parse(void) -> mx::usz {
 		if (_parse_identifiers() == true)
 			continue;
 
-		auto expr = parse_expr<pr::level::expr>(pr::precedence::none);
+		auto expr = parse_expr<pr::level::expr>(pr::precedence::separator);
 
 		if (expr != 0U) {
 			_tree->push(expr);
@@ -186,7 +186,7 @@ template <pr::level L>
 auto pr::parser::parse_expr(const pr::precedence min_pre) -> mx::usz {
 	depth_guard dg{_depth};
 
-	debug_level<L>("PARSE*EXPR", "min pre", min_pre);
+	debug_level<L>("PARSE EXPR", "min pre", min_pre);
 
 	mx::usz left = 0U;
 
@@ -194,57 +194,23 @@ auto pr::parser::parse_expr(const pr::precedence min_pre) -> mx::usz {
 		debug_level<L>("nud loop", "current token", *_it);
 
 		auto& tk = _it.token();
-		auto nud = pr::nud_of<L>(tk);
+		auto eval = pr::eval_of<L>(tk);
 
-		// no NUD found, go to LED phase
-		if (!nud)
+		if (!eval)
 			break;
 
-		else
-			std::cout << "\x1b[32mNUD\x1b[0m loop " << *_it << '\n';
-
-		if (pr::can_start<L>(tk) == false) {
-			error("Token cannot start an expression", _it);
-			return 0U;
+		// precedence check
+		if (pr::pre_of<L>(tk) <= min_pre)
 			break;
-		}
 
 		// consume token in nud function
-		left = (this->*nud)(left);
+		left = (this->*eval)(left);
 
 		if constexpr (L == pr::level::seq)
 			if (_back == true)
-				return left;
+				break;
 	}
 
-
-	// loop for led
-	while (_it != _end) {
-		debug_level<L>("led loop", "current token", *_it);
-
-		const auto& tk = _it.token();
-		const auto led = pr::led_of<L>(tk);
-		const auto pre = pr::pre_of<L>(tk);
-
-		if (!led)
-			break;
-
-		std::cout << "\x1b[31mLED\x1b[0m loop " << *_it << '\n';
-
-		if (pre <= min_pre)
-			break;
-
-		// consume token in led function
-		left = (this->*led)(left);
-
-		if (!left)
-			return 0U;
-
-		if constexpr (L == pr::level::seq)
-			if (_back == true)
-				return left;
-
-	}
 	return left;
 }
 
@@ -565,7 +531,7 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 		// recurse sequence parsing
 		const mx::usz seq = parse_expr<pr::level::seq>(
-								pr::precedence::none);
+								pr::precedence::parameter);
 
 		if (seq) {
 

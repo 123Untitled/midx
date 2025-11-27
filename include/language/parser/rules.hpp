@@ -31,38 +31,17 @@ namespace pr {
 
 			// -- public types ------------------------------------------------
 
-			/* nud type */
-			using nud_type = auto (pr::parser::*)(const mx::usz) -> mx::usz;
-
-			/* led type */
-			using led_type = auto (pr::parser::*)(const mx::usz) -> mx::usz;
-
+			/* eval type */
+			using eval_type = auto (pr::parser::*)(const mx::usz) -> mx::usz;
 
 
 			// -- public members ----------------------------------------------
 
-			/* null denotation */
-			const nud_type nud;
-
-			/* left denotation */
-			const led_type led;
+			/* eval function */
+			const eval_type eval;
 
 			/* precedence */
 			const pr::precedence pre;
-
-			/* can start an expression */
-			const bool can_start;
-
-			/* is infix */
-			const bool is_infix;
-
-			/* is prefix */
-			const bool is_prefix;
-
-			/* is postfix */
-			const bool is_postfix;
-
-
 
 	}; // class rule
 

@@ -12,21 +12,25 @@ namespace pr {
 	// -- P R E C E D E N C E -------------------------------------------------
 
 	enum precedence : mx::uint {
-		none       = 0U,
+		none            = 0U,
 
-		parallel   = 20U,
-		crossfade  = 30U,
-		tempo      = 40U,
-		modulo     = 50U,
+		separator       = 5U,
+		track_separator = 7U,
 
+		parameter       = 10U,
 
-		grouping   = 80U,
+		parallel        = 20U,
+		crossfade       = 30U,
+
+		tempo           = 50U,
+		modulo          = 50U,
+
+		grouping        = 80U,
+
+		value           = 90U,
+		reference       = 95U,
 	};
 
 } // namespace pr
-
-		//sequence   = 55U,
-		//term       = 60U,
-		//factor     = 70U,
 
 #endif // language_parser_precedence_hpp

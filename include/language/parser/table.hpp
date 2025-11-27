@@ -17,24 +17,16 @@ namespace pr {
 	template <pr::level L>
 	consteval auto rule_number(void) -> pr::rule {
 		return pr::rule {
-			//.nud = &pr::parser::nud_value,
-			.nud = &pr::parser::nud_atomic_value,
-			.led = nullptr,
-			.pre = pr::precedence::none,
-			.can_start = L == pr::level::seq,
-			// is infix, is prefix, is postfix
-			false, false, false
+			.eval = &pr::parser::nud_atomic_value,
+			.pre  = pr::precedence::value,
 		};
 	}
 
 	/* empty */
 	consteval auto rule_empty(void) -> pr::rule {
 		return pr::rule {
-			.nud = nullptr,
-			.led = nullptr,
+			.eval = nullptr,
 			.pre = pr::precedence::none,
-			// can start, is infix, is prefix, is postfix
-			false, false, false, false
 		};
 	}
 
@@ -42,12 +34,8 @@ namespace pr {
 	template <pr::level L>
 	consteval auto rule_tempo(void) -> pr::rule {
 		return pr::rule {
-			.nud = &pr::parser::nud_tempo<L>,
-			.led = nullptr,
+			.eval = &pr::parser::nud_tempo<L>,
 			.pre = pr::precedence::tempo,
-			//.pre = pr::precedence::none,
-			// can start, is prefix, is infix, is postfix
-			true, true, false, false
 		};
 	}
 
@@ -55,15 +43,10 @@ namespace pr {
 	template <pr::level L>
 	consteval auto rule_parameter(void) -> pr::rule {
 		return pr::rule {
-			// nud
-			.nud = L == pr::level::expr ?
+			.eval = L == pr::level::expr ?
 						&pr::parser::nud_parameter :
 						nullptr,
-			.led = nullptr,
-			// precedence
-			.pre = pr::precedence::none,
-			// can start, is prefix, is infix, is postfix
-			true, true, false, false
+			.pre = pr::precedence::parameter,
 		};
 	}
 
@@ -73,13 +56,20 @@ namespace pr {
 	consteval auto rule_track_separator(void) -> pr::rule {
 		return pr::rule {
 			// nud
-			.nud = L == pr::level::expr ? &pr::parser::nud_track_separator : nullptr,
-			// led
-			.led = nullptr,
+			.eval = L == pr::level::expr ? &pr::parser::nud_track_separator : nullptr,
 			// precedence
-			.pre = pr::precedence::none,
-			// can start, is prefix, is infix, is postfix
-			true, false, false, false
+			.pre = pr::precedence::track_separator,
+		};
+	}
+
+	/* separator */
+	template <pr::level L>
+	consteval auto rule_separator(void) -> pr::rule {
+		return pr::rule {
+			// nud
+			.eval = nullptr,
+			// precedence
+			.pre = pr::precedence::separator,
 		};
 	}
 
@@ -93,7 +83,7 @@ namespace pr {
 		pr::rule_empty(),
 
 		// separator ;
-		pr::rule_empty(),
+		pr::rule_separator<L>(),
 
 
 		// tempo ^2 \2
@@ -102,38 +92,26 @@ namespace pr {
 
 		// modulo %
 		{
-			// nud
-			nullptr,
 			// led
 			&pr::parser::nud_modulo<L>,
 			// precedence
 			pr::precedence::modulo,
-			// can start, is prefix, is infix, is postfix
-			true, true, false, false
 		},
 
 		// parallel
 		{
-			// nud
-			nullptr,
 			// led
 			&pr::parser::led_parallel<L>,
 			// precedence
 			pr::precedence::parallel,
-			// can start, is prefix, is infix, is postfix
-			false, false, true, false
 		},
 
 		// crossfade
 		{
-			// nud
-			nullptr,
 			// led
 			&pr::parser::led_crossfade<L>,
 			// precedence
 			pr::precedence::crossfade,
-			// can start, is prefix, is infix, is postfix
-			false, false, true, false
 		},
 
 		// track separator
@@ -147,27 +125,16 @@ namespace pr {
 		{
 			// nud
 			&pr::parser::nud_references,
-			// led
-			nullptr,
 			// precedence
-			pr::precedence::none,
-			// can start, is prefix, is infix, is postfix
-			true, false, false, false
+			pr::precedence::reference,
 		},
 
 		// param reference
 		{
 			// nud
-			//&pr::parser::nud_param_reference,
-			nullptr,
-			// led
 			nullptr,
 			// precedence
 			pr::precedence::none,
-			// can start
-			.can_start = L == pr::level::seq,
-			// is prefix, is infix, is postfix
-			false, false, false
 		},
 
 
@@ -192,12 +159,8 @@ namespace pr {
 		{
 			// nud
 			&pr::parser::nud_group<L>,
-			// led
-			nullptr,
 			// precedence
 			pr::precedence::grouping,
-			// can start, is prefix, is infix, is postfix
-			true, false, false, false
 		},
 		// priority_close,
 		pr::rule_empty(),
@@ -206,12 +169,8 @@ namespace pr {
 		{
 			// nud
 			&pr::parser::nud_permutation<L>,
-			// led
-			nullptr,
 			// precedence
 			pr::precedence::grouping,
-			// can start, is prefix, is infix, is postfix
-			true, false, false, false
 		},
 		// permutation_close,
 		pr::rule_empty(),
@@ -221,12 +180,8 @@ namespace pr {
 		{
 			// nud
 			nullptr,
-			// led
-			nullptr,
 			// precedence
 			pr::precedence::grouping,
-			// can start, is prefix, is infix, is postfix
-			true, false, false, false
 		},
 
 		// condition_close,
@@ -251,14 +206,8 @@ namespace pr {
 
 	/* nud of */
 	template <pr::level L>
-	inline auto nud_of(const tk::token& token) noexcept -> pr::rule::nud_type {
-		return rules<L>[token.id].nud;
-	}
-
-	/* led of */
-	template <pr::level L>
-	inline auto led_of(const tk::token& token) noexcept -> pr::rule::led_type {
-		return rules<L>[token.id].led;
+	inline auto eval_of(const tk::token& token) noexcept -> pr::rule::eval_type {
+		return rules<L>[token.id].eval;
 	}
 
 	/* precedence of */

@@ -679,6 +679,7 @@ namespace as {
 				return *reinterpret_cast<const T*>(&_nodes[index]);
 			}
 
+
 		private:
 
 			/* extend range
@@ -695,6 +696,7 @@ namespace as {
 				_remap[start + size] = node;
 				range.start = start;
 			}
+
 
 		public:
 
@@ -827,8 +829,9 @@ namespace as {
 					return lcm;
 
 				// get first duration
-				const auto&h0 = remap_header(range.start);
-				lcm = h0.dur;
+				//const auto& h0 = remap_header(range.start);
+				//lcm = h0.dur;
+				lcm = remap_header(range.start).dur;
 
 				for (mx::usz i = 1U; i < range.count; ++i) {
 					const auto& h = remap_header(range.start + i);
