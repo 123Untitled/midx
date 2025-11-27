@@ -193,6 +193,10 @@ auto lx::lexer::_lex(void) -> void {
 				lex_number();
 				continue;
 
+			// floating .123
+			case '.':
+				lex_floating();
+				continue;
 
 			// () [] {}
 			case '(':
@@ -220,29 +224,12 @@ auto lx::lexer::_lex(void) -> void {
 				continue;
 
 
-			// =
-			case '=':
-				push_byte_token(tk::assignment);
-				continue;
 
 			// ;
 			case ';':
 				push_byte_token(tk::separator);
 				continue;
 
-
-			//case '+':
-			//	push_byte_token(tk::add);
-			//	continue;
-			//case '-':
-			//	push_byte_token(tk::subtract);
-			//	continue;
-			//case '*':
-			//	push_byte_token(tk::multiply);
-			//	continue;
-			//case '/':
-			//	push_byte_token(tk::divide);
-			//	continue;
 
 			// reference
 			case '&':
@@ -304,6 +291,10 @@ auto lx::lexer::_lex(void) -> void {
 				continue;
 			case '\\':
 				lex_tempo(tk::tempo_slow);
+				continue;
+
+			case '%':
+				lex_modulo();
 				continue;
 
 			default:
@@ -401,10 +392,48 @@ auto lx::lexer::lex_number(void) -> void {
 	while (_it < _end && cc::is_digit(*_it))
 		++_it;
 
+	tk::id id = tk::decimal;
+
+	if (_it < _end && *_it == '.') {
+		id = tk::floating;
+
+		do {
+			++_it;
+		} while (_it < _end && cc::is_digit(*_it));
+	}
+
 	// push decimal token
 	_tokens->push_filtered_token(
-		tk::decimal,
-		self::new_chunk(mark)
+		id, self::new_chunk(mark)
+	);
+}
+
+/* lex floating */
+auto lx::lexer::lex_floating(void) -> void {
+
+	// assume we are on '.'
+	auto ck = byte_chunk();
+
+	// mark start
+	const auto mark = _it;
+
+	while (_it < _end && cc::is_digit(*_it))
+		++_it;
+
+	// only a dot
+	if (mark == _it) {
+		error("expected floating value", ck);
+		return;
+	}
+
+	// extend chunk
+	const auto gap = static_cast<mx::usz>(_it - mark);
+	ck.lexeme.size += gap;
+	ck.range.ce    += gap;
+	_column        += gap;
+
+	_tokens->push_filtered_token(
+		tk::floating, ck
 	);
 }
 
@@ -419,7 +448,7 @@ auto lx::lexer::lex_tempo(const tk::id id) -> void {
 	skip_ignored();
 
 	if (_it >= _end || !cc::is_digit(*_it)) {
-		error("expected tempo number", ck);
+		error("expected tempo value", ck);
 		return;
 	}
 
@@ -439,7 +468,7 @@ auto lx::lexer::lex_tempo(const tk::id id) -> void {
 	// check if we have skipped something
 	//if (mark != eoc) {
 		_tokens->push_filtered_token(
-			id, ck, new_chunk(mark) // always slip the chunk to parse the number
+			id, ck, new_chunk(mark) // always split the chunk to parse the number
 		);
 		//return;
 	//}
@@ -453,6 +482,38 @@ auto lx::lexer::lex_tempo(const tk::id id) -> void {
 	//_tokens->push_filtered_token(id, ck);
 }
 
+
+/* lex modulo */
+auto lx::lexer::lex_modulo(void) -> void {
+
+	auto ck = byte_chunk();
+	const auto eoc = _it;
+
+	// skip ignored
+	skip_ignored();
+
+	if (_it >= _end || !cc::is_digit(*_it)) {
+		error("expected modulo value", ck);
+		return;
+	}
+
+	const auto mark = _it;
+
+	do {
+		++_it;
+	} while (_it < _end && cc::is_digit(*_it));
+
+	if (_it < _end && *_it == '.') {
+		do {
+			++_it;
+		} while (_it < _end && cc::is_digit(*_it));
+	}
+
+	// push modulo token
+	_tokens->push_filtered_token(
+		tk::modulo, ck, new_chunk(mark) // always split the chunk to parse the number
+	);
+}
 
 
 /* lex parameter */

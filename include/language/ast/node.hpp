@@ -20,13 +20,11 @@ namespace as {
 
 	struct alignas(std::max_align_t) header final {
 		as::type type;
-		mx::usz steps;
 		mx::frac dur;
 
 		header(const as::type type,
-			   const mx::usz steps,
 			   const mx::frac& dur) noexcept
-		: type{type}, steps{steps}, dur{dur} {
+		: type{type}, dur{dur} {
 		}
 
 
@@ -69,7 +67,7 @@ namespace as {
 
 
 		program(void) noexcept
-		: header{as::type::program, 0U, {}},
+		: header{as::type::program, mx::frac{0U, 1U}},
 		  range{} {
 		}
 
@@ -86,7 +84,7 @@ namespace as {
 
 		mx::usz token_start; // tokens start index
 		mx::usz value_start; // values start index
-		// count is steps in header
+		mx::usz count;
 
 		pa::id param_id; // associated parameter id
 
@@ -96,11 +94,11 @@ namespace as {
 		atomic_values(const pa::id pid,
 					  const mx::usz tstart,
 					  const mx::usz vstart,
-					  const mx::usz steps,
+					  const mx::usz count,
 					  const mx::frac& dur) noexcept
-		: header{as::type::atomic_values,
-		         steps, dur},
+		: header{as::type::atomic_values, dur},
 		  token_start{tstart}, value_start{vstart},
+		  count{count},
 		  param_id{pid} {
 		}
 
@@ -111,7 +109,7 @@ namespace as {
 			const auto ratio = time / header.dur;
 
 			mx::usz res;
-			if (__builtin_mul_overflow(ratio.num, header.steps, &res))
+			if (__builtin_mul_overflow(ratio.num, count, &res))
 				throw std::overflow_error{"play_atomic: step computation overflow"};
 
 			return res / ratio.den;
@@ -137,11 +135,11 @@ namespace as {
 		references(const mx::usz tok_start,
 				   const mx::usz ref_start,
 				   const mx::usz count,
-				   const mx::usz steps,
 				   const mx::frac& dur) noexcept
-		: header{as::type::references,
-		         steps, dur},
-		  tok_start{tok_start}, ref_start{ref_start}, count{count} {
+		: header{as::type::references, dur},
+		  tok_start{tok_start},
+		  ref_start{ref_start},
+		  count{count} {
 		}
 	};
 
@@ -156,30 +154,9 @@ namespace as {
 		/* params */
 		mx::usz params[pa::max_params];
 
-		/* values */
-		mx::usz values[pa::max_params];
-
 
 		track(const mx::usz (&params)[pa::max_params]) noexcept
-		: header{as::type::track, 0U, {}}, /* uninitialized */
-		  values{
-			  // trig
-			  0,
-			  // note
-			  60,
-			  // gate
-			  50,
-			  // velo
-			  100,
-			  // octa
-			  0,
-			  // semi
-			  0,
-			  // chan
-			  0,
-			  // prob
-			  100,
-		  } {
+		: header{as::type::track, {}} /* uninitialized */ {
 
 			// copy params
 			for (mx::usz i = 0U; i < pa::max_params; ++i)
@@ -202,9 +179,8 @@ namespace as {
 		parameter(void) = delete;
 
 		parameter(const as::remap_range& range,
-				  const mx::usz steps,
 				  const mx::frac& dur) noexcept
-		: header{as::type::parameter, steps, dur},
+		: header{as::type::parameter, dur},
 		  range{range} {
 		}
 	};
@@ -224,10 +200,9 @@ namespace as {
 		group(void) = delete;
 
 		group(const as::remap_range& range,
-			  const mx::usz steps,
 			  const mx::frac& dur) noexcept
-		: header{as::type::group,
-		         steps, dur}, range{range} {
+		: header{as::type::group, dur},
+		  range{range} {
 		}
 	};
 
@@ -246,10 +221,8 @@ namespace as {
 		parallel(void) = delete;
 
 		parallel(const as::remap_range& range,
-				 const mx::usz steps,
 				 const mx::frac& dur) noexcept
-		: header{as::type::parallel,
-		         steps, dur},
+		: header{as::type::parallel, dur},
 		  range{range} {
 		}
 
@@ -275,9 +248,8 @@ namespace as {
 
 		crossfade(const mx::usz left,
 				  const mx::usz right,
-				  const mx::usz steps) noexcept
-		: header{as::type::crossfade,
-		         steps, {}},
+				  const mx::frac& dur) noexcept
+		: header{as::type::crossfade, dur},
 		  left{left}, right{right} {
 		}
 	};
@@ -295,9 +267,9 @@ namespace as {
 
 		mx::frac local;
 
+
 		permutation(void) noexcept
-		: header{as::type::permutation,
-		         0U, {}},
+		: header{as::type::permutation, {}},
 		  range{} {
 		}
 	};
@@ -319,18 +291,40 @@ namespace as {
 		/* child node */
 		mx::usz child;
 
+
 		tempo(void) = delete;
 
 		tempo(const mx::frac& factor,
 			  const bool runtime,
 			  const mx::usz child,
-			  const mx::usz steps,
 			  const mx::frac& dur) noexcept
-		: header{as::type::tempo,
-		         steps, dur},
-		  factor{factor}, runtime{runtime}, child{child} {
+		: header{as::type::tempo, dur},
+		  factor{factor},
+		  runtime{runtime},
+		  child{child} {
 		}
 	};
+
+
+	// -- M O D U L O ---------------------------------------------------------
+
+	struct modulo final {
+
+		/* header */
+		as::header header;
+
+		/* child node */
+		mx::usz child;
+
+
+		modulo(void) = delete;
+		modulo(const mx::usz child,
+			   const mx::frac& dur) noexcept
+		: header{as::type::modulo, dur},
+		  child{child} {
+		}
+
+	}; // struct modulo
 
 } // namespace as
 

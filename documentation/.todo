@@ -79,3 +79,32 @@ not work because reference are not copied
 &bass (\8 &bass)
 
 
+
+# ----
+tempo bug:
+^2 :tr 1 0 0 1 0 0 1 0
+:tr ^2 1 0 0 1 0 0 1 0
+not same signature
+
+
+
+# -----
+More smart fraction reduction system
+
+
+# -----
+highlight modulo operator on first step
+
+
+# -----
+issue when uncomment sequence, edge is always true
+
+# -----
+modulo %0.3
+seen as 1 virtual step
+detect if edge is true in case of step != 1
+
+
+
+# ------
+add monophonic parameter to force only one note at a time

@@ -6,66 +6,312 @@
 
 #include "midi/midi_engine.hpp"
 
+#include "language/ast/storage.hpp"
+#include "midi/constant.hpp"
 #include <unordered_set>
+#include <unordered_map>
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
 
 namespace as {
 
+	struct average final {
+		mx::usz count;
+		mx::isz sum;
+
+		average(void) noexcept
+		: count{0U}, sum{0} {
+		}
+
+		auto add(const mx::i8 v) noexcept -> void {
+			sum += v;
+			++count;
+		}
+
+		auto get_or(const mx::i8 def) const noexcept -> mx::i8 {
+			return count == 0U
+				? def
+				: static_cast<mx::i8>(
+						sum / static_cast<mx::isz>(count)
+				  );
+		}
+
+		auto reset(void) noexcept -> void {
+			count = 0U; sum = 0;
+		}
+	};
+
+	struct notes final {
+
+		mx::u8 states[128U];
+		mx::i8 active[128U];
+		mx::u8 count;
+
+		notes(void) noexcept
+		: states{}, active{}, count{0U} {
+		}
+
+		auto add(const mx::i8 n) noexcept -> void {
+
+			if (states[n] == 0U) {
+				states[n] = 1U;
+				active[count] = n;
+				++count;
+			}
+		}
+
+		auto reset(void) noexcept -> void {
+			for (mx::u8 i = 0U; i < count; ++i) {
+				const mx::i8 n = active[i];
+				states[n] = 0U;
+			}
+			count = 0U;
+		}
+	};
+
+	struct channels final {
+		mx::u8 states[16U];
+		mx::i8 active[16U];
+		mx::u8 count;
+
+		channels(void) noexcept
+		: states{}, active{}, count{0U} {
+		}
+
+		auto add(const mx::i8 c) noexcept -> void {
+
+			if (states[c] == 0U) {
+				states[c] = 1U;
+				active[count] = c;
+				++count;
+			}
+		}
+
+		auto reset(void) noexcept -> void {
+			for (mx::u8 i = 0U; i < count; ++i) {
+				const mx::i8 c = active[i];
+				states[c] = 0U;
+			}
+			count = 0U;
+		}
+	};
 
 	struct event final {
 
 		/* values */
-		mx::usz values[pa::max_params];
-		bool edges[pa::max_params];
+		//mx::usz values[pa::max_params];
+
+		/* trig */
+		bool _trig;
+
+		/* notes */
+		as::notes _nts;
+
+		/* gate */
+		as::average _ga;
+
+		/* velo */
+		as::average _vl;
+
+		/* octa */
+		mx::i8 _oc;
+
+		/* semi */
+		mx::i8 _se;
+
+		/* chan */
+		as::channels _chs;
+
+		/* prob */
+		as::average _pr;
+
+
+
 
 		event(void) noexcept
-		:
-		  values{
-			  0, // trig
-			  60, // note
-			  50, // gate
-			  100, // velo
-			  0, // octa
-			  0, // semi
-			  0, // chan
-			  100, // prob
-		  },
-			edges{} {
+		: _trig{false},
+		  _nts{},
+		  _ga{},
+		  _vl{},
+		  _oc{0},
+		  _se{0},
+		  _chs{},
+		  _pr{} {
 		}
 
+		auto trig(void) noexcept -> void {
+			_trig = true;
+		}
+
+		auto flush(mx::midi_engine& engine) noexcept -> void {
+
+			static bool init = false;
+			if (init == false) {
+				::srand(::getpid());
+				init = true;
+			}
+
+			if (_trig == false)
+				return;
+
+			mx::i8 oc = _oc;
+			mx::i8 se = _se;
+			mx::i8 ga = _ga.get_or(50);
+			mx::i8 vl = _vl.get_or(100);
+			mx::i8 pr = _pr.get_or(100);
+
+
+			// convert gate as ticks
+			//mx::u32 gate = (MIDI_PPQN * static_cast<mx::u32>(ga)) / 100U;
+
+
+			// compute probability
+			const mx::i8 rp = static_cast<mx::i8>(::rand() % 100U);
+			if (rp >= pr) {
+				return;
+			}
+
+			if (_nts.count == 0U)
+				_nts.add(60);
+			if (_chs.count == 0U)
+				_chs.add(0);
+			//std::cout << "Gate: " << gate << '\n';
+
+			for (mx::u8 i = 0U; i < _chs.count; ++i) {
+				const mx::i8 ch = _chs.active[i];
+
+				for (mx::u8 j = 0U; j < _nts.count; ++j) {
+					mx::i8 nt = _nts.active[j];
+
+					nt += (oc * 12);
+					nt += se;
+
+					// probability, will be implemented later...
+
+					engine.note_on(ch, nt, vl, ga);
+				}
+			}
+		}
+
+
+		auto add(const pa::id id, const mx::i8 va) noexcept -> void {
+
+			switch (id) {
+
+				case pa::note:
+					_nts.add(va);
+					break;
+
+				case pa::gate:
+					_ga.add(va);
+					break;
+
+				case pa::velo:
+					_vl.add(va);
+					break;
+
+				case pa::octa:
+					_oc += va; // not good at evaluation rate // maybe OK
+					break;
+
+				case pa::semi:
+					_se += va; // not good at evaluation rate // maybe OK
+					break;
+
+				case pa::chan:
+					_chs.add(va);
+					break;
+
+				case pa::prob:
+					_pr.add(va);
+					break;
+
+
+				default:
+					break;
+			}
+		}
+
+
+
 		auto has_trig(void) const noexcept -> bool {
-			return values[pa::trig] != 0U && edges[pa::trig];
+			return _trig;
 		}
 	};
 
+
+	struct edge final {
+		mx::usz step;
+		mx::frac time;
+	}; // struct edge final
+
+
 	struct frame final {
 		mx::usz node;
+		mx::usz hash;
 		mx::frac time;
-		mx::frac prev;
 		mx::frac speed;
-		bool diverged;
 
 		frame(void) noexcept
 		: node{0U},
+		  hash{0U},
 		  time{},
-		  prev{},
-		  speed{1U, 1U},
-		  diverged{false} {
+		  speed{1U, 1U} {
 		}
 
 		frame(const mx::usz node,
-			  const mx::frac& time,
-			  const mx::frac& prev,
-			  const mx::frac& speed,
-			  const bool diverged = false
-			  ) noexcept
+			  const mx::frac& time) noexcept
 		: node{node},
+		  hash{0U},
 		  time{time},
-		  prev{prev},
-		  speed{speed},
-		  diverged{diverged} {
+		  speed{1U, 1U} {
+		}
+
+		frame(const mx::usz node,
+			  const mx::usz hash,
+			  const mx::frac& time,
+			  const mx::frac& speed) noexcept
+		: node{node},
+		  hash{hash},
+		  time{time},
+		  speed{speed} {
+		}
+	};
+
+	struct hash_run final {
+
+		using map_type = std::unordered_map<mx::usz, as::edge>;
+		using self = as::hash_run;
+
+		map_type _m1;
+		map_type _m2;
+		map_type* _old;
+		map_type* _now;
+
+		hash_run(void) noexcept
+		: _m1{}, _m2{},
+		  _old{&_m1},
+		  _now{&_m2} {
+		}
+
+		auto swap_now(void) noexcept -> void {
+			auto* tmp = _old;
+			_old = _now;
+			_now = tmp;
+			_now->clear();
+		}
+
+		auto operator[](const mx::usz h) noexcept -> as::edge& {
+			return (*_now)[h];
+		}
+
+		auto find(const mx::usz h) noexcept -> typename map_type::iterator {
+			return _old->find(h);
+		}
+
+		auto end(void) noexcept -> typename map_type::iterator {
+			return _old->end();
 		}
 	};
 
@@ -74,19 +320,32 @@ namespace as {
 
 		std::stringstream& hi;
 		mx::midi_engine& engine;
-		std::vector<frame> stack;
+		inline static std::vector<frame> stack{};
+		inline static as::hash_run hashes{};
 
-		std::vector<as::event> events;
+		inline static std::vector<as::event> events{};
 		as::frame fr;
 
+		mx::frac absolute;
 
 		play_ctx(std::stringstream& h, mx::midi_engine& e) noexcept
-		: hi{h}, engine{e}, stack{}, fr{} {
+		: hi{h}, engine{e}, fr{} {
 		}
 
-		template <typename... Ts>
-		auto push(const Ts&... args) -> void {
-			stack.emplace_back(args...);
+		inline mx::u64 hash_combine(mx::u64 h, mx::u64 v) {
+			h ^= v + 0x9e3779b97f4a7c15ULL + (h<<6) + (h>>2);
+			return h;
+		}
+
+		auto push(const mx::usz node,
+				  const mx::frac& time,
+				  const mx::frac& speed) -> void {
+			mx::u64 h = hash_combine(fr.hash, node);
+			stack.emplace_back(node, h, time, speed);
+		}
+
+		auto push(const mx::usz node, const mx::frac& time) -> void {
+			stack.emplace_back(node, time);
 		}
 
 		auto next(void) -> bool {
@@ -105,6 +364,10 @@ namespace as {
 		}
 
 	};
+
+
+
+
 
 
 	// -- T R E E -------------------------------------------------------------
@@ -144,13 +407,6 @@ namespace as {
 			}
 
 
-			/* align up
-			   align a size up to the next multiple of align */
-			template <typename T>
-			static auto _align_up(const mx::usz size) noexcept -> mx::usz {
-				constexpr mx::usz align = std::alignment_of<T>::value;
-				return (size + (align - 1U)) & ~(align - 1U);
-			}
 
 
 
@@ -161,9 +417,11 @@ namespace as {
 			auto play_track(play_ctx&) const -> void;
 			auto play_atomic(play_ctx&) const -> void;
 			auto play_tempo(play_ctx&) const -> void;
+			auto play_modulo(play_ctx&) const -> void;
 			auto play_group(play_ctx&) const -> void;
 			auto play_group2(play_ctx&) const -> void;
 			auto play_reference(play_ctx&) const -> void;
+			auto play_program(play_ctx&) const -> void;
 
 			auto play_parameter(play_ctx&) const -> void;
 
@@ -175,8 +433,7 @@ namespace as {
 			tk::tokens* tokens;
 
 			auto play(std::stringstream&, mx::midi_engine&,
-										  const mx::frac&,
-										  mx::frac&) const -> void;
+										  const mx::frac&) const -> void;
 
 
 			// -- public lifecycle --------------------------------------------
@@ -206,7 +463,7 @@ namespace as {
 			template <typename T, typename... Ts>
 			auto make_node(const Ts&... args) -> mx::usz {
 
-				const mx::usz offset = _align_up<T>(_nodes.size());
+				const mx::usz offset = mx::align_up<T>(_nodes.size());
 				constexpr auto  size = sizeof(T);
 
 				// allocate space
@@ -230,6 +487,19 @@ namespace as {
 				_values.push_back(value);
 			}
 
+			/* value
+			   access value by direct index */
+			auto value_at(const mx::usz index) const /*noexcept*/ -> mx::i8 {
+				if (index >= _values.size()) {
+					std::cout << "Value index out of bounds: " << index
+							  << " >= " << _values.size() << '\n';
+					throw std::runtime_error{"Arena value index out of bounds"};
+				}
+				return _values[index];
+			}
+
+
+
 			/* ref start
 			   get the start index for reference storage */
 			auto ref_start(void) const noexcept -> mx::usz {
@@ -251,17 +521,6 @@ namespace as {
 					throw std::runtime_error{"Arena ref index out of bounds"};
 				}
 				return _refs[index];
-			}
-
-			/* value
-			   access value by direct index */
-			auto value_at(const mx::usz index) const /*noexcept*/ -> mx::i8 {
-				if (index >= _values.size()) {
-					std::cout << "Value index out of bounds: " << index
-							  << " >= " << _values.size() << '\n';
-					throw std::runtime_error{"Arena value index out of bounds"};
-				}
-				return _values[index];
 			}
 
 
@@ -305,7 +564,7 @@ namespace as {
 			   push a pending node index onto the stack
 			   to be flushed later */
 			auto push(const mx::usz index) -> void {
-				_stack.emplace_back(index);
+				_stack.push_back(index);
 			}
 
 			/* push
@@ -426,16 +685,15 @@ namespace as {
 			   append an element to a contiguous range */
 			auto _extend_range(as::remap_range& range,
 							   const mx::usz node) -> void {
-
-				mark();
-
-				// push all children of to range
-				push(range);
-				// push new node
-				push(node);
-
-				// flush and update range
-				range = flush();
+				// manual version
+				const auto size = range.count;
+				range.count += 1U;
+				const auto start = _remap.size();
+				_remap.resize(start + range.count);
+				for (mx::usz i = 0U; i < size; ++i)
+					_remap[start + i] = _remap[range.start + i];
+				_remap[start + size] = node;
+				range.start = start;
 			}
 
 		public:
@@ -460,8 +718,7 @@ namespace as {
 				// get elem header
 				const auto& h = header(add);
 
-				g.header.steps    += h.steps;
-				g.header.dur      += h.dur;
+				g.header.dur += h.dur;
 
 				// reduce duration
 				g.header.dur.reduce();
@@ -471,19 +728,18 @@ namespace as {
 
 			/* extend parameter
 			   extend a parameter node by another node */
-			auto extend_parameter(const mx::usz parameter, const mx::usz add) -> void {
+			auto extend_parameter(const mx::usz param, const mx::usz add) -> void {
 
-				if (!is_parameter(parameter))
+				if (!is_parameter(param))
 					throw std::runtime_error{"extend_parameter: node is not a parameter"};
 
 				// get parameter node
-				auto& p = node<as::parameter>(parameter);
+				auto& p = node<as::parameter>(param);
 
 				// get elem header
 				const auto& h = header(add);
 
-				p.header.steps += h.steps;
-				p.header.dur   += h.dur;
+				p.header.dur += h.dur;
 
 				// reduce duration
 				p.header.dur.reduce();
@@ -507,19 +763,6 @@ namespace as {
 					dur += h->steps;
 
 				return make_node<as::group>(make_range(nodes...), dur);
-			}
-
-			/* sum steps
-			   sum the steps of all nodes in a range */
-			auto sum_steps(const as::remap_range& range) const -> mx::usz {
-
-				mx::usz sum = 0U;
-
-				for (mx::usz i = 0U; i < range.count; ++i) {
-					const auto& h = remap_header(range.start + i);
-					sum += h.steps;
-				}
-				return sum;
 			}
 
 			/* sum duration
@@ -547,18 +790,6 @@ namespace as {
 				return prod;
 			}
 
-			/* product steps
-			   compute the product of steps of all nodes in a range */
-			auto product_steps(const as::remap_range& range) const -> mx::usz {
-				mx::usz prod = 1U;
-
-				for (mx::usz i = 0U; i < range.count; ++i) {
-					const auto& h = remap_header(range.start + i);
-					prod *= h.steps;
-				}
-				return prod;
-			}
-
 
 			/* make range
 			   create a new remap range with given nodes */
@@ -574,20 +805,7 @@ namespace as {
 				return as::remap_range{start, sizeof...(args) + 1U};
 			}
 
-			auto max_steps_of_range(const as::remap_range& range) const -> mx::usz {
-
-				mx::usz max = 0U;
-
-				for (mx::usz i = 0U; i < range.count; ++i) {
-					const auto& h = remap_header(range.start + i);
-					if (h.steps > max)
-						max = h.steps;
-				}
-
-				return max;
-			}
-
-			auto max_duration_of_range(const as::remap_range& range) const -> mx::frac {
+			auto max_range_dur(const as::remap_range& range) const -> mx::frac {
 
 				mx::frac max;
 
@@ -600,6 +818,25 @@ namespace as {
 				return max;
 			}
 
+			/* lcm range
+			   compute the lcm of durations of all nodes in a range */
+			auto lcm_range(const as::remap_range& range) const -> mx::frac {
+
+				mx::frac lcm;
+				if (range.count == 0U)
+					return lcm;
+
+				// get first duration
+				const auto&h0 = remap_header(range.start);
+				lcm = h0.dur;
+
+				for (mx::usz i = 1U; i < range.count; ++i) {
+					const auto& h = remap_header(range.start + i);
+					lcm = mx::lcm_frac(lcm, h.dur);
+				}
+
+				return lcm;
+			}
 
 
 			/* make parallel */
@@ -617,14 +854,14 @@ namespace as {
 					if (rh.type == as::type::parallel) {
 						absorb_range(left, right);
 						const auto& range = range_of(left);
-						lh.steps = max_steps_of_range(range);
-						lh.dur  = max_duration_of_range(range);
+						//lh.dur  = max_range_dur(range);
+						lh.dur  = mx::lcm_frac(lh.dur, rh.dur);
 						return left;
 					}
 					else {
 						extend_range_of(left, right); // append right to left
-						lh.steps = rh.steps > lh.steps ? rh.steps : lh.steps;
-						lh.dur  = rh.dur   > lh.dur   ? rh.dur   : lh.dur;
+						//lh.dur = rh.dur > lh.dur ? rh.dur : lh.dur;
+						lh.dur = mx::lcm_frac(lh.dur, rh.dur);
 						return left;
 					}
 				}
@@ -632,22 +869,17 @@ namespace as {
 				// right is parallel
 				if (rh.type == as::type::parallel) {
 					extend_range_of(right, left); // append left to right
-					rh.steps = lh.steps > rh.steps ? lh.steps : rh.steps;
-					rh.dur  = lh.dur   > rh.dur   ? lh.dur   : rh.dur;
-					//const auto& range = range_of(right);
-					//rh.steps = max_steps_of_range(range);
-					//rh.dur  = max_duration_of_range(range);
+					//rh.dur = lh.dur > rh.dur ? lh.dur : rh.dur;
+					rh.dur = mx::lcm_frac(lh.dur, rh.dur);
 					return right;
 				}
 
 				const auto range = make_range(left, right);
-				auto steps = lh.steps > rh.steps ? lh.steps : rh.steps;
-				auto dur   = lh.dur   > rh.dur   ? lh.dur   : rh.dur;
-				//const auto steps = max_steps_of_range(range);
-				//const auto dur   = max_duration_of_range(range);
+				//auto dur = lh.dur > rh.dur ? lh.dur : rh.dur;
+				auto dur = mx::lcm_frac(lh.dur, rh.dur);
 
 				// create new parallel node
-				return make_node<as::parallel>(range, steps, dur);
+				return make_node<as::parallel>(range, dur);
 			}
 
 			/* absorb range
@@ -706,9 +938,21 @@ namespace as {
 
 			/* make crossfade
 			   create a new crossfade node with given arguments */
-			template <typename... Tp>
-			auto make_crossfade(const Tp&... args) -> mx::usz {
-				return this->make_node<as::crossfade>(args...);
+			auto make_crossfade(const mx::usz left, const mx::usz right) -> mx::usz {
+							
+				// get headers
+				const auto& lh = header(left);
+				const auto& rh = header(right);
+
+				// compute lcm duration
+				const auto dur = mx::lcm_frac(lh.dur, rh.dur);
+
+
+				auto c =  this->make_node<as::crossfade>(
+						left, right, dur
+				);
+
+				return c;
 			}
 
 
@@ -784,7 +1028,7 @@ namespace as {
 			};
 
 			template <typename T, typename... Ts>
-			friend auto make_node(as::tree&, const Ts&...) -> as::tree::make_result<T>;
+			friend auto make_node(const Ts&...) -> as::tree::make_result<T>;
 
 
 
@@ -802,19 +1046,23 @@ namespace as {
 	}; // class arena
 
 
+	inline as::tree* tree_locator = nullptr;
+
+
+
 	/* make node
 	   create a new node in the arena
 	   and return its index and reference */
 	template <typename T, typename... Ts>
-	auto make_node(as::tree& t, const Ts&... args) -> as::tree::make_result<T> {
+	auto make_node(const Ts&... args) -> as::tree::make_result<T> {
 
-		const mx::usz offset = t.template _align_up<T>(t._nodes.size());
+		const auto offset = mx::align_up<T>(tree_locator->_nodes.size());
 
 		// allocate space
-		t._nodes.resize(offset + sizeof(T));
+		tree_locator->_nodes.resize(offset + sizeof(T));
 
 		// pointer
-		void* ptr = t._nodes.data() + offset;
+		void* ptr = tree_locator->_nodes.data() + offset;
 
 		// construct in place
 		::new (ptr) T{args...};
@@ -824,6 +1072,23 @@ namespace as {
 			*reinterpret_cast<T*>(ptr)
 		};
 	}
+
+	/* make group
+	   create a new group node with given two nodes */
+	inline auto make_group(const mx::usz a, const mx::usz b) -> mx::usz {
+		return tree_locator->make_node<as::group>(
+			   tree_locator->make_range(a, b),
+			  (tree_locator->header(a).dur
+			 + tree_locator->header(b).dur).reduce()
+		);
+	}
+
+	/* is group
+	   check if a node is a group */
+	inline auto is_group(const mx::usz index) /*noexcept*/ -> bool {
+		return tree_locator->header(index).type == as::type::group;
+	}
+
 
 
 
@@ -835,230 +1100,165 @@ namespace as {
 
 			const as::tree& _tree;
 			const tk::tokens& _tokens;
-			mx::usz _indent;
-
 
 			printer(const as::tree& t,
 					const tk::tokens& tokens)
-			: _tree{t}, _tokens{tokens}, _indent{0U} {
+			: _tree{t}, _tokens{tokens} {
 			}
 
 
 		public:
 
-
-
-
 			static auto run(const as::tree& tree, const mx::usz root, const tk::tokens& tokens) -> void {
 				std::cout << "\nAST Printer:\n";
-				as::printer{tree, tokens}.print_node(root);
-				std::cout << "End of AST\n\n";
+				as::printer{tree, tokens}.print_node(root, {}, true);
 			}
 
-
-			auto pad(const char* type) const -> void {
-				std::cout << "\x1b[90m| ";
-				for (mx::usz i = 0U; i < _indent; ++i)
-					std::cout << "----";
-				std::cout << "\x1b[0m" << ((_indent > 0U) ? " " : "") << type;
-			}
-
-			void print_node(mx::usz index) {
-
-				switch (_tree.header(index).type) {
-
-					case as::type::program:
-						print_program(index);
-						break;
-
-					case as::type::atomic_values:
-						print_atomic_values(index);
-						break;
-
-					case as::type::references:
-						print_references(index);
-						break;
-
-					case as::type::group:
-						print_group(index);
-						break;
-
-					case as::type::parallel:
-						print_parallel(index);
-						break;
-
-					case as::type::crossfade:
-						print_crossfade(index);
-						break;
-
-					case as::type::track:
-						print_track(index);
-						break;
-
-					case as::type::parameter:
-						print_parameter(index);
-						break;
-
-					case as::type::permutation:
-						print_permutation(index);
-						break;
-
-					case as::type::tempo:
-						print_tempo(index);
-						break;
-
-
-					default:
-						pad("unknown");
-						break;
+			auto node_name(const as::header& h) const -> std::string {
+				switch (h.type) {
+					case as::type::program:      return "PROGRAM";
+					case as::type::group:        return "\x1b[90m☐\x1b[0m group";
+					case as::type::track:        return "\x1b[90m♬\x1b[0m track";
+					case as::type::parameter:    return "\x1b[90m⚙\x1b[0m param";
+					case as::type::tempo:        return "\x1b[90m↻\x1b[0m tempo";
+					case as::type::modulo:       return "\x1b[90m⧗\x1b[0m modulo";
+					case as::type::atomic_values:return "\x1b[90m↘\x1b[0m []";
+					case as::type::references:   return "\x1b[90m⚭\x1b[0m refs";
+					case as::type::parallel:     return "\x1b[90m☰\x1b[0m parallel";
+					case as::type::crossfade:    return "\x1b[90m⇋\x1b[0m crossfade";
+					case as::type::permutation:  return "\x1b[90m☷\x1b[0m permutation";
+					default:                     return "unknown";
 				}
 			}
 
-			class indent_guard {
 
-				private:
-					mx::usz& indent;
+			void print_node(mx::usz index,
+					const std::vector<bool>& prefix,
+					const bool last) {
 
-				public:
-					indent_guard(mx::usz& ind)
-					: indent{ind} {
-						++indent;
-					}
-
-					~indent_guard(void) noexcept {
-						--indent;
-					}
-			};
+				// get children
+				const auto children = get_children(index);
+				const auto& h = _tree.header(index);
 
 
-			auto print_range(const as::remap_range& range) -> void {
-				mx::usz it  = range.start;
-				mx::usz end = it + range.count;
-
-				for (; it < end; ++it)
-					print_node(_tree.remap_index(it));
-			}
-
-
-			auto print_program(const mx::usz index) -> void {
-				const auto& n = _tree.node<as::program>(index);
-
-				pad("program ");
-				print_time(n.header, '\n');
-
-				indent_guard ig{_indent};
-				print_range(n.range);
-			}
-
-			auto print_tempo(mx::usz index) -> void {
-				const auto& n = _tree.node<as::tempo>(index);
-
-				pad("tempo ");
-				print_time(n.header, ' ', n.factor, '\n');
-
-				indent_guard ig{_indent};
-				print_node(n.child);
-			}
-
-
-			auto print_permutation(mx::usz index) -> void {
-				const auto& n = _tree.node<as::permutation>(index);
-
-				pad("permutation ");
-				print_time(n.header, '\n');
-
-				indent_guard ig{_indent};
-				print_range(n.range);
-			}
-
-			auto print_track(mx::usz index) -> void {
-				const auto& n = _tree.node<as::track>(index);
-
-				pad("track ");
-				print_time(n.header, '\n');
-
-				indent_guard ig{_indent};
-				for (mx::usz i = 0U; i < pa::max_params; ++i) {
-					if (n.params[i] != 0U)
-						print_parameter(n.params[i]);
+				std::cout << "\x1b[90m";
+				// Draw the prefix bars
+				for (mx::usz i = 0; i < prefix.size(); ++i) {
+					if (prefix[i])
+						std::cout << "│  ";
+					else
+						std::cout << "   ";
 				}
-			}
 
-			auto print_parameter(mx::usz index) -> void {
-				const auto& n = _tree.node<as::parameter>(index);
+				std::cout << (last ? "╰─" : "├─");
 
-				pad("parameter ");
-				print_time(n.header, '\n');
+				if (children.empty())
+					std::cout << "── ";
+				else
+					std::cout << "─╮ ";
 
-				indent_guard ig{_indent};
-				print_range(n.range);
-			}
+				std::cout << "\x1b[0m" << node_name(h) << " ";
+				std::cout << "\x1b[34m"
+						  << h.dur.num
+						  << "\x1b[90m/\x1b[33m"
+						  << h.dur.den
+						  << "\x1b[0m";
 
-			auto print_group(mx::usz index) -> void {
-				const auto& n = _tree.node<as::group>(index);
+				if (h.type == as::type::atomic_values) {
 
-				pad("group ");
-				print_time(n.header, '\n');
+					std::cout << " \x1b[90m[\x1b[32m";
+					const auto& n = _tree.node<as::atomic_values>(index);
+					for (mx::usz i = 0; i < n.count; ++i) {
+						const auto v = _tree.value_at(n.value_start + i);
+						std::cout << static_cast<mx::i32>(v) << (i + 1 < n.count ? " " : "");
+					}
+					std::cout << "\x1b[90m]\x1b[0m\n";
 
-				indent_guard ig{_indent};
-				print_range(n.range);
-			}
-
-			auto print_parallel(mx::usz index) -> void {
-				const auto& n = _tree.node<as::parallel>(index);
-
-				pad("parallel ");
-				print_time(n.header, '\n');
-
-				indent_guard ig{_indent};
-				print_range(n.range);
-			}
-
-			auto print_crossfade(mx::usz index) -> void {
-				const auto& n = _tree.node<as::crossfade>(index);
-
-				pad("crossfade ");
-				print_time(n.header, '\n');
-
-				indent_guard ig{_indent};
-				print_node(n.left);
-				print_node(n.right);
-			}
-
-			auto print_atomic_values(mx::usz index) -> void {
-				const auto& n = _tree.node<as::atomic_values>(index);
-
-				pad("atomic values ");
-				print_time(n.header, " ");
-
-				for (mx::usz i = 0; i < n.header.steps; ++i) {
-					const auto v = _tree.value_at(n.value_start + i);
-					std::cout << static_cast<mx::i32>(v) << " ";
+					return;
 				}
 				std::cout << "\n";
-			}
-
-			template <typename... Ts>
-			auto print_time(const as::header& h, const Ts&... args) -> void {
-				std::cout << "[\x1b[32m" << h.steps << "\x1b[0m][\x1b[34m"
-						  << h.dur << "\x1b[0m] ";
-				((std::cout << args), ...);
-			}
 
 
-			auto print_references(mx::usz index) -> void {
-				const auto& n = _tree.node<as::references>(index);
+				// For each child, update prefix and recurse
+				for (mx::usz i = 0; i < children.size(); ++i) {
 
-				pad("references ");
-				print_time(n.header);
+					bool is_last = (i == children.size() - 1);
 
-				if (n.count != 0U)
-					std::cout << "\n";
-				for (mx::usz i = 0U; i < n.count; ++i) {
-					auto idx = _tree.ref_at(n.ref_start + i);
-					indent_guard ig{_indent};
-					print_node(idx);
+					auto new_prefix = prefix;
+					new_prefix.push_back(!last);  // continue vertical line if parent not last
+
+					print_node(children[i], new_prefix, is_last);
 				}
+			}
+
+
+			auto get_children(mx::usz index) -> std::vector<mx::usz> {
+
+				std::vector<mx::usz> out;
+
+				const auto& h = _tree.header(index);
+
+				switch (h.type)
+				{
+					case as::type::program:
+					case as::type::group:
+					case as::type::parallel:
+					case as::type::permutation:
+						{
+							const auto& n = _tree.node<as::group>(index);
+							for (mx::usz i = n.range.start; i < n.range.end(); ++i)
+								out.push_back(_tree.remap_index(i));
+							break;
+						}
+
+					case as::type::track:
+						{
+							const auto& n = _tree.node<as::track>(index);
+							for (mx::usz i = 0; i < pa::max_params; ++i)
+								if (n.params[i])
+									out.push_back(n.params[i]);
+							break;
+						}
+
+					case as::type::parameter:
+						{
+							const auto& n = _tree.node<as::parameter>(index);
+							for (mx::usz i = n.range.start; i < n.range.end(); ++i)
+								out.push_back(_tree.remap_index(i));
+							break;
+						}
+
+					case as::type::tempo: {
+						const auto& n = _tree.node<as::tempo>(index);
+						out.push_back(n.child);
+						break;
+					}
+
+					case as::type::modulo: {
+						const auto& n = _tree.node<as::modulo>(index);
+						out.push_back(n.child);
+						break;
+					}
+
+					case as::type::references: {
+						const auto& n = _tree.node<as::references>(index);
+						for (mx::usz i = 0; i < n.count; ++i)
+							out.push_back(_tree.ref_at(n.ref_start + i));
+						break;
+					}
+
+					case as::type::crossfade: {
+						const auto& n = _tree.node<as::crossfade>(index);
+						out.push_back(n.left);
+						out.push_back(n.right);
+						break;
+					}
+
+						// atomic / permutation : pas d’enfants
+					default: break;
+				}
+
+				return out;
 			}
 
 	};

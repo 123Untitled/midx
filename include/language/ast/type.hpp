@@ -23,6 +23,7 @@ namespace as {
 		permutation,
 
 		tempo,
+		modulo,
 
 		references,
 		atomic_values,

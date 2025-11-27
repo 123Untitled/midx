@@ -122,11 +122,13 @@ namespace mx {
 			auto flush(void) -> void {
 
 				// add clock tick event
-				_evs.tick();
+				//_evs.tick();
 
 				// send events
-				_evs.send(_srcs[0U]);
-				_evs.clear();
+				if (not _evs.empty()) {
+					_evs.send(_srcs[0U]);
+					_evs.clear();
+				}
 
 				// increment epoch, reset if overflow
 				if (_epoch == 0xFFFFU) {

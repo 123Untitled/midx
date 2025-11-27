@@ -114,13 +114,16 @@ namespace pr {
 
 
 			/* parse expression */
-			template <pr::level L>
+			template <pr::level>
 			auto parse_expr(const pr::precedence) -> mx::usz;
 
 
 
-			template <pr::level L>
+			template <pr::level>
 			auto nud_tempo(const mx::usz) -> mx::usz;
+
+			template <pr::level>
+			auto nud_modulo(const mx::usz) -> mx::usz;
 
 			auto nud_value(const mx::usz) -> mx::usz;
 

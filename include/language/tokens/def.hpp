@@ -47,6 +47,10 @@ namespace tk {
 		mx::usz start;
 		// count
 		mx::usz count;
+
+		auto operator==(const tk::id type) const noexcept -> bool {
+			return this->id == type;
+		}
 	};
 
 
@@ -57,9 +61,6 @@ namespace tk {
 		// identifier [a-z][a-zA-Z0-9_]*
 		identifier,
 
-		// assignment =
-		assignment,
-
 		// separator ;
 		separator,
 
@@ -68,6 +69,9 @@ namespace tk {
 		// tempo ^2 \2
 		tempo_fast,
 		tempo_slow,
+
+		// modulo %
+		modulo,
 
 		// parallel |
 		parallel,
@@ -92,6 +96,7 @@ namespace tk {
 		octal,
 		decimal,
 		hexadecimal,
+		floating,
 
 		// () [] {}
 		priority_open,
@@ -148,21 +153,16 @@ namespace tk {
 		// identifier
 		"identifier",
 
-		// assignment =
-		"assignment",
-
 		// separator ;
 		"separator",
 
-		// + - * /
-		//"add",
-		//"subtract",
-		//"multiply",
-		//"divide",
 
 		// tempo ^2 \2
 		"tempo_fast",
 		"tempo_slow",
+
+		// modulo %
+		"modulo",
 
 		// parallel |
 		"parallel",
@@ -187,6 +187,7 @@ namespace tk {
 		"octal",
 		"decimal",
 		"hexadecimal",
+		"floating",
 
 		// () [] {}
 		"priority_open",
@@ -234,21 +235,17 @@ namespace tk {
 		// identifier
 		"\x1b[37m",
 
-		// assignment =
-		"\x1b[33m",
-
 		// separator ;
 		"\x1b[90m",
 
-		// + - * /
-		//"\x1b[33m",
-		//"\x1b[33m",
-		//"\x1b[33m",
-		//"\x1b[33m",
 
 		// tempo ^2 \2
 		"\x1b[32m",
 		"\x1b[32m",
+
+		// modulo %
+		"\x1b[36m",
+
 
 		// parallel |
 		"\x1b[36m",
@@ -268,6 +265,7 @@ namespace tk {
 		"\x1b[94m",
 
 		// numbers
+		"\x1b[31m",
 		"\x1b[31m",
 		"\x1b[31m",
 		"\x1b[31m",
@@ -297,20 +295,17 @@ namespace tk {
 
 		// identifier
 		"Identifier",
-		// assignment =
-		"Operator",
 		// separator ;
 		"Delimiter",
 
-		// + - * /
-		//"Operator",
-		//"Operator",
-		//"Operator",
-		//"Operator",
 
 		// tempo ^2 \2
 		"StorageClass",
 		"StorageClass",
+
+		// modulo %
+		"Keyword",
+
 
 		// parallel |
 		"Operator",
@@ -330,6 +325,7 @@ namespace tk {
 		"Function",
 
 		// numbers
+		"Number",
 		"Number",
 		"Number",
 		"Number",

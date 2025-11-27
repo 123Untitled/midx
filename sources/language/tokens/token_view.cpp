@@ -91,9 +91,9 @@ auto operator<<(std::ostream& os, const tk::const_token_view& tv) -> std::ostrea
 	const auto id = tv.id();
 	const auto len = tk::max_name_len - std::strlen(tk::names[id]);
 
-	//os << tk::colors[id] << tk::names[id] << "\x1b[0m";
-	//for (mx::usz i = 0U; i < len; ++i)
-	//	os << ' ';
+	os << tk::colors[id] << tk::names[id] << "\x1b[0m";
+	for (mx::usz i = 0U; i < len; ++i)
+		os << ' ';
 	os << "'";
 
 	tv.for_each_chunk(

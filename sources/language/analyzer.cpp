@@ -31,20 +31,10 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 	// lex
 	_lexer.lex(_data, _tokens, _diagnostic);
 
-	//_tokens.debug();
-
-	//for (const auto& tv : _tokens.filtered()) {
-	//	std::cout << tv << '\n';
-	//}
+	_tokens.debug();
 
 	// parse
 	_parser.parse(_tokens, _tree, _diagnostic);
-
-	//_builder.build(_tree, _model, _diagnostic);
-
-	//_tree.debug();
-	//_tokens.debug(br);
-
 
 
 	std::stringstream ss;

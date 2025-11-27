@@ -26,8 +26,6 @@ namespace pa {
 		chan,
 		prob,
 
-		dura,
-
 		invalid,
 		max_params
 	};
@@ -53,8 +51,7 @@ namespace pa {
 				pa::entry<pa::octa, "octa", "oc">,
 				pa::entry<pa::semi, "semi", "se">,
 				pa::entry<pa::chan, "chan", "ch">,
-				pa::entry<pa::prob, "prob", "pr">,
-				pa::entry<pa::dura, "dura", "du">
+				pa::entry<pa::prob, "prob", "pr">
 				> t;
 
 		if (tv.num_chunks() == 2U)

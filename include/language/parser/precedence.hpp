@@ -16,10 +16,11 @@ namespace pr {
 
 		parallel   = 20U,
 		crossfade  = 30U,
+		tempo      = 40U,
+		modulo     = 50U,
 
 
 		grouping   = 80U,
-		tempo      = 90U,
 	};
 
 } // namespace pr

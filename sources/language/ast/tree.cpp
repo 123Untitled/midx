@@ -22,40 +22,55 @@ auto highlight(std::stringstream& ss,
 	);
 }
 
-auto as::tree::play_atomic(play_ctx& ctx) const -> void {
-	auto& atomic = node<as::atomic_values>(ctx.fr.node);
 
-	const auto time = ctx.fr.time * ctx.fr.speed;
-	const auto step = atomic.step_from_time(time);
+auto as::tree::play_atomic(play_ctx& ctx) const -> void {
+
+	const auto& a = node<as::atomic_values>(ctx.fr.node);
+
+	const auto time = a.header.mod(ctx.fr.time * ctx.fr.speed);
+	const auto step = a.count != 1U ? a.step_from_time(time) : 0U;
 
 	bool edge = true;
 
-	if (!ctx.fr.diverged) {
-		const auto prev      = ctx.fr.prev * ctx.fr.speed;
-		const auto prev_step = atomic.step_from_time(prev);
-		edge = (step != prev_step);
-	}
+	auto hash = ctx.hash_combine(ctx.fr.node, step);
 
-	const auto value = value_at(atomic.value_start + step);
+	const auto it = ctx.hashes.find(hash);
 
-	if (atomic.param_id == pa::trig) {
+	if (it != ctx.hashes.end())
+		edge = time < it->second.time;
+
+	ctx.hashes[hash] = as::edge{step, time};
+
+	auto& ev = ctx.events.back();
+	const auto value = value_at(a.value_start + step);
+
+
+	//mx::usz ticks_to_next = 0U;
+
+	if (a.param_id == pa::trig) {
+
 		if (edge && value != 0) {
-			ctx.events.back().edges[atomic.param_id]  = true;
-			ctx.events.back().values[atomic.param_id] = value;
+			ev.trig();
 		}
 	}
 	else {
-		ctx.events.back().edges[atomic.param_id]  = edge;
-		ctx.events.back().values[atomic.param_id] = value;
+		if (a.param_id == pa::gate) {
+			//mx::frac step_dur = a.header.dur / a.count;
+			//mx::frac gate_frac{(mx::usz)value, 100};
+			//mx::frac gate_dur = (step_dur * gate_frac).reduce();
+			//mx::u64 gate_ticks = (gate_dur.num * MIDI_PPQN) / gate_dur.den;
+		}
+		//else {
+			ev.add(a.param_id, value);
+		//}
 	}
 
-	//if (edge) {
-	auto tv = tokens->filtered_view(
-			atomic.token_start + step);
-		highlight(ctx.hi, tv, "IncSearch");
-	//}
+	const auto tv = tokens->filtered_view(a.token_start + step);
+	highlight(ctx.hi, tv, "IncSearch");
 }
 
+			//step = a.step_from_time(time);
+			//edge = step != it->second.step;
 
 
 
@@ -64,36 +79,26 @@ auto as::tree::play_group(play_ctx& ctx) const -> void {
 	const auto& g = node<as::group>(ctx.fr.node);
 
 	auto time = g.header.mod(ctx.fr.time * ctx.fr.speed);
-	auto prev = g.header.mod(ctx.fr.prev * ctx.fr.speed);
 
 		  auto it  = g.range.start;
     const auto end = g.range.end();
 
-	bool diverged = false;
     for (; it < end; ++it) {
 		   mx::usz node = remap_index(it);
         const auto& dur = header(node).dur;
 
 		if (time < dur) {
 			// push node and local tick
-			ctx.push(node,
-					(time / ctx.fr.speed),
-					(prev / ctx.fr.speed),
-					ctx.fr.speed, diverged);
+			ctx.push(node, (time / ctx.fr.speed), ctx.fr.speed);
 			return;
 		}
 		time -= dur;
-		if (prev < dur) {
-			diverged = true;
-		}
-		else {
-			prev -= dur;
-		}
 	}
 }
 
 
 auto as::tree::play_tempo(play_ctx& ctx) const -> void {
+
 	const auto& t = node<as::tempo>(ctx.fr.node);
 
 	const auto speed = (t.runtime == true)
@@ -103,8 +108,14 @@ auto as::tree::play_tempo(play_ctx& ctx) const -> void {
 	// push child node with full duration
 	ctx.push(t.child,
 			ctx.fr.time,
-			ctx.fr.prev,
 			speed);
+}
+
+auto as::tree::play_modulo(play_ctx& ctx) const -> void {
+	const auto& m = node<as::modulo>(ctx.fr.node);
+
+	// push child node with modulated time
+	ctx.push(m.child, ctx.fr.time, ctx.fr.speed);
 }
 
 
@@ -117,10 +128,7 @@ auto as::tree::play_reference(play_ctx& ctx) const -> void {
 	const auto end = r.ref_start + r.count;
 
 	auto time = r.header.mod(ctx.fr.time * ctx.fr.speed);
-	auto prev = r.header.mod(ctx.fr.prev * ctx.fr.speed);
 
-
-	bool diverged = false;
 	// loop over referenced nodes
 	for (; it < end; ++it, ++tk) {
 		const auto node = ref_at(it);
@@ -128,24 +136,16 @@ auto as::tree::play_reference(play_ctx& ctx) const -> void {
 
 		if (time < dur) {
 			// push node and local tick
-			ctx.push(node,
-					(time / ctx.fr.speed),
-					(prev / ctx.fr.speed),
-					ctx.fr.speed, diverged);
+			ctx.push(node, (time / ctx.fr.speed), ctx.fr.speed);
 			break;
 		}
 		time -= dur;
-		if (prev < dur) {
-			diverged = true;
-		}
-		else {
-			prev -= dur;
-		}
 	}
 
 	auto tv = tokens->filtered_view(tk);
 	highlight(ctx.hi, tv, "Underlined");
 }
+
 
 
 auto as::tree::play_track(play_ctx& ctx) const -> void {
@@ -154,7 +154,6 @@ auto as::tree::play_track(play_ctx& ctx) const -> void {
 	const auto& fr = ctx.fr;
 
 	const auto time = tr.header.mod(fr.time * fr.speed);
-	const auto prev = tr.header.mod(fr.prev * fr.speed);
 
 	ctx.events.emplace_back();
 	const auto mark = ctx.stack.size();
@@ -168,73 +167,36 @@ auto as::tree::play_track(play_ctx& ctx) const -> void {
 		const auto& p = node<as::parameter>(n);
 
         auto pt  = p.header.mod(time);
-		auto pp  = p.header.mod(prev);
 
         auto it  = p.range.start;
         auto end = p.range.end();
 
-		bool diverged = false;
         for (; it < end; ++it) {
             const auto node = remap_index(it);
             const auto& dur = header(node).dur;
 
             if (pt < dur) {
-				ctx.push(node, (pt / fr.speed),
-							   (pp / fr.speed), fr.speed, diverged);
+				ctx.push(node, (pt / fr.speed), fr.speed);
 				break;
 			}
-
 			pt -= dur;
-			if (pp < dur) {
-				diverged = true;
-			}
-			else {
-				pp -= dur;
-			}
         }
     }
 
 	while (ctx.next_until(mark))
 		dispatch_play(ctx);
 
-	// finalize events
-	if (!ctx.events.back().has_trig()) {
-		ctx.events.pop_back();
-		return;
-	}
-	else {
-		mx::i8 ch   = ctx.events.back().values[pa::chan];
-		mx::i8 note = ctx.events.back().values[pa::note];
-		mx::i8 velo = ctx.events.back().values[pa::velo];
 
-		ctx.engine.note_on(ch, note, velo, 10);
-		//static mx::usz count = 0U;
-		//std::cout << "Track Event: " << count++ << '\n';
-	}
+	ctx.events.back().flush(ctx.engine);
+	ctx.events.pop_back();
 }
 
+auto as::tree::play_program(play_ctx& ctx) const -> void {
 
+	const auto& p = node<as::program>(ctx.fr.node);
 
-auto as::tree::play(std::stringstream& hi,
-					mx::midi_engine& engine,
-					const mx::frac& time,
-						  mx::frac& prev) const -> void {
-
-	as::play_ctx ctx{hi, engine};
-
-	// get root node
-	const auto& root = node<as::program>(0U);
-
-	if (prev.num == 0 && prev.den == 0) {
-		//prev = root.header.dur - mx::frac{1U, 1U};
-		prev = mx::frac{root.header.dur.num
-					  * root.header.dur.den - 1,
-						root.header.dur.den }.reduce();
-
-	}
-
-		   auto it = root.range.start;
-	const auto end = root.range.end();
+		  auto it  = p.range.start;
+	const auto end = p.range.end();
 
 	// loop over child nodes
 	for (; it < end; ++it) {
@@ -242,11 +204,26 @@ auto as::tree::play(std::stringstream& hi,
 		const auto& h   = header(node);
 
 		// push node and local tick
-		ctx.push(node, h.mod(time), h.mod(prev), mx::frac{1U, 1U});
-
-		while (ctx.next())
-			dispatch_play(ctx);
+		ctx.push(node, h.mod(ctx.fr.time), mx::frac{1U, 1U});
 	}
+}
+
+
+auto as::tree::play(std::stringstream& hi,
+					mx::midi_engine& engine,
+					const mx::frac& time) const -> void {
+
+	as::play_ctx ctx{hi, engine};
+	ctx.hashes.swap_now();
+	ctx.stack.clear();
+	ctx.events.clear();
+	ctx.absolute = time;
+
+	// push root node
+	ctx.push(0U, time);
+
+	while (ctx.next())
+		dispatch_play(ctx);
 }
 
 
@@ -269,9 +246,9 @@ auto as::tree::dispatch_play(play_ctx& ctx) const -> void {
 			play_parallel(ctx);
 			break;
 
-		//case as::type::crossfade:
-			// not implemented...
-			//break;
+		case as::type::crossfade:
+			play_crossfade(ctx);
+			break;
 
 		case as::type::track:
 			play_track(ctx);
@@ -285,8 +262,16 @@ auto as::tree::dispatch_play(play_ctx& ctx) const -> void {
 			play_tempo(ctx);
 			break;
 
+		case as::type::modulo:
+			play_modulo(ctx);
+			break;
+
 		case as::type::permutation:
 			// not implemented...
+			break;
+
+		case as::type::program:
+			play_program(ctx);
 			break;
 
 		default:
@@ -302,7 +287,6 @@ auto as::tree::play_parallel(play_ctx& ctx) const -> void {
 	const auto end = p.range.end();
 
 	auto time = p.header.mod(ctx.fr.time * ctx.fr.speed);
-	auto prev = p.header.mod(ctx.fr.prev * ctx.fr.speed);
 
 	// loop over child nodes
 	for (; it < end; ++it) {
@@ -311,16 +295,59 @@ auto as::tree::play_parallel(play_ctx& ctx) const -> void {
 
 		// time inside this child's cycle
         const auto ti = h.mod(time);
-		const auto pr = h.mod(prev);
 
 		// push child node and local tick
-		ctx.push(node,
-				ti / ctx.fr.speed,
-				pr / ctx.fr.speed,
-				ctx.fr.speed);
+		ctx.push(node, ti / ctx.fr.speed, ctx.fr.speed);
 	}
 }
 
+
+auto as::tree::play_crossfade(play_ctx& ctx) const -> void {
+
+	return;
+	const auto& cf = node<as::crossfade>(ctx.fr.node);
+	const auto& h  = cf.header;
+
+	const auto time = cf.header.mod(ctx.fr.time * ctx.fr.speed);
+
+	// get total duration in ticks
+	const auto ticks = h.dur.num * MIDI_PPQN / h.dur.den;
+	const auto current = time.num * MIDI_PPQN / time.den;
+	//std::cout << "Crossfade total ticks: " << ticks << "\n";
+	//std::cout << "Crossfade current tick: " << current << "\n";
+
+	double accumulated = 0.0;
+
+	for (mx::usz i = 0; i < ticks; ++i) {
+        // Densité linéaire de 0 à 1
+        double density = (ticks > 1) ? static_cast<double>(i) / (ticks - 1) : 0.0;
+
+        // Accumuler la densité
+        accumulated += density;
+
+        
+		// Placer un 1 si l'accumulateur dépasse 1.0
+		if (accumulated >= 1.0) {
+
+			accumulated -= 1.0;      // Réinitialiser l'erreur
+			// Push right node
+			if (i == current) {
+				ctx.push(cf.right, (ctx.fr.time * ctx.fr.speed), ctx.fr.speed);
+				break;
+			}
+		}
+		else {
+			// Push left node
+			if (i == current) {
+				ctx.push(cf.left, (ctx.fr.time * ctx.fr.speed), ctx.fr.speed);
+				break;
+			}
+		}
+    }
+
+
+	//totalDuration.numerator * MIDI_PPQN / totalDuration.denominator;
+}
 
 
 //auto as::tree::play_permutation(play_ctx& ctx) const -> void {
@@ -346,20 +373,4 @@ auto as::tree::play_parallel(play_ctx& ctx) const -> void {
 //    }
 //}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // GOOD IMPLEMENTATION FOR REFERENCE PLAYBACK
-
-

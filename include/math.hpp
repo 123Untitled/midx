@@ -41,7 +41,8 @@ namespace mx {
 	inline auto safe_mul(mx::usz a, mx::usz b) noexcept -> mx::usz {
 		mx::usz res;
 		while (__builtin_mul_overflow(a, b, &res))
-			a >>= 1, b >>= 1;
+			a /= 2, b /= 2;
+			//a >>= 1, b >>= 1;
 		return res;
 	}
 
@@ -100,21 +101,32 @@ namespace mx {
 			//	return 0;
 			//}
 
+
 			/* reduce
 			   reduce the fraction to its simplest form */
-			constexpr auto reduce(void) noexcept -> self& {
+			auto reduce(void) noexcept -> self& {
 
 				const auto g = mx::gcd(num, den);
 				num /= g;
 				den /= g;
 
 				// racine carre de mx::usz max
+				auto sq = ::pow(2U, 32U);
+
 
 				// OPTIMISATION POSSIBLE
-				while (num > 1000000U || den > 1000000U) {
-					num >>= 1U;
-					den >>= 1U;
+				while (num > sq || den > sq) {
+					num /= 2U;
+					den /= 2U;
+					const auto gg = mx::gcd(num, den);
+					num /= gg;
+					den /= gg;
 				}
+
+				//if (den == 0U) {
+				//	num = 1U;
+				//	den = 1U;
+				//}
 
 				return *this;
 			}
@@ -182,10 +194,16 @@ namespace mx {
 
 
 			/* divide operator */
-			constexpr auto operator/(const frac& other) const -> frac {
+			constexpr auto operator/(const self& other) const -> frac {
 
 				return self{safe_mul(num, other.den),
 							safe_mul(den, other.num)};
+			}
+
+
+			/* divide operator with integer */
+			constexpr auto operator/(const value_type other) const -> frac {
+				return self{num, safe_mul(den, other)};
 			}
 
 
@@ -296,9 +314,9 @@ namespace mx {
 
 
 
-		inline auto frac_mod(const mx::frac& a, const mx::frac& b) noexcept -> mx::frac
-		{
-			if ((mx::usz)a.num * b.den < (mx::usz)b.num * a.den)
+		inline auto frac_mod(const mx::frac& a, const mx::frac& b) noexcept -> mx::frac {
+
+			if (safe_mul(a.num, b.den) < safe_mul(b.num, a.den))
 				return a;
 
 			mx::usz lhs_num = a.num;

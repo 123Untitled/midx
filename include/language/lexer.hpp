@@ -89,8 +89,14 @@ namespace lx {
 			/* lex number */
 			auto lex_number(void) -> void;
 
+			/* lex floating */
+			auto lex_floating(void) -> void;
+
 			/* lex tempo */
 			auto lex_tempo(const tk::id) -> void;
+
+			/* lex modulo */
+			auto lex_modulo(void) -> void;
 
 			/* lex parameter */
 			auto lex_parameter(void) -> void;

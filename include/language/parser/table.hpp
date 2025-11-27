@@ -47,7 +47,7 @@ namespace pr {
 			.pre = pr::precedence::tempo,
 			//.pre = pr::precedence::none,
 			// can start, is prefix, is infix, is postfix
-			true, false, true, false
+			true, true, false, false
 		};
 	}
 
@@ -92,9 +92,6 @@ namespace pr {
 		// identifier
 		pr::rule_empty(),
 
-		// assignment =
-		pr::rule_empty(),
-
 		// separator ;
 		pr::rule_empty(),
 
@@ -102,6 +99,18 @@ namespace pr {
 		// tempo ^2 \2
 		pr::rule_tempo<L>(),
 		pr::rule_tempo<L>(),
+
+		// modulo %
+		{
+			// nud
+			nullptr,
+			// led
+			&pr::parser::nud_modulo<L>,
+			// precedence
+			pr::precedence::modulo,
+			// can start, is prefix, is infix, is postfix
+			true, true, false, false
+		},
 
 		// parallel
 		{
@@ -163,15 +172,18 @@ namespace pr {
 
 
 		// -- numbers ---------------------------------------------------------
-		// note,
+
+		// note
 		rule_number<L>(),
-		// binary,
+		// binary
 		rule_number<L>(),
-		// octal,
+		// octal
 		rule_number<L>(),
-		// decimal,
+		// decimal
 		rule_number<L>(),
-		// hexadecimal,
+		// hexadecimal
+		rule_number<L>(),
+		// floating
 		rule_number<L>(),
 
 

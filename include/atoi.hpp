@@ -114,13 +114,6 @@ namespace mx {
 		constexpr static bool   neg = false;
 	}; // struct overflow
 
-	template <>
-	struct overflow<pa::dura> {
-		non_instantiable_class(overflow);
-		constexpr static mx::i8 max = 127;
-		constexpr static mx::i8 min = 0;
-		constexpr static bool   neg = false;
-	}; // struct overflow
 
 
 	/* convert integer */
@@ -216,7 +209,6 @@ namespace mx {
 		&mx::convert<pa::semi, mx::dec, NEG>,
 		&mx::convert<pa::chan, mx::dec, NEG>,
 		&mx::convert<pa::prob, mx::dec, NEG>,
-		&mx::convert<pa::dura, mx::dec, NEG>
 	};
 
 	/* convert binary */
@@ -230,7 +222,6 @@ namespace mx {
 		&mx::convert<pa::semi, mx::bin, NEG>,
 		&mx::convert<pa::chan, mx::bin, NEG>,
 		&mx::convert<pa::prob, mx::bin, NEG>,
-		&mx::convert<pa::dura, mx::bin, NEG>
 	};
 
 	/* convert octal */
@@ -244,7 +235,6 @@ namespace mx {
 		&mx::convert<pa::semi, mx::oct, NEG>,
 		&mx::convert<pa::chan, mx::oct, NEG>,
 		&mx::convert<pa::prob, mx::oct, NEG>,
-		&mx::convert<pa::dura, mx::oct, NEG>
 	};
 
 	/* convert hexadecimal */
@@ -258,130 +248,104 @@ namespace mx {
 		&mx::convert<pa::semi, mx::hex, NEG>,
 		&mx::convert<pa::chan, mx::hex, NEG>,
 		&mx::convert<pa::prob, mx::hex, NEG>,
-		&mx::convert<pa::dura, mx::hex, NEG>
 	};
 
 
+	template <typename T, T MIN, T MAX, typename B, bool NEG>
+	auto convert2(const mx::i8* it,
+				  const mx::i8* end,
+				  T& num,
+				 an::diagnostic& diag) noexcept -> bool {
 
+		constexpr T mul_limit = NEG ? (MIN / B::base) : MAX / B::base;
 
+		num = static_cast<T>(0);
 
-	//auto convert(const tk::token_view& tv,
-	//			 an::diagnostic& diag) noexcept -> mx::i8 {
-	//}
-
-
-
-			//struct alteration final {
-			//	const bool sharp;
-			//	const bool flat;
-			//};
-			//
-			//constexpr mx::u8 notes[] {
-			//	9U, 11U, 0U, 2U, 4U, 5U, 7U
-			//};
-			//
-			//constexpr alteration alts[] {
-			//	{true,  true}, {false, true}, {true, false},
-			//	{true,  true}, {false, true}, {true, false},
-			//	{true,  true}
-			//};
-			//
-			//const mx::u8* begin = _it;
-			//auto value = notes[(c - 'A')];
-			//++_it;
-			//
-			//
-			//// -- alteration --------------------------------------------------
-			//
-			//if (_it < _end) {
-			//
-			//	if (*_it == '#' && alts[(c - 'A')].sharp == true) {
-			//		++_it;
-			//		value = (value + 1U) % 12U;
-			//	}
-			//	else if (*_it == 'b' && alts[(c - 'A')].flat == true) {
-			//		++_it;
-			//		value = (value + 11U) % 12U;
-			//	}
-			//}
-			//
-			//// -- negative octave ---------------------------------------------
-			//
-			//
-			//
-			//
-			////constexpr mx::u8 note_limit = max / 12U;
-			////
-			////if (num > note_limit) {
-			////	this->push_error<"note value overflow">();
-			////}
-			//
-			////num *= 12U;
-			//
-			////if (num > (max - value)) {
-			////	this->push_error<"note value overflow">();
-			////}
-			//
-			////value += num;
-
-
-	/* convert integer */
-	inline auto tempo_convert(const lx::lexeme& l, const tk::range& r,
-						an::diagnostic& diag) noexcept -> double {
-
-		const mx::u8* it  = l.data;
-		const mx::u8* end = l.data
-						  + l.size;
-
-		double num = 0.0;
-		constexpr mx::i8 max       = 64;
-		constexpr mx::i8 mul_limit = max / 10U;
-
-
-		while (it < end && cc::is_digit(*it) == true) {
+		while (it < end) {
 
 			// check multiplication overflow
-			if (num > mul_limit) {
-				// push error
-				num = 0U;
-				diag.push("value overflow", r);
-				break;
+			if constexpr (NEG == true) {
+				if (num < mul_limit) {
+					// push error
+					num = MIN;
+					return false;
+				}
+			}
+			if constexpr (NEG == false) {
+				if (num > mul_limit) {
+					// push error
+					num = MAX;
+					return false;
+				}
 			}
 
-			num *= 10U;
-			const mx::usz digit = (*it - '0');
+			num *= B::base;
+			const T digit = B::to_digit(*it);
 
 			// check subtraction overflow
-			if (num > (max - digit)) {
-				// push error
-				num = 0U;
-				diag.push("value overflow", r);
-				break;
+			if constexpr (NEG == true) {
+				if (num < (MIN + digit)) {
+					// push error
+					num = MIN;
+					return false;
+				}
+				num -= digit;
 			}
-			num += digit;
+			if constexpr (NEG == false) {
+				if (num > (MAX - digit)) {
+					// push error
+					num = MAX;
+					return false;
+				}
+				num += digit;
+			}
 
 			++it;
 		}
 
-		if (it == end)
-			return num;
+		return true;
+	}
 
-		// check fractional part
-		if (*it == '.') {
-			++it;
-			double frac = 0.0;
-			double div  = 10.0;
-			while (it < end && cc::is_digit(*it) == true) {
-				const mx::usz digit = (*it - '0');
-				frac += static_cast<double>(digit) / div;
-				div  *= 10.0;
-				++it;
+
+
+	inline auto convert_note(const tk::token_view& tv,
+								an::diagnostic& diag) noexcept -> mx::i8 {
+
+		constexpr mx::u8 notes[] {
+			9U, 11U, 0U, 2U, 4U, 5U, 7U
+		};
+
+		const auto& l = tv.first_chunk().lexeme;
+		const auto* it  = l.data;
+		const auto* end = l.data + l.size;
+
+		auto value = notes[(*it - 'A')];
+		++it;
+
+		if (it < end) {
+			if (*it == '#') {
+				value = (value + 1U) % 12U;
 			}
-			num += frac;
+			else if (*it == 'b') {
+				value = (value + 11U) % 12U;
+			}
 		}
 
+		return 0;
 
-		return num;
+		//constexpr mx::u8 note_limit = max / 12U;
+		//
+		//if (num > note_limit) {
+		//	this->push_error<"note value overflow">();
+		//}
+
+		//num *= 12U;
+
+		//if (num > (max - value)) {
+		//	this->push_error<"note value overflow">();
+		//}
+
+		//value += num;
 	}
 
 
@@ -448,7 +412,6 @@ namespace mx {
 		if (num > (max - den))
 			goto overflow;
 
-		std::cout << ck.lexeme << " -> " << mx::frac{num + den, pow} << "\n";
 		return mx::frac{num + den, pow};
 
 		// overflow handler
