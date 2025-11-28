@@ -4,7 +4,7 @@
 
 #include <numeric>
 
-auto highlight(std::stringstream& ss,
+auto as::highlight(std::stringstream& ss,
 			   const tk::const_token_view& tv,
 			   const char* group) -> void {
 
@@ -23,99 +23,66 @@ auto highlight(std::stringstream& ss,
 }
 
 
-auto as::tree::play_atomic(play_ctx& ctx) const -> void {
-
-	const auto& a = node<as::atomic_values>(ctx.fr.node);
-
-	const auto time = a.header.mod(ctx.fr.time * ctx.fr.speed);
-	const auto step = a.count != 1U ? a.step_from_time(time) : 0U;
-
-	bool edge = true;
-
-	auto hash = ctx.hash_combine(ctx.fr.node, step);
-
-	const auto it = ctx.hashes.find(hash);
-
-	if (it != ctx.hashes.end())
-		edge = time < it->second.time;
-
-	ctx.hashes[hash] = as::edge{step, time};
-
-	auto& ev = ctx.events.back();
-	const auto value = value_at(a.value_start + step);
-
-
-	//mx::usz ticks_to_next = 0U;
-
-	if (a.param_id == pa::trig) {
-
-		if (edge && value != 0) {
-			ev.trig();
-		}
-	}
-	else {
-		if (a.param_id == pa::gate) {
-			//mx::frac step_dur = a.header.dur / a.count;
-			//mx::frac gate_frac{(mx::usz)value, 100};
-			//mx::frac gate_dur = (step_dur * gate_frac).reduce();
-			//mx::u64 gate_ticks = (gate_dur.num * MIDI_PPQN) / gate_dur.den;
-		}
-		//else {
-			ev.add(a.param_id, value);
-		//}
-	}
-
-	const auto tv = tokens->filtered_view(a.token_start + step);
-	highlight(ctx.hi, tv, "IncSearch");
-}
-
-			//step = a.step_from_time(time);
-			//edge = step != it->second.step;
-
-
-
-auto as::tree::play_group(play_ctx& ctx) const -> void {
-
-	const auto& g = node<as::group>(ctx.fr.node);
-
-	auto time = g.header.mod(ctx.fr.time * ctx.fr.speed);
-
-		  auto it  = g.range.start;
-    const auto end = g.range.end();
-
-    for (; it < end; ++it) {
-		   mx::usz node = remap_index(it);
-        const auto& dur = header(node).dur;
-
-		if (time < dur) {
-			// push node and local tick
-			ctx.push(node, (time / ctx.fr.speed), ctx.fr.speed);
-			return;
-		}
-		time -= dur;
-	}
-}
 
 
 auto as::tree::play_tempo(play_ctx& ctx) const -> void {
 
 	const auto& t = node<as::tempo>(ctx.fr.node);
 
-	const auto speed = (t.runtime == true)
-					 ? (ctx.fr.speed * t.factor)
-					 :  ctx.fr.speed;
+	auto time = t.header.mod(ctx.fr.time * ctx.fr.speed);
 
-	// push child node with full duration
-	ctx.push(t.child,
-			ctx.fr.time,
-			speed);
+		  auto  it = t.frac_start;
+		  auto  tk = t.token_start;
+	const auto end = t.frac_start + t.count;
+
+	for (; it < end; ++it, ++tk) {
+		const auto& tempo_frac = frac_at(it);
+
+		// duration of child at this tempo
+		const auto child_dur = header(t.child).dur / tempo_frac;
+
+		if (time < child_dur) {
+			// push child node with tempo-adjusted speed
+			ctx.push(t.child,
+					(time / ctx.fr.speed),
+					 ctx.fr.speed * tempo_frac);
+			break;
+		}
+		time -= child_dur;
+	}
+
+	// highlight
+	auto tv = tokens->filtered_view(tk);
+	highlight(ctx.hi, tv, "Underlined");
 }
 
 auto as::tree::play_modulo(play_ctx& ctx) const -> void {
+
 	const auto& m = node<as::modulo>(ctx.fr.node);
 
-	// push child node with modulated time
-	ctx.push(m.child, ctx.fr.time, ctx.fr.speed);
+
+	auto time = m.header.mod(ctx.fr.time * ctx.fr.speed);
+
+		  auto  it = m.frac_start;
+		  auto  tk = m.token_start;
+	const auto end = m.frac_start + m.count;
+
+	for (; it < end; ++it, ++tk) {
+		const auto& frac = frac_at(it);
+
+		if (time < frac) {
+			// push child node with modulated time
+			ctx.push(m.child,
+					(time / ctx.fr.speed),
+					 ctx.fr.speed);
+			break;
+		}
+		time -= frac;
+	}
+
+	// highlight
+	auto tv = tokens->filtered_view(tk);
+	highlight(ctx.hi, tv, "Underlined");
 }
 
 
@@ -213,7 +180,7 @@ auto as::tree::play(std::stringstream& hi,
 					mx::midi_engine& engine,
 					const mx::frac& time) const -> void {
 
-	as::play_ctx ctx{hi, engine};
+	as::play_ctx ctx{*this, *tokens, hi, engine};
 	ctx.hashes.swap_now();
 	ctx.stack.clear();
 	ctx.events.clear();
@@ -234,12 +201,12 @@ auto as::tree::dispatch_play(play_ctx& ctx) const -> void {
 
 	switch (type) {
 
-		case as::type::atomic_values:
-			play_atomic(ctx);
+		case as::type::atomics:
+			node<as::atomics>(ctx.fr.node).play(ctx);
 			break;
 
 		case as::type::group:
-			play_group(ctx);
+			node<as::group>(ctx.fr.node).play(ctx);
 			break;
 
 		case as::type::parallel:
@@ -304,49 +271,31 @@ auto as::tree::play_parallel(play_ctx& ctx) const -> void {
 
 auto as::tree::play_crossfade(play_ctx& ctx) const -> void {
 
-	return;
-	const auto& cf = node<as::crossfade>(ctx.fr.node);
-	const auto& h  = cf.header;
+	  const auto& cf = node<as::crossfade>(ctx.fr.node);
 
-	const auto time = cf.header.mod(ctx.fr.time * ctx.fr.speed);
+      const auto time = cf.header.mod(ctx.fr.time * ctx.fr.speed);
+      const auto progress = time / cf.header.dur;  // 0.0 → 1.0
 
-	// get total duration in ticks
-	const auto ticks = h.dur.num * MIDI_PPQN / h.dur.den;
-	const auto current = time.num * MIDI_PPQN / time.den;
-	//std::cout << "Crossfade total ticks: " << ticks << "\n";
-	//std::cout << "Crossfade current tick: " << current << "\n";
+      const auto mark = ctx.stack.size();
 
-	double accumulated = 0.0;
+      // Évaluer left
+      ctx.events.emplace_back();
+      ctx.push(cf.left, time);
+      while (ctx.next_until(mark))
+          dispatch_play(ctx);
+      auto ev_left = std::move(ctx.events.back());
+      ctx.events.pop_back();
 
-	for (mx::usz i = 0; i < ticks; ++i) {
-        // Densité linéaire de 0 à 1
-        double density = (ticks > 1) ? static_cast<double>(i) / (ticks - 1) : 0.0;
+      // Évaluer right
+      ctx.events.emplace_back();
+      ctx.push(cf.right, time);
+      while (ctx.next_until(mark))
+          dispatch_play(ctx);
+      auto ev_right = std::move(ctx.events.back());
+      ctx.events.pop_back();
 
-        // Accumuler la densité
-        accumulated += density;
-
-        
-		// Placer un 1 si l'accumulateur dépasse 1.0
-		if (accumulated >= 1.0) {
-
-			accumulated -= 1.0;      // Réinitialiser l'erreur
-			// Push right node
-			if (i == current) {
-				ctx.push(cf.right, (ctx.fr.time * ctx.fr.speed), ctx.fr.speed);
-				break;
-			}
-		}
-		else {
-			// Push left node
-			if (i == current) {
-				ctx.push(cf.left, (ctx.fr.time * ctx.fr.speed), ctx.fr.speed);
-				break;
-			}
-		}
-    }
-
-
-	//totalDuration.numerator * MIDI_PPQN / totalDuration.denominator;
+      // Mixer et push résultat
+      //ctx.events.push_back(mix_events(ev_left, ev_right, progress));
 }
 
 

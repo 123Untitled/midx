@@ -3,56 +3,19 @@
 
 #include "language/syntax/parameter.hpp"
 #include "language/ast/type.hpp"
-//#include "language/tokens/def.hpp"
 #include "language/tokens/token_view.hpp"
 #include "language/syntax/parameter.hpp"
 
 #include "math.hpp"
+
+#include "language/ast/header.hpp"
+#include "language/ast/remap_range.hpp"
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
 
 
 namespace as {
-
-
-	// -- H E A D E R ---------------------------------------------------------
-
-	struct alignas(std::max_align_t) header final {
-		as::type type;
-		mx::frac dur;
-
-		header(const as::type type,
-			   const mx::frac& dur) noexcept
-		: type{type}, dur{dur} {
-		}
-
-
-		auto mod(const mx::frac& time) const noexcept -> mx::frac {
-			return mx::frac_mod(time, dur);
-		}
-	};
-
-
-	// -- R E M A P  R A N G E ------------------------------------------------
-
-	struct alignas(std::max_align_t) remap_range final {
-		mx::usz start; // start index in arena
-		mx::usz count; // count of nodes
-		remap_range(void) noexcept
-		: start{0U}, count{0U} {
-		}
-		remap_range(const mx::usz s,
-					const mx::usz c) noexcept
-		: start{s}, count{c} {
-		}
-
-		auto end(void) const noexcept -> mx::usz {
-			return start + count;
-		}
-	};
-
-
 
 
 	// -- P R O G R A M -------------------------------------------------------
@@ -73,49 +36,6 @@ namespace as {
 
 	}; // struct program
 
-
-
-	// -- A T O M I C  V A L U E S --------------------------------------------
-
-	struct atomic_values final {
-
-		/* header */
-		as::header header;
-
-		mx::usz token_start; // tokens start index
-		mx::usz value_start; // values start index
-		mx::usz count;
-
-		pa::id param_id; // associated parameter id
-
-
-		atomic_values(void) = delete;
-
-		atomic_values(const pa::id pid,
-					  const mx::usz tstart,
-					  const mx::usz vstart,
-					  const mx::usz count,
-					  const mx::frac& dur) noexcept
-		: header{as::type::atomic_values, dur},
-		  token_start{tstart}, value_start{vstart},
-		  count{count},
-		  param_id{pid} {
-		}
-
-
-		auto step_from_time(const mx::frac& time) const -> mx::usz {
-
-			// compute ratio
-			const auto ratio = time / header.dur;
-
-			mx::usz res;
-			if (__builtin_mul_overflow(ratio.num, count, &res))
-				throw std::overflow_error{"play_atomic: step computation overflow"};
-
-			return res / ratio.den;
-		}
-
-	}; // struct atomic_values
 
 
 	// -- R E F E R E N C E S -------------------------------------------------
@@ -181,27 +101,6 @@ namespace as {
 		parameter(const as::remap_range& range,
 				  const mx::frac& dur) noexcept
 		: header{as::type::parameter, dur},
-		  range{range} {
-		}
-	};
-
-
-	// -- G R O U P -----------------------------------------------------------
-
-	struct group final {
-
-		/* header */
-		as::header header;
-
-		/* range */
-		as::remap_range range;
-
-
-		group(void) = delete;
-
-		group(const as::remap_range& range,
-			  const mx::frac& dur) noexcept
-		: header{as::type::group, dur},
 		  range{range} {
 		}
 	};
@@ -282,11 +181,14 @@ namespace as {
 		/* header */
 		as::header header;
 
-		/* ratio */
-		mx::frac factor;
+		/* frac start */
+		mx::usz frac_start;
 
-		/* runtime */
-		bool runtime;
+		/* token start */
+		mx::usz token_start;
+
+		/* count */
+		mx::usz count;
 
 		/* child node */
 		mx::usz child;
@@ -294,13 +196,15 @@ namespace as {
 
 		tempo(void) = delete;
 
-		tempo(const mx::frac& factor,
-			  const bool runtime,
+		tempo(const mx::usz frac_start,
+			  const mx::usz token_start,
+			  const mx::usz count,
 			  const mx::usz child,
 			  const mx::frac& dur) noexcept
 		: header{as::type::tempo, dur},
-		  factor{factor},
-		  runtime{runtime},
+		  frac_start{frac_start},
+		  token_start{token_start},
+		  count{count},
 		  child{child} {
 		}
 	};
@@ -313,14 +217,30 @@ namespace as {
 		/* header */
 		as::header header;
 
+		/* frac start */
+		mx::usz frac_start;
+
+		/* token start */
+		mx::usz token_start;
+
+		/* count */
+		mx::usz count;
+
 		/* child node */
 		mx::usz child;
 
 
+
 		modulo(void) = delete;
-		modulo(const mx::usz child,
+		modulo(const mx::usz frac_start,
+			   const mx::usz token_start,
+			   const mx::usz count,
+				const mx::usz child,
 			   const mx::frac& dur) noexcept
 		: header{as::type::modulo, dur},
+		  frac_start{frac_start},
+		  token_start{token_start},
+		  count{count},
 		  child{child} {
 		}
 

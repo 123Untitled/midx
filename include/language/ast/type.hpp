@@ -26,7 +26,7 @@ namespace as {
 		modulo,
 
 		references,
-		atomic_values,
+		atomics
 	};
 
 

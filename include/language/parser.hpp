@@ -82,8 +82,9 @@ namespace pr {
 
 
 			auto apply_tempo(const mx::usz steps) noexcept -> mx::frac {
-				return mx::frac{steps * _tempo.den,
-								_tempo.num};
+				//return mx::frac{steps * _tempo.den,
+				//				_tempo.num};
+				return mx::frac{steps * 1, 1};
 			}
 
 
@@ -115,46 +116,47 @@ namespace pr {
 
 			/* parse expression */
 			template <pr::level>
-			auto parse_expr(const pr::precedence) -> mx::usz;
+			auto parse_expr(const mx::uint/*pr::precedence*/
+					) -> mx::usz;
 
 
 
 			template <pr::level>
-			auto nud_tempo(const mx::usz) -> mx::usz;
+			auto eval_tempo(const mx::usz) -> mx::usz;
 
 			template <pr::level>
-			auto nud_modulo(const mx::usz) -> mx::usz;
+			auto eval_modulo(const mx::usz) -> mx::usz;
 
-			auto nud_value(const mx::usz) -> mx::usz;
+			auto eval_value(const mx::usz) -> mx::usz;
 
-			auto nud_atomic_value(const mx::usz) -> mx::usz;
+			auto eval_atomic_value(const mx::usz) -> mx::usz;
 
 
-			auto nud_references(const mx::usz) -> mx::usz;
+			auto eval_references(const mx::usz) -> mx::usz;
 
 
 			template <pr::level L>
-			auto nud_group(const mx::usz) -> mx::usz;
+			auto eval_group(const mx::usz) -> mx::usz;
 
-			auto nud_parameter(const mx::usz) -> mx::usz;
+			auto eval_parameter(const mx::usz) -> mx::usz;
 
-			auto nud_track_separator(const mx::usz) -> mx::usz;
+			auto eval_track_separator(const mx::usz) -> mx::usz;
 
 			template <pr::level L>
-			auto nud_permutation(const mx::usz) -> mx::usz;
+			auto eval_permutation(const mx::usz) -> mx::usz;
 
 
 
 			template <pr::level>
-			auto led_parallel(const mx::usz) -> mx::usz;
+			auto eval_parallel(const mx::usz) -> mx::usz;
 
 			template <pr::level>
-			auto led_crossfade(const mx::usz) -> mx::usz;
+			auto eval_crossfade(const mx::usz) -> mx::usz;
 
 
 
 			auto lookahead(tk::iterator) const noexcept -> bool;
-			auto lookahead_op(tk::iterator) const noexcept -> bool;
+			auto lookahead_op(tk::iterator) const -> bool;
 
 			auto abord(void) noexcept -> void {
 				_it = _end;

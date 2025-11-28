@@ -2,6 +2,7 @@
 #define language_parser_precedence_hpp
 
 #include "core/types.hpp"
+#include "language/parser/levels.hpp"
 
 
 // -- P R  N A M E S P A C E --------------------------------------------------
@@ -11,7 +12,7 @@ namespace pr {
 
 	// -- P R E C E D E N C E -------------------------------------------------
 
-	enum precedence : mx::uint {
+	enum class precedence_default : mx::uint {
 		none            = 0U,
 
 		separator       = 5U,
@@ -30,6 +31,47 @@ namespace pr {
 		value           = 90U,
 		reference       = 95U,
 	};
+
+	constexpr mx::uint precedence_none = 0U;
+
+	template <pr::level>
+	struct precedence;
+
+	template <>
+	struct precedence<pr::level::expr> {
+		enum : mx::uint {
+			none      = 0,
+			separator = 5,
+			track_separator = 7,
+			parallel  = 20,
+			crossfade = 30,
+			tempo     = 60,
+			modulo    = 60,
+			parameter = 70,
+			grouping  = 80,
+			value     = 90,
+			reference = 95,
+		};
+	};
+
+	template <>
+	struct precedence<pr::level::seq> {
+		enum : mx::uint {
+			none      = 0,
+			separator = 5,
+			track_separator = 7,
+			parameter = 10,
+			parallel  = 20,
+			crossfade = 30,
+			tempo     = 60,
+			modulo    = 60,
+			grouping  = 80,
+			value     = 90,
+			reference = 95,
+		};
+	};
+
+
 
 } // namespace pr
 

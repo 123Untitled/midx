@@ -125,7 +125,9 @@ auto pr::parser::_parse(void) -> mx::usz {
 		if (_parse_identifiers() == true)
 			continue;
 
-		auto expr = parse_expr<pr::level::expr>(pr::precedence::separator);
+		constexpr auto L = pr::level::expr;
+
+		auto expr = parse_expr<L>(pr::precedence<L>::separator);
 
 		if (expr != 0U) {
 			_tree->push(expr);
@@ -168,7 +170,9 @@ auto pr::parser::_parse_identifiers(void) -> bool {
 	while (++_it != _end && _it.token() == tk::identifier);
 	auto end = _it;
 
-	const auto expr = parse_expr<pr::level::expr>(pr::precedence::none);
+	constexpr auto L = pr::level::expr;
+
+	const auto expr = parse_expr<L>(pr::precedence<L>::none);
 
 	while (it != end) {
 		if (!_idents.insert(it.view().first_chunk().lexeme, expr)) {
@@ -183,7 +187,7 @@ auto pr::parser::_parse_identifiers(void) -> bool {
 
 /* parse expr */
 template <pr::level L>
-auto pr::parser::parse_expr(const pr::precedence min_pre) -> mx::usz {
+auto pr::parser::parse_expr(const mx::uint min_pre) -> mx::usz {
 	depth_guard dg{_depth};
 
 	debug_level<L>("PARSE EXPR", "min pre", min_pre);
@@ -191,7 +195,7 @@ auto pr::parser::parse_expr(const pr::precedence min_pre) -> mx::usz {
 	mx::usz left = 0U;
 
 	while (_it != _end) {
-		debug_level<L>("nud loop", "current token", *_it);
+		debug_level<L>("parse_expr loop", "current token", *_it);
 
 		auto& tk = _it.token();
 		auto eval = pr::eval_of<L>(tk);
@@ -224,7 +228,7 @@ auto debug(const char* msg, const tk::iterator& it) -> void {
 // -- N U D S -----------------------------------------------------------------
 
 /* nud atomic value */
-auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
+auto pr::parser::eval_atomic_value(mx::usz left) -> mx::usz {
 
 	debug("NUD atomic value", _it);
 
@@ -281,13 +285,8 @@ auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
 		return left; // just only for temporary not implemented 'note' case
 
 
-	// make duration
-	auto dur = apply_tempo(count).reduce();
-
 	// make atomic values node
-	const auto values = _tree->make_atomics(_last_param,
-											tok_start, val_start,
-											count, dur);
+	const auto values = _tree->make_atomics(_last_param, tok_start, val_start, count);
 
 	if (!left)
 		return values;
@@ -303,9 +302,9 @@ auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
 
 	// make new group
 	const auto range = _tree->make_range(left, values);
-	dur   += lh.dur;
+	const auto dur = mx::frac{count, 1U} + lh.dur;
 
-	return _tree->make_group(range, dur.reduce());
+	return _tree->make_group(range, dur);
 }
 
 
@@ -317,7 +316,7 @@ auto pr::parser::nud_atomic_value(mx::usz left) -> mx::usz {
 
 
 /* nud track reference */
-auto pr::parser::nud_references(const mx::usz left) -> mx::usz {
+auto pr::parser::eval_references(const mx::usz left) -> mx::usz {
 
 	debug("NUD references", _it);
 
@@ -385,7 +384,7 @@ auto pr::parser::nud_references(const mx::usz left) -> mx::usz {
 
 /* nud group */
 template <pr::level L>
-auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
+auto pr::parser::eval_group(const mx::usz left) -> mx::usz {
 
 	debug("NUD group", _it);
 	const auto it = _it;
@@ -401,7 +400,7 @@ auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 	}
 
 	// parse inner expression
-    const auto inside = parse_expr<L>(pr::precedence::none);
+    const auto inside = parse_expr<L>(pr::precedence<L>::none);
 
 	if (_it != _end && _it.token() == tk::priority_close) {
 		debug("NUD group", _it);
@@ -431,7 +430,7 @@ auto pr::parser::nud_group(const mx::usz left) -> mx::usz {
 
 /* nud permutation */
 template <pr::level L>
-auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
+auto pr::parser::eval_permutation(const mx::usz left) -> mx::usz {
 
 	debug("NUD permutation", _it);
 	const auto it = _it;
@@ -448,7 +447,7 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 	}
 
 	// parse inner expression
-    const auto inside = parse_expr<L>(pr::precedence::none);
+    const auto inside = parse_expr<L>(pr::precedence<L>::none);
 
 
 	if (_it != _end && _it.token() == tk::permutation_close) {
@@ -505,7 +504,7 @@ auto pr::parser::nud_permutation(const mx::usz left) -> mx::usz {
 
 
 /* nud parameter */
-auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
+auto pr::parser::eval_parameter(mx::usz left) -> mx::usz {
 
 	debug("NUD parameter", _it);
 
@@ -529,9 +528,11 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 			continue;
 		}
 
+		constexpr auto L = pr::level::seq;
+
 		// recurse sequence parsing
 		const mx::usz seq = parse_expr<pr::level::seq>(
-								pr::precedence::parameter);
+								pr::precedence<L>::parameter);
 
 		if (seq) {
 
@@ -552,7 +553,7 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 			// create new parameter
 			params[_last_param] = _tree->make_parameter(_tree->make_range(seq), dur);
 			has_params = true;
-			continue;
+			//continue;
 		}
 
 		if (_back == true) {
@@ -616,12 +617,15 @@ auto pr::parser::nud_parameter(mx::usz left) -> mx::usz {
 
 /* nud tempo */
 template <pr::level L>
-auto pr::parser::nud_tempo(mx::usz left) -> mx::usz {
+auto pr::parser::eval_tempo(mx::usz left) -> mx::usz {
 
 	// save tempo
 	auto old = _tempo;
 
-	mx::frac temp{1, 1};
+	const auto frac_start = _tree->frac_start();
+	const auto tok_start  = _it.index();
+	mx::usz count = 0U;
+	mx::frac dur;
 
 
 	do { // accumulate consecutive tempo changes
@@ -631,71 +635,68 @@ auto pr::parser::nud_tempo(mx::usz left) -> mx::usz {
 
 			case tk::tempo_fast: {
 				const auto& ck = tv.last_chunk();
-				//_tempo *= mx::to_fraction(ck, *_diag).fix();
-				auto f = mx::to_fraction(ck, *_diag).fix();
-				temp *= f;
-				_tempo *= f;
+				_tempo = mx::to_fraction(ck, *_diag).fix();
 				break;
 			}
 
 			case tk::tempo_slow: {
 				const auto& ck = tv.last_chunk();
-				//_tempo *= mx::to_fraction(ck, *_diag).fix().invert();
-				auto f = mx::to_fraction(ck, *_diag).fix().invert();
-				temp *= f;
-				_tempo *= f;
+				_tempo = mx::to_fraction(ck, *_diag).fix().invert();
 				break;
 			}
 
 			default:
-				break;
+				// never reached
+				continue;
 		}
+
+		_tempo.reduce();
+		_tree->push_frac(_tempo);
+		++count;
 
 	} while (++_it != _end && (_it.token() == tk::tempo_fast
 						    || _it.token() == tk::tempo_slow));
 
-	// reduce tempo frac
-	_tempo.reduce();
-	// reduce temp frac
-	temp.reduce();
-
-	//mx::frac temp = _tempo;
-
-
-	std::cout << "\x1b[32mTEMPO\x1b[0m: frac=" << _tempo << '\n';
-
+	std::cout << "\x1b[31mTEMPO\x1b[0m: " << _tempo << std::endl;
 
 	// recurse right expression
-	const auto right = parse_expr<L>(pr::precedence::tempo);
+	const auto right = parse_expr<L>(pr::precedence<L>::tempo - 1U);
+
 
 	// restore old tempo
 	_tempo = old;
 
-	if (!right)
+	if (!right || count == 0U) {
+		// remove pushed fracs
+		_tree->resize_fracs(frac_start);
 		return left;
+	}
 
 	// get right header
-	const auto rh = _tree->header(right);
+	const auto& rh = _tree->header(right);
 
-	auto dur   = rh.dur;
-
-
-	bool runtime;
-
-	if constexpr (L == pr::level::seq) {
-		runtime = false;
-	}
-	else {
-		dur /= temp; // SOLUTION HERE
-		runtime = true;
+	// calculate total duration: sum of (child_dur / tempo) for each tempo
+	for (mx::usz i = 0U; i < count; ++i) {
+		const auto& tempo_frac = _tree->frac_at(frac_start + i);
+		dur += rh.dur / tempo_frac;
 	}
 
+	dur.reduce();
 
 	// make tempo node
-	const auto tempo = _tree->make_tempo(temp, runtime, right, dur);
+	const auto tempo = _tree->make_node<as::tempo>(
+										frac_start,
+										tok_start,
+										count, right, dur);
 
 	if (!left)
 		return tempo;
+
+	// extend existing group
+	if (as::is_group(left)) {
+		_tree->extend_group(left, tempo);
+		return left;
+	}
 
 
 	// get left header
@@ -710,35 +711,60 @@ auto pr::parser::nud_tempo(mx::usz left) -> mx::usz {
 
 /* nud modulo */
 template <pr::level L>
-auto pr::parser::nud_modulo(mx::usz left) -> mx::usz {
+auto pr::parser::eval_modulo(mx::usz left) -> mx::usz {
 
-	tk::iterator it;
+	//tk::iterator it;
+
+	const auto frac_start = _tree->frac_start();
+	const auto tok_start  = _it.index();
+	mx::usz count = 0U;
+	mx::frac dur;
 
 	// skip consecutive modulo operators
-	do { it = _it; } while
-		(++_it != _end && _it.token() == tk::modulo);
+	do {
+		// convert value
+		auto d = mx::to_fraction(_it.view().last_chunk(), *_diag);
 
-	// convert value
-	mx::frac dur = mx::to_fraction(it.view().last_chunk(), *_diag);
+		if (d.num == 0U || d.den == 0U)
+			continue;
+
+		d.reduce();
+		dur += d;
+
+		_tree->push_frac(d);
+		++count;
+
+	} while (++_it != _end && _it.token() == tk::modulo);
+
+
+
+	// recurse right expression
+	const auto right = parse_expr<L>(pr::precedence<L>::modulo - 1U);
+
+	// check duration validity
+	if (!right || dur.num == 0U || dur.den == 0U) {
+		// remove pushed fracs
+		_tree->resize_fracs(frac_start);
+		return left;
+	}
 
 	dur.reduce();
 
-	// recurse right expression
-	const auto right = parse_expr<L>(pr::precedence::modulo);
-
-	// check duration validity
-	if (dur.den == 0U
-	 || dur.num == 0U
-	 || !right)
-		return left;
-
-
 	// make modulo node
-	const auto mod = _tree->make_node<as::modulo>(right, dur);
+	const auto mod = _tree->make_node<as::modulo>(
+										frac_start,
+										tok_start,
+										count, right, dur);
 
 	if (!left)
 		return mod;
 
+
+	// extend existing group
+	if (as::is_group(left)) {
+		_tree->extend_group(left, mod);
+		return left;
+	}
 
 	// get left header
 	const auto& lh = _tree->header(left);
@@ -751,10 +777,98 @@ auto pr::parser::nud_modulo(mx::usz left) -> mx::usz {
 }
 
 
+
+//template <pr::level L>
+//auto pr::parser::eval_tempo(mx::usz left) -> mx::usz {
+//
+//	// save tempo
+//	auto old = _tempo;
+//
+//	_tempo = mx::frac{1U, 1U};
+//
+//	do { // accumulate consecutive tempo changes
+//
+//		auto tv = *_it;
+//		switch (_it.token().id) {
+//
+//			case tk::tempo_fast: {
+//				const auto& ck = tv.last_chunk();
+//				_tempo *= mx::to_fraction(ck, *_diag).fix();
+//				break;
+//			}
+//
+//			case tk::tempo_slow: {
+//				const auto& ck = tv.last_chunk();
+//				_tempo *= mx::to_fraction(ck, *_diag).fix().invert();
+//				break;
+//			}
+//
+//			default:
+//				break;
+//		}
+//
+//	} while (++_it != _end && (_it.token() == tk::tempo_fast
+//						    || _it.token() == tk::tempo_slow));
+//
+//	// reduce tempo frac
+//	_tempo.reduce();
+//
+//
+//	// recurse right expression
+//	const auto right = parse_expr<L>(pr::precedence<L>::tempo - 1U);
+//
+//
+//	const auto frac = _tempo;
+//	// restore old tempo
+//	_tempo = old;
+//
+//	if (!right)
+//		return left;
+//
+//	// get right header
+//	const auto rh = _tree->header(right);
+//
+//	auto dur   = rh.dur;
+//
+//
+//	bool runtime;
+//
+//	if constexpr (L == pr::level::seq) {
+//		runtime = false;
+//	}
+//	else {
+//		dur /= frac; // SOLUTION HERE
+//		runtime = true;
+//	}
+//
+//
+//	// make tempo node
+//	const auto tempo = _tree->make_tempo(frac, runtime, right, dur);
+//
+//	if (!left)
+//		return tempo;
+//
+//	// extend existing group
+//	if (as::is_group(left)) {
+//		_tree->extend_group(left, tempo);
+//		return left;
+//	}
+//
+//
+//	// get left header
+//	const auto& lh = _tree->header(left);
+//
+//	// else make new group
+//	const auto range = _tree->make_range(left, tempo);
+//	dur   += lh.dur;
+//
+//	return _tree->make_group(range, dur.reduce());
+//}
+
 // -- L E D S -----------------------------------------------------------------
 
 
-auto pr::parser::nud_track_separator(const mx::usz left) -> mx::usz {
+auto pr::parser::eval_track_separator(const mx::usz left) -> mx::usz {
 
 	// skip consecutive track separators
 	do { ++_it; } while
@@ -766,7 +880,7 @@ auto pr::parser::nud_track_separator(const mx::usz left) -> mx::usz {
 
 /* led parallel */
 template <pr::level L>
-auto pr::parser::led_parallel(const mx::usz left) -> mx::usz {
+auto pr::parser::eval_parallel(const mx::usz left) -> mx::usz {
 
 	// get current token
 	const auto& tk = _it.token();
@@ -781,6 +895,7 @@ auto pr::parser::led_parallel(const mx::usz left) -> mx::usz {
 	if constexpr (L == pr::level::seq) {
 		if (lookahead_op(_it) == true) {
 			_back = true;
+			std::cout << "LED parallel: lookahead found parameter or block ref, returning left\n";
 			return left;
 		}
 	}
@@ -797,7 +912,7 @@ auto pr::parser::led_parallel(const mx::usz left) -> mx::usz {
 
 /* led crossfade */
 template <pr::level L>
-auto pr::parser::led_crossfade(const mx::usz left) -> mx::usz {
+auto pr::parser::eval_crossfade(const mx::usz left) -> mx::usz {
 
 	debug("LED crossfade", _it);
 
@@ -858,6 +973,7 @@ auto pr::parser::lookahead(tk::iterator it) const noexcept -> bool {
 				return true;
 			}
 
+			case tk::floating:
 			case tk::decimal:
 			case tk::hexadecimal:
 			case tk::octal:
@@ -874,7 +990,7 @@ auto pr::parser::lookahead(tk::iterator it) const noexcept -> bool {
 	return false;
 }
 
-auto pr::parser::lookahead_op(tk::iterator it) const noexcept -> bool {
+auto pr::parser::lookahead_op(tk::iterator it) const /*noexcept*/ -> bool {
 
 	// assume we are at the token after the operator
 
@@ -885,6 +1001,7 @@ auto pr::parser::lookahead_op(tk::iterator it) const noexcept -> bool {
 			case tk::reference:
 				return true;
 
+			case tk::floating:
 			case tk::decimal:
 			case tk::hexadecimal:
 			case tk::octal:
@@ -897,8 +1014,13 @@ auto pr::parser::lookahead_op(tk::iterator it) const noexcept -> bool {
 				++it;
 				return lookahead(it);
 
+			case tk::priority_close:
+			case tk::permutation_close:
+				return false;
+
 			default:
-				break;
+				std::cout << "lookahead_op: skipping token " << tk << '\n';
+				//throw std::runtime_error{"Unexpected token in lookahead_op"};
 		}
 		++it;
 	}

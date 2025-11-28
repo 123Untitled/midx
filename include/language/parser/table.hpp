@@ -17,16 +17,19 @@ namespace pr {
 	template <pr::level L>
 	consteval auto rule_number(void) -> pr::rule {
 		return pr::rule {
-			.eval = &pr::parser::nud_atomic_value,
-			.pre  = pr::precedence::value,
+			.eval = L == pr::level::seq ?
+				&pr::parser::eval_atomic_value
+				: nullptr,
+			.pre  = pr::precedence<L>::value,
 		};
 	}
 
 	/* empty */
+	template <pr::level L>
 	consteval auto rule_empty(void) -> pr::rule {
 		return pr::rule {
 			.eval = nullptr,
-			.pre = pr::precedence::none,
+			.pre = pr::precedence<L>::none,
 		};
 	}
 
@@ -34,8 +37,8 @@ namespace pr {
 	template <pr::level L>
 	consteval auto rule_tempo(void) -> pr::rule {
 		return pr::rule {
-			.eval = &pr::parser::nud_tempo<L>,
-			.pre = pr::precedence::tempo,
+			.eval = &pr::parser::eval_tempo<L>,
+			.pre = pr::precedence<L>::tempo,
 		};
 	}
 
@@ -44,9 +47,9 @@ namespace pr {
 	consteval auto rule_parameter(void) -> pr::rule {
 		return pr::rule {
 			.eval = L == pr::level::expr ?
-						&pr::parser::nud_parameter :
+						&pr::parser::eval_parameter :
 						nullptr,
-			.pre = pr::precedence::parameter,
+			.pre = pr::precedence<L>::parameter,
 		};
 	}
 
@@ -56,9 +59,9 @@ namespace pr {
 	consteval auto rule_track_separator(void) -> pr::rule {
 		return pr::rule {
 			// nud
-			.eval = L == pr::level::expr ? &pr::parser::nud_track_separator : nullptr,
+			.eval = L == pr::level::expr ? &pr::parser::eval_track_separator : nullptr,
 			// precedence
-			.pre = pr::precedence::track_separator,
+			.pre = pr::precedence<L>::track_separator,
 		};
 	}
 
@@ -69,7 +72,7 @@ namespace pr {
 			// nud
 			.eval = nullptr,
 			// precedence
-			.pre = pr::precedence::separator,
+			.pre = pr::precedence<L>::separator,
 		};
 	}
 
@@ -80,7 +83,7 @@ namespace pr {
 	constexpr pr::rule rules[tk::max_tokens] {
 
 		// identifier
-		pr::rule_empty(),
+		pr::rule_empty<L>(),
 
 		// separator ;
 		pr::rule_separator<L>(),
@@ -93,25 +96,25 @@ namespace pr {
 		// modulo %
 		{
 			// led
-			&pr::parser::nud_modulo<L>,
+			&pr::parser::eval_modulo<L>,
 			// precedence
-			pr::precedence::modulo,
+			pr::precedence<L>::modulo,
 		},
 
 		// parallel
 		{
 			// led
-			&pr::parser::led_parallel<L>,
+			&pr::parser::eval_parallel<L>,
 			// precedence
-			pr::precedence::parallel,
+			pr::precedence<L>::parallel,
 		},
 
 		// crossfade
 		{
 			// led
-			&pr::parser::led_crossfade<L>,
+			&pr::parser::eval_crossfade<L>,
 			// precedence
-			pr::precedence::crossfade,
+			pr::precedence<L>::crossfade,
 		},
 
 		// track separator
@@ -124,9 +127,9 @@ namespace pr {
 		// reference
 		{
 			// nud
-			&pr::parser::nud_references,
+			&pr::parser::eval_references,
 			// precedence
-			pr::precedence::reference,
+			pr::precedence<L>::reference,
 		},
 
 		// param reference
@@ -134,7 +137,7 @@ namespace pr {
 			// nud
 			nullptr,
 			// precedence
-			pr::precedence::none,
+			pr::precedence<L>::none,
 		},
 
 
@@ -158,22 +161,22 @@ namespace pr {
 		// priority_open,
 		{
 			// nud
-			&pr::parser::nud_group<L>,
+			&pr::parser::eval_group<L>,
 			// precedence
-			pr::precedence::grouping,
+			pr::precedence<L>::grouping,
 		},
 		// priority_close,
-		pr::rule_empty(),
+		pr::rule_empty<L>(),
 
 		// permutation_open,
 		{
 			// nud
-			&pr::parser::nud_permutation<L>,
+			&pr::parser::eval_permutation<L>,
 			// precedence
-			pr::precedence::grouping,
+			pr::precedence<L>::grouping,
 		},
 		// permutation_close,
-		pr::rule_empty(),
+		pr::rule_empty<L>(),
 
 
 		// condition_open,
@@ -181,24 +184,24 @@ namespace pr {
 			// nud
 			nullptr,
 			// precedence
-			pr::precedence::grouping,
+			pr::precedence<L>::grouping,
 		},
 
 		// condition_close,
-		pr::rule_empty(),
+		pr::rule_empty<L>(),
 
 
 
 		// -- non used tokens -------------------------------------------------
 
 		// comment
-		pr::rule_empty(),
+		pr::rule_empty<L>(),
 
 		// invalid
-		pr::rule_empty(),
+		pr::rule_empty<L>(),
 
 		// end of tokens
-		pr::rule_empty(),
+		pr::rule_empty<L>(),
 	};
 
 
@@ -212,7 +215,7 @@ namespace pr {
 
 	/* precedence of */
 	template <pr::level L>
-	inline auto pre_of(const tk::token& token) noexcept -> pr::precedence {
+	inline auto pre_of(const tk::token& token) noexcept -> mx::uint {
 		return rules<L>[token.id].pre;
 	}
 

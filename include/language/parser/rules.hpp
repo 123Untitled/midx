@@ -41,7 +41,8 @@ namespace pr {
 			const eval_type eval;
 
 			/* precedence */
-			const pr::precedence pre;
+			const mx::uint pre;
+			//const pr::precedence pre;
 
 	}; // class rule
 

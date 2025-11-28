@@ -394,13 +394,31 @@ auto lx::lexer::lex_number(void) -> void {
 
 	tk::id id = tk::decimal;
 
-	if (_it < _end && *_it == '.') {
-		id = tk::floating;
+	if (_it < _end) {
 
-		do {
-			++_it;
-		} while (_it < _end && cc::is_digit(*_it));
+		if (*_it == '.') {
+			id = tk::floating;
+
+			do {
+				++_it;
+			} while (_it < _end && cc::is_digit(*_it));
+		}
+		//else if (*_it == '/') {
+		//	id = tk::fraction;
+		//
+		//	++_it; // skip '/'
+		//
+		//	if (_it >= _end || !cc::is_digit(*_it)) {
+		//		error("expected fraction denominator", self::new_chunk(mark));
+		//		return;
+		//	}
+		//
+		//	do {
+		//		++_it;
+		//	} while (_it < _end && cc::is_digit(*_it));
+		//}
 	}
+
 
 	// push decimal token
 	_tokens->push_filtered_token(

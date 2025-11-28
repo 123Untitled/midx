@@ -2,371 +2,25 @@
 #define language_ast_hpp
 
 #include "language/ast/node.hpp"
+#include "language/ast/nodes.hpp"
+
 #include "language/tokens/tokens.hpp"
 
 #include "midi/midi_engine.hpp"
 
 #include "language/ast/storage.hpp"
-#include "midi/constant.hpp"
-#include <unordered_set>
-#include <unordered_map>
+
+#include "language/ast/play_ctx.hpp"
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
 
 namespace as {
 
-	struct average final {
-		mx::usz count;
-		mx::isz sum;
 
-		average(void) noexcept
-		: count{0U}, sum{0} {
-		}
-
-		auto add(const mx::i8 v) noexcept -> void {
-			sum += v;
-			++count;
-		}
-
-		auto get_or(const mx::i8 def) const noexcept -> mx::i8 {
-			return count == 0U
-				? def
-				: static_cast<mx::i8>(
-						sum / static_cast<mx::isz>(count)
-				  );
-		}
-
-		auto reset(void) noexcept -> void {
-			count = 0U; sum = 0;
-		}
-	};
-
-	struct notes final {
-
-		mx::u8 states[128U];
-		mx::i8 active[128U];
-		mx::u8 count;
-
-		notes(void) noexcept
-		: states{}, active{}, count{0U} {
-		}
-
-		auto add(const mx::i8 n) noexcept -> void {
-
-			if (states[n] == 0U) {
-				states[n] = 1U;
-				active[count] = n;
-				++count;
-			}
-		}
-
-		auto reset(void) noexcept -> void {
-			for (mx::u8 i = 0U; i < count; ++i) {
-				const mx::i8 n = active[i];
-				states[n] = 0U;
-			}
-			count = 0U;
-		}
-	};
-
-	struct channels final {
-		mx::u8 states[16U];
-		mx::i8 active[16U];
-		mx::u8 count;
-
-		channels(void) noexcept
-		: states{}, active{}, count{0U} {
-		}
-
-		auto add(const mx::i8 c) noexcept -> void {
-
-			if (states[c] == 0U) {
-				states[c] = 1U;
-				active[count] = c;
-				++count;
-			}
-		}
-
-		auto reset(void) noexcept -> void {
-			for (mx::u8 i = 0U; i < count; ++i) {
-				const mx::i8 c = active[i];
-				states[c] = 0U;
-			}
-			count = 0U;
-		}
-	};
-
-	struct event final {
-
-		/* values */
-		//mx::usz values[pa::max_params];
-
-		/* trig */
-		bool _trig;
-
-		/* notes */
-		as::notes _nts;
-
-		/* gate */
-		as::average _ga;
-
-		/* velo */
-		as::average _vl;
-
-		/* octa */
-		mx::i8 _oc;
-
-		/* semi */
-		mx::i8 _se;
-
-		/* chan */
-		as::channels _chs;
-
-		/* prob */
-		as::average _pr;
-
-
-
-
-		event(void) noexcept
-		: _trig{false},
-		  _nts{},
-		  _ga{},
-		  _vl{},
-		  _oc{0},
-		  _se{0},
-		  _chs{},
-		  _pr{} {
-		}
-
-		auto trig(void) noexcept -> void {
-			_trig = true;
-		}
-
-		auto flush(mx::midi_engine& engine) noexcept -> void {
-
-			static bool init = false;
-			if (init == false) {
-				::srand(::getpid());
-				init = true;
-			}
-
-			if (_trig == false)
-				return;
-
-			mx::i8 oc = _oc;
-			mx::i8 se = _se;
-			mx::i8 ga = _ga.get_or(50);
-			mx::i8 vl = _vl.get_or(100);
-			mx::i8 pr = _pr.get_or(100);
-
-
-			// convert gate as ticks
-			//mx::u32 gate = (MIDI_PPQN * static_cast<mx::u32>(ga)) / 100U;
-
-
-			// compute probability
-			const mx::i8 rp = static_cast<mx::i8>(::rand() % 100U);
-			if (rp >= pr) {
-				return;
-			}
-
-			if (_nts.count == 0U)
-				_nts.add(60);
-			if (_chs.count == 0U)
-				_chs.add(0);
-			//std::cout << "Gate: " << gate << '\n';
-
-			for (mx::u8 i = 0U; i < _chs.count; ++i) {
-				const mx::i8 ch = _chs.active[i];
-
-				for (mx::u8 j = 0U; j < _nts.count; ++j) {
-					mx::i8 nt = _nts.active[j];
-
-					nt += (oc * 12);
-					nt += se;
-
-					// probability, will be implemented later...
-
-					engine.note_on(ch, nt, vl, ga);
-				}
-			}
-		}
-
-
-		auto add(const pa::id id, const mx::i8 va) noexcept -> void {
-
-			switch (id) {
-
-				case pa::note:
-					_nts.add(va);
-					break;
-
-				case pa::gate:
-					_ga.add(va);
-					break;
-
-				case pa::velo:
-					_vl.add(va);
-					break;
-
-				case pa::octa:
-					_oc += va; // not good at evaluation rate // maybe OK
-					break;
-
-				case pa::semi:
-					_se += va; // not good at evaluation rate // maybe OK
-					break;
-
-				case pa::chan:
-					_chs.add(va);
-					break;
-
-				case pa::prob:
-					_pr.add(va);
-					break;
-
-
-				default:
-					break;
-			}
-		}
-
-
-
-		auto has_trig(void) const noexcept -> bool {
-			return _trig;
-		}
-	};
-
-
-	struct edge final {
-		mx::usz step;
-		mx::frac time;
-	}; // struct edge final
-
-
-	struct frame final {
-		mx::usz node;
-		mx::usz hash;
-		mx::frac time;
-		mx::frac speed;
-
-		frame(void) noexcept
-		: node{0U},
-		  hash{0U},
-		  time{},
-		  speed{1U, 1U} {
-		}
-
-		frame(const mx::usz node,
-			  const mx::frac& time) noexcept
-		: node{node},
-		  hash{0U},
-		  time{time},
-		  speed{1U, 1U} {
-		}
-
-		frame(const mx::usz node,
-			  const mx::usz hash,
-			  const mx::frac& time,
-			  const mx::frac& speed) noexcept
-		: node{node},
-		  hash{hash},
-		  time{time},
-		  speed{speed} {
-		}
-	};
-
-	struct hash_run final {
-
-		using map_type = std::unordered_map<mx::usz, as::edge>;
-		using self = as::hash_run;
-
-		map_type _m1;
-		map_type _m2;
-		map_type* _old;
-		map_type* _now;
-
-		hash_run(void) noexcept
-		: _m1{}, _m2{},
-		  _old{&_m1},
-		  _now{&_m2} {
-		}
-
-		auto swap_now(void) noexcept -> void {
-			auto* tmp = _old;
-			_old = _now;
-			_now = tmp;
-			_now->clear();
-		}
-
-		auto operator[](const mx::usz h) noexcept -> as::edge& {
-			return (*_now)[h];
-		}
-
-		auto find(const mx::usz h) noexcept -> typename map_type::iterator {
-			return _old->find(h);
-		}
-
-		auto end(void) noexcept -> typename map_type::iterator {
-			return _old->end();
-		}
-	};
-
-
-	struct play_ctx final {
-
-		std::stringstream& hi;
-		mx::midi_engine& engine;
-		inline static std::vector<frame> stack{};
-		inline static as::hash_run hashes{};
-
-		inline static std::vector<as::event> events{};
-		as::frame fr;
-
-		mx::frac absolute;
-
-		play_ctx(std::stringstream& h, mx::midi_engine& e) noexcept
-		: hi{h}, engine{e}, fr{} {
-		}
-
-		inline mx::u64 hash_combine(mx::u64 h, mx::u64 v) {
-			h ^= v + 0x9e3779b97f4a7c15ULL + (h<<6) + (h>>2);
-			return h;
-		}
-
-		auto push(const mx::usz node,
-				  const mx::frac& time,
-				  const mx::frac& speed) -> void {
-			mx::u64 h = hash_combine(fr.hash, node);
-			stack.emplace_back(node, h, time, speed);
-		}
-
-		auto push(const mx::usz node, const mx::frac& time) -> void {
-			stack.emplace_back(node, time);
-		}
-
-		auto next(void) -> bool {
-			if (stack.empty() == true)
-				return false;
-			fr = stack.back();
-			stack.pop_back();
-			return true;
-		}
-		auto next_until(const mx::usz mark) -> bool {
-			if (!(stack.size() > mark))
-				return false;
-			fr = stack.back();
-			stack.pop_back();
-			return true;
-		}
-
-	};
-
-
-
+	auto highlight(std::stringstream&,
+				   const tk::const_token_view&,
+				   const char*) -> void;
 
 
 
@@ -391,6 +45,8 @@ namespace as {
 			std::vector<mx::usz> _marks;
 			std::vector<mx::usz> _refs;
 			std::vector<mx::i8>  _values;
+
+			std::vector<mx::frac> _fracs;
 
 
 			// -- private methods ---------------------------------------------
@@ -473,6 +129,35 @@ namespace as {
 				::new (&_nodes[offset]) T{args...};
 
 				return offset;
+			}
+
+			/* frac start
+			   get the start index for frac storage */
+			auto frac_start(void) const noexcept -> mx::usz {
+				return _fracs.size();
+			}
+
+			/* push frac
+			   push a frac onto the frac storage */
+			auto push_frac(const mx::frac& f) -> void {
+				_fracs.push_back(f);
+			}
+
+			/* frac at
+			   access frac by direct index */
+			auto frac_at(const mx::usz index) const /*noexcept*/ -> const mx::frac& {
+				if (index >= _fracs.size()) {
+					std::cout << "Frac index out of bounds: " << index
+							  << " >= " << _fracs.size() << '\n';
+					throw std::runtime_error{"Arena frac index out of bounds"};
+				}
+				return _fracs[index];
+			}
+
+			/* resize fracs
+			   resize the frac storage to a given size */
+			auto resize_fracs(const mx::usz size) -> void {
+				_fracs.resize(size);
 			}
 
 			/* value start
@@ -929,7 +614,7 @@ namespace as {
 			   create a new atomic values node with given arguments */
 			template <typename... Tp>
 			auto make_atomics(const Tp&... args) -> mx::usz {
-				return this->make_node<as::atomic_values>(args...);
+				return this->make_node<as::atomics>(args...);
 			}
 
 			/* make refs
@@ -978,9 +663,9 @@ namespace as {
 					|| t == as::type::permutation;
 			}
 
-			/* is atomic */
-			auto is_atomic_values(const mx::usz index) /*noexcept*/ -> bool {
-				return header(index).type == as::type::atomic_values;
+			/* is atomics */
+			auto is_atomics(const mx::usz index) /*noexcept*/ -> bool {
+				return header(index).type == as::type::atomics;
 			}
 
 			template <typename F, typename... Ts>
@@ -1001,8 +686,8 @@ namespace as {
 				switch (h.type) {
 					case as::type::program:
 						return "program";
-					case as::type::atomic_values:
-						return "atomic_values";
+					case as::type::atomics:
+						return "atomics";
 					case as::type::references:
 						return "references";
 					case as::type::group:
@@ -1125,7 +810,7 @@ namespace as {
 					case as::type::parameter:    return "\x1b[90m⚙\x1b[0m param";
 					case as::type::tempo:        return "\x1b[90m↻\x1b[0m tempo";
 					case as::type::modulo:       return "\x1b[90m⧗\x1b[0m modulo";
-					case as::type::atomic_values:return "\x1b[90m↘\x1b[0m []";
+					case as::type::atomics:      return "\x1b[90m↘\x1b[0m []";
 					case as::type::references:   return "\x1b[90m⚭\x1b[0m refs";
 					case as::type::parallel:     return "\x1b[90m☰\x1b[0m parallel";
 					case as::type::crossfade:    return "\x1b[90m⇋\x1b[0m crossfade";
@@ -1167,13 +852,14 @@ namespace as {
 						  << h.dur.den
 						  << "\x1b[0m";
 
-				if (h.type == as::type::atomic_values) {
+				if (h.type == as::type::atomics) {
 
 					std::cout << " \x1b[90m[\x1b[32m";
-					const auto& n = _tree.node<as::atomic_values>(index);
-					for (mx::usz i = 0; i < n.count; ++i) {
+					const auto& n = _tree.node<as::atomics>(index);
+					const auto count = n.header.dur.num;
+					for (mx::usz i = 0; i < count; ++i) {
 						const auto v = _tree.value_at(n.value_start + i);
-						std::cout << static_cast<mx::i32>(v) << (i + 1 < n.count ? " " : "");
+						std::cout << static_cast<mx::i32>(v) << (i + 1 < count ? " " : "");
 					}
 					std::cout << "\x1b[90m]\x1b[0m\n";
 
