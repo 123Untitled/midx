@@ -1,4 +1,0 @@
-[1m/Users/untitled/Desktop/code/projects/audio/midilang/sources/language/machines/global_machine.cpp:1:10: [0m[0;1;31mfatal error: [0m[1m'language/machines/global_machine.hpp' file not found[0m
-    1 | #include "language/machines/global_machine.hpp"[0m
-      | [0;1;32m         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-[0m1 error generated.
