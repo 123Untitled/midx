@@ -72,6 +72,9 @@ namespace mx {
 			/* exit */
 			auto exit(void) noexcept -> void;
 
+			/* toggle play */
+			auto toggle_play(void) noexcept -> void;
+
 
 			// -- public accessors --------------------------------------------
 

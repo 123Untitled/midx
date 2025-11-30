@@ -4,6 +4,7 @@
 #include "time/clock.hpp"
 #include "monitoring/watcher.hpp"
 #include "midi/midi_engine.hpp"
+#include "language/ast/eval.hpp"
 
 
 namespace as { class tree; }
@@ -40,8 +41,14 @@ namespace mx {
 			/* tree reference */
 			as::tree* _tree;
 
+			/* evaluator */
+			as::eval _eval;
+
 			/* midi engine */
 			mx::midi_engine _engine;
+
+			/* ticks */
+			mx::usz _ticks;
 
 
 		public:
@@ -65,6 +72,9 @@ namespace mx {
 
 			/* switch tree */
 			auto switch_tree(as::tree&) noexcept -> void;
+
+			/* is playing */
+			auto is_playing(void) const noexcept -> bool;
 
 
 			// -- public overrides --------------------------------------------

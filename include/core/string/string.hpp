@@ -116,7 +116,7 @@ namespace ms {
 
 			template <typename... Tp>
 			static constexpr bool is_single_self =
-				(sizeof...(Tp) == 1U) && (ms::is_same<self, ms::remove_cvr<Tp>> && ...);
+				(sizeof...(Tp) == 1U) && (mx::is_same<self, ms::remove_cvr<Tp>> && ...);
 
 
 			/* variadic constructor */
@@ -767,7 +767,7 @@ namespace ms {
 	//		static constexpr auto chars_length(T value) noexcept -> ms::usz {
 	//
 	//
-	//			static_assert(ms::is_same<T, float>,
+	//			static_assert(mx::is_same<T, float>,
 	//						   "floating_traits only supports float type for now");
 	//
 	//
@@ -935,28 +935,28 @@ namespace ms {
 			////template <typename T>
 			////static constexpr bool is_pointer =
 			////	ms::is_pointer<clean<T>> &&
-			////	ms::is_same<ms::remove_cvp<clean<T>>, C>;
+			////	mx::is_same<ms::remove_cvp<clean<T>>, C>;
 			//
 			///* is array */
 			////template <typename T>
 			////static constexpr bool is_array =
 			////	ms::is_array<clean<T>> &&
-			////	ms::is_same<ms::remove_cve<clean<T>>, C>;
+			////	mx::is_same<ms::remove_cve<clean<T>>, C>;
 			//
 			///* is string */
 			//template <typename T>
 			//static constexpr bool is_string =
-			//	ms::is_same<clean<T>, ms::basic_string<C>>;
+			//	mx::is_same<clean<T>, ms::basic_string<C>>;
 			//
 			///* is string view */
 			//template <typename T>
 			//static constexpr bool is_view =
-			//	ms::is_same<clean<T>, ms::basic_string_view<C>>;
+			//	mx::is_same<clean<T>, ms::basic_string_view<C>>;
 			//
 			///* is char type */
 			//template <typename T>
 			//static constexpr bool is_char_type =
-			//	ms::is_same<clean<T>, C>;
+			//	mx::is_same<clean<T>, C>;
 			//
 			///* is integral */
 			//template <typename T>

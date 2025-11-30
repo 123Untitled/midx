@@ -21,7 +21,8 @@ mx::player::player(const mx::monitor& monitor)
 : mx::watcher{},
   _clock{monitor.kqueue(), *this},
   _tree{nullptr},
-  _engine{} {
+  _engine{},
+  _ticks{0U} {
 
 	// add user event to monitor
 	monitor.add_user(*this);
@@ -35,6 +36,9 @@ auto mx::player::start(void) -> void {
 
 	if (_clock.is_running() == true)
 		return;
+
+	// reset ticks
+	_ticks = 0U;
 
 	// start clock
 	_clock.start();
@@ -58,7 +62,13 @@ auto mx::player::stop(void) -> void {
 
 /* switch tree */
 auto mx::player::switch_tree(as::tree& tree) noexcept -> void {
+	_eval.init(tree, *tree.tokens);
 	_tree = &tree;
+}
+
+/* is playing */
+auto mx::player::is_playing(void) const noexcept -> bool {
+	return _clock.is_running();
 }
 
 
@@ -67,37 +77,34 @@ auto mx::player::switch_tree(as::tree& tree) noexcept -> void {
 /* on event */
 auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> void {
 
-	static mx::u64 tick_count = 0U;
-
-	if (_tree == nullptr) {
-		++tick_count;
+	if (_eval.is_evaluable() == false) {
 		return;
 	}
 
 	// make fractional time
-	const auto time = mx::make_reduced_frac(tick_count, MIDI_PPQN);
+	const auto time = mx::make_reduced_frac(_ticks, MIDI_PPQN);
 
-	std::stringstream ss;
-	ss << "{\"type\":\"animation\",\"highlights\":[";
+	static std::string s;
+	s.append("{\"type\":\"animation\",\"highlights\":[");
 
 	_engine.off_pass();
-	_tree->play(ss, _engine, time);
+	//_tree->play(ss, _engine, time);
+	_eval.evaluate(s, _engine, time);
 	_engine.flush();
 
-	auto str = ss.str();
+	if (s.empty() == false) {
 
-	if (str.empty() == false) {
+		if (s.back() == ',')
+			s.pop_back();
+		s.append("]}\r\n");
 
-		if (str.back() == ',')
-			str.pop_back();
-		str += "]}\r\n";
-
-		app.server().broadcast(str);
+		app.server().broadcast(s);
 	}
 	else {
 		std::cout << "EMPTY PLAYLOAD\n";
 	}
-	++tick_count;
+	s.clear();
+	++_ticks;
 }
 
 /* ident */

@@ -37,13 +37,21 @@ auto mx::application::reparse(std::string&& data) -> void {
 	// switch tree
 	_player.switch_tree(analyzer.tree());
 	_active = (_active == 0U) ? 1U : 0U;
-
-	_player.start();
 }
 
 /* exit */
 auto mx::application::exit(void) noexcept -> void {
 	_running = false;
+}
+
+/* toggle play */
+auto mx::application::toggle_play(void) noexcept -> void {
+	if (_player.is_playing() == true) {
+		_player.stop();
+	}
+	else {
+		_player.start();
+	}
 }
 
 /* run */

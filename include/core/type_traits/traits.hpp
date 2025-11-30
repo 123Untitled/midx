@@ -201,7 +201,7 @@ namespace ms {
 
 	/* is array of */
 	template <typename T, typename U>
-	concept is_array_of = ms::is_array<T> && ms::is_same<ms::remove_cve<T>, U>;
+	concept is_array_of = ms::is_array<T> && mx::is_same<ms::remove_cve<T>, U>;
 
 
 	// -- I S  P O I N T E R --------------------------------------------------
@@ -238,14 +238,14 @@ namespace ms {
 
 	/* is pointer of */
 	template <typename T, typename U>
-	concept is_pointer_of = ms::is_pointer<T> && ms::is_same<ms::remove_cvp<T>, U>;
+	concept is_pointer_of = ms::is_pointer<T> && mx::is_same<ms::remove_cvp<T>, U>;
 
 
 	// -- I S  B O O L --------------------------------------------------------
 
 	/* is bool */
 	template <typename T>
-	concept is_bool = ms::is_same<ms::remove_cv<T>, bool>;
+	concept is_bool = mx::is_same<ms::remove_cv<T>, bool>;
 
 
 
@@ -254,7 +254,7 @@ namespace ms {
 
 	/* is floating point */
 	template <typename T>
-	concept is_floating_point = ms::is_one_of<ms::remove_cv<T>,
+	concept is_floating_point = mx::is_one_of<ms::remove_cv<T>,
 		float, double, long double>;
 
 
@@ -268,7 +268,7 @@ namespace ms {
 	// -- I S  C H A R --------------------------------------------------------
 
 	template <typename T>
-	concept is_character = ms::is_one_of<ms::remove_cv<T>,
+	concept is_character = mx::is_one_of<ms::remove_cv<T>,
 		char, wchar_t, char8_t, char16_t, char32_t>;
 
 

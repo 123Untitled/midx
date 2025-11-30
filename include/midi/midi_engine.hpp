@@ -154,7 +154,7 @@ namespace mx {
 
 				// ensure ticks is not zero
 				if (ticks == 0U)
-					++ticks;
+					return;
 
 				// check if already note on
 				if (st.epoch == _epoch) {
@@ -167,12 +167,21 @@ namespace mx {
 					_active[_count++] = i;
 				}
 				else {
+					std::cout << "\x1b[33mWarning:\x1b[0m "
+							  << "Retriggering note before note off. "
+							  << "Ch " << static_cast<mx::usz>(ch)
+							  << " No " << static_cast<mx::usz>(no)
+							  << " Ticks " << ticks << std::endl;
 					// note off before note on
 					_evs.note_off(ch, no);
 				}
 
 				// note on event can be triggered here
 				_evs.note_on(ch, no, ve);
+				std::cout << "\x1b[32mNote On:\x1b[0m Ch " << static_cast<mx::usz>(ch)
+						  << " No " << static_cast<mx::usz>(no)
+						  << " Ve " << static_cast<mx::usz>(ve)
+						  << " Ticks " << ticks << std::endl;
 
 				st.epoch = _epoch;
 				st.ticks = ticks;

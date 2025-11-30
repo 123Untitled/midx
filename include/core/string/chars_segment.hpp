@@ -383,7 +383,7 @@ namespace ms {
 			template <typename F> requires (ms::is_floating_point<F>)
 			static constexpr auto _count_digits(F value) noexcept -> traits::size_type {
 
-				static_assert(ms::is_same<F, float>,
+				static_assert(mx::is_same<F, float>,
 						"only supports float type for now");
 
 				// aliasing rule is violated here

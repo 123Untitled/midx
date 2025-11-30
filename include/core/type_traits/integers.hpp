@@ -132,8 +132,8 @@ namespace mx {
 
 			// -- assertions --------------------------------------------------
 
-			static_assert(!ms::is_void<signed_type>
-					   && !ms::is_void<unsign_type>,
+			static_assert(!mx::is_void<signed_type>
+					   && !mx::is_void<unsign_type>,
 					   "this machine does not support this integer type.");
 
 	}; // class integer_selector

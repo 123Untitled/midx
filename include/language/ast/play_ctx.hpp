@@ -4,9 +4,9 @@
 #include "core/types.hpp"
 #include "language/syntax/parameter.hpp"
 #include "language/tokens/tokens.hpp"
+#include "language/ast/hash_run.hpp"
 #include "midi/midi_engine.hpp"
 #include "math.hpp"
-#include <unordered_map>
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
@@ -241,20 +241,20 @@ namespace as {
 
 
 
-	struct frame final {
+	struct frame2 final {
 		mx::usz node;
 		mx::usz hash;
 		mx::frac time;
 		mx::frac speed;
 
-		frame(void) noexcept
+		frame2(void) noexcept
 		: node{0U},
 		  hash{0U},
 		  time{},
 		  speed{1U, 1U} {
 		}
 
-		frame(const mx::usz node,
+		frame2(const mx::usz node,
 			  const mx::frac& time) noexcept
 		: node{node},
 		  hash{0U},
@@ -262,7 +262,7 @@ namespace as {
 		  speed{1U, 1U} {
 		}
 
-		frame(const mx::usz node,
+		frame2(const mx::usz node,
 			  const mx::usz hash,
 			  const mx::frac& time,
 			  const mx::frac& speed) noexcept
@@ -273,46 +273,6 @@ namespace as {
 		}
 	};
 
-	struct hash_run final {
-
-		using map_type = std::unordered_map<mx::usz, mx::frac>;
-		using self = as::hash_run;
-
-		map_type _m1;
-		map_type _m2;
-		map_type* _old;
-		map_type* _now;
-
-		hash_run(void) noexcept
-		: _m1{}, _m2{},
-		  _old{&_m1},
-		  _now{&_m2} {
-		}
-
-		auto swap_now(void) noexcept -> void {
-			auto* tmp = _old;
-			_old = _now;
-			_now = tmp;
-			_now->clear();
-		}
-
-		auto hash_combine(mx::u64 h, mx::u64 v) noexcept -> mx::u64 {
-			h ^= v + 0x9e3779b97f4a7c15ULL + (h<<6) + (h>>2);
-			return h;
-		}
-
-		auto operator[](const mx::usz h) noexcept -> mx::frac& {
-			return (*_now)[h];
-		}
-
-		auto find(const mx::usz h) noexcept -> typename map_type::iterator {
-			return _old->find(h);
-		}
-
-		auto end(void) noexcept -> typename map_type::iterator {
-			return _old->end();
-		}
-	};
 
 
 	struct play_ctx final {
@@ -320,17 +280,17 @@ namespace as {
 		const as::tree& tree;
 		const tk::tokens& tokens;
 
-		std::stringstream& hi;
+		std::string& hi;
 		mx::midi_engine& engine;
-		inline static std::vector<frame> stack{};
+		inline static std::vector<frame2> stack{};
 		inline static as::hash_run hashes{};
 
 		inline static std::vector<as::event> events{};
-		as::frame fr;
+		as::frame2 fr;
 
 		mx::frac absolute;
 
-		play_ctx(const as::tree& t, const tk::tokens& tks, std::stringstream& h, mx::midi_engine& e) noexcept
+		play_ctx(const as::tree& t, const tk::tokens& tks, std::string& h, mx::midi_engine& e) noexcept
 		: tree{t}, tokens{tks}, hi{h}, engine{e}, fr{} {
 		}
 
@@ -363,6 +323,7 @@ namespace as {
 		}
 
 	};
+
 
 
 

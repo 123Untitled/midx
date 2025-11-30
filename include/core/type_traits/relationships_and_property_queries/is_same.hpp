@@ -1,11 +1,12 @@
-#pragma once
+#ifndef core_type_traits_is_same_hpp
+#define core_type_traits_is_same_hpp
 
 #include "core/config/class.hpp"
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 
 	// -- I S  S A M E --------------------------------------------------------
@@ -38,6 +39,8 @@ namespace ms {
 
 	/* is same */
 	template <typename T, typename U>
-	concept is_same = ms::impl::is_same<T, U>::value;
+	concept is_same = mx::impl::is_same<T, U>::value;
 
-} // namespace ms
+} // namespace mx
+
+#endif // core_type_traits_is_same_hpp

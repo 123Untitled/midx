@@ -35,7 +35,7 @@ auto mx::server::broadcast(const std::string& msg) -> void {
 	if (_client.is_connected() == false)
 		return;
 
-	_client.send(std::move(msg));
+	_client.send(msg);
 }
 
 

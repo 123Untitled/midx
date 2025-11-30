@@ -120,6 +120,7 @@ namespace mx {
 					_cmd = command::TOGGLE;
 					_states[0U] = &mx::protocol::_start;
 					_data.clear();
+					return;
 				}
 				else if (_data == "PAUSE") {
 					_cmd = command::PAUSE;
@@ -234,7 +235,6 @@ namespace mx {
 
 			template <mx::usz N>
 			auto feed(const mx::reader<N>& reader, mx::application& app) -> void {
-
 				// process data according to protocol
 				self::_feed(reader.begin(), reader.end(), app);
 			}

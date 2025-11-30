@@ -13,7 +13,7 @@ namespace ms {
 
 	/* is integral */
 	template <typename T>
-	concept is_integral = ms::is_one_of<ms::remove_cv<T>,
+	concept is_integral = mx::is_one_of<ms::remove_cv<T>,
 		char, wchar_t, char8_t, char16_t, char32_t,
 		signed char, unsigned char,
 		short, unsigned short,

@@ -41,7 +41,7 @@ declare -rg script=${0:a}
 # -- T A R G E T S ------------------------------------------------------------
 
 # project name
-declare -rg project='midilang'
+declare -rg project='midx'
 
 # main executable
 declare -rg executable=$cwd_dir'/'$project
@@ -436,11 +436,10 @@ function _test() {
 	tmux split-window -h -t $session
 
 	# send first command
-	tmux send-keys -t "$session"':0.0' 'nvim hello.midx; tmux kill-pane' C-m
+	tmux send-keys -t "$session"':0.0' 'nvim tests/hello.midx; tmux kill-pane' C-m
 
 	# send second command
 	tmux send-keys -t "$session"':0.1' "$executable"' && tmux kill-pane' C-m
-	#tmux send-keys -t "$session"':0.1' "timeout 10 $executable" C-m
 
 	# select second pane
 	tmux select-pane -t "$session"':0.0'

@@ -28,7 +28,7 @@ namespace ms {
 		// construct constraint
 		{
 			ms::chars_segment<C, T>{ms::forward<T>(t)}
-		} -> ms::is_same<ms::chars_segment<C, T>>;
+		} -> mx::is_same<ms::chars_segment<C, T>>;
 
 		// size constraint
 		{
@@ -210,7 +210,7 @@ namespace ms {
 
 			template <typename... Ts>
 			static constexpr bool is_single_self =
-				(sizeof...(Tp) == 1U) && (ms::is_same<self, ms::remove_cvr<Ts>> && ...);
+				(sizeof...(Tp) == 1U) && (mx::is_same<self, ms::remove_cvr<Ts>> && ...);
 
 
 		public:

@@ -68,29 +68,29 @@ namespace ms {
 
 			/* length */
 			static auto _length(const_pointer str) noexcept -> size_type {
-				if constexpr (ms::is_same<C, char>)
+				if constexpr (mx::is_same<C, char>)
 					return ::strlen(str);
-				if constexpr (ms::is_same<C, wchar_t>)
+				if constexpr (mx::is_same<C, wchar_t>)
 					return ::wcslen(str);
-				if constexpr (ms::is_same<C, char8_t>)
+				if constexpr (mx::is_same<C, char8_t>)
 					return ::strlen(reinterpret_cast<const char*>(str));
-				if constexpr (ms::is_same<C, char16_t>)
+				if constexpr (mx::is_same<C, char16_t>)
 					return 0U; // TODO: implement
-				if constexpr (ms::is_same<C, char32_t>)
+				if constexpr (mx::is_same<C, char32_t>)
 					return 0U; // TODO: implement
 			}
 
 			/* copy */
 			static auto _copy(pointer dst, const_pointer src, size_type count) noexcept -> void {
-				if constexpr (ms::is_same<C, char>)
+				if constexpr (mx::is_same<C, char>)
 					static_cast<void>(::memcpy(dst, src, count));
-				else if constexpr (ms::is_same<C, wchar_t>)
+				else if constexpr (mx::is_same<C, wchar_t>)
 					static_cast<void>(::wmemcpy(dst, src, count));
-				else if constexpr (ms::is_same<C, char8_t>)
+				else if constexpr (mx::is_same<C, char8_t>)
 					static_cast<void>(::memcpy(dst, src, count));
-				else if constexpr (ms::is_same<C, char16_t>)
+				else if constexpr (mx::is_same<C, char16_t>)
 					static_cast<void>(::memcpy(dst, src, count * sizeof(char16_t)));
-				else if constexpr (ms::is_same<C, char32_t>)
+				else if constexpr (mx::is_same<C, char32_t>)
 					static_cast<void>(::memcpy(dst, src, count * sizeof(char32_t)));
 			}
 

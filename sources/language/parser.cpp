@@ -137,6 +137,11 @@ auto pr::parser::_parse(void) -> mx::usz {
 		if (_it == _end)
 			break;
 
+		if (_it.token().id == tk::separator) {
+			++_it;
+			continue;
+		}
+
 		error("Unexpected token in expression", _it);
 		++_it;
 	}
@@ -502,7 +507,6 @@ auto pr::parser::eval_permutation(const mx::usz left) -> mx::usz {
 	return _tree->make_group(range, dur.reduce());
 }
 
-
 /* nud parameter */
 auto pr::parser::eval_parameter(mx::usz left) -> mx::usz {
 
@@ -659,8 +663,16 @@ auto pr::parser::eval_tempo(mx::usz left) -> mx::usz {
 
 	std::cout << "\x1b[31mTEMPO\x1b[0m: " << _tempo << std::endl;
 
+	mx::usz right;
+	if (_it != _end && _it.token() == tk::modulo) {
+		right = eval_modulo<L>(0);
+	}
+	else {
+		right = parse_expr<L>(pr::precedence<L>::tempo);
+	}
+
 	// recurse right expression
-	const auto right = parse_expr<L>(pr::precedence<L>::tempo - 1U);
+	//const auto right = parse_expr<L>(pr::precedence<L>::tempo - 1U);
 
 
 	// restore old tempo
@@ -736,10 +748,18 @@ auto pr::parser::eval_modulo(mx::usz left) -> mx::usz {
 
 	} while (++_it != _end && _it.token() == tk::modulo);
 
+	mx::usz right;
 
+	if (_it != _end && (_it.token() == tk::tempo_fast
+					 || _it.token() == tk::tempo_slow)) {
+		right = eval_tempo<L>(0);
+	}
+	else {
+		right = parse_expr<L>(pr::precedence<L>::modulo);
+	}
 
 	// recurse right expression
-	const auto right = parse_expr<L>(pr::precedence<L>::modulo - 1U);
+	//const auto right = parse_expr<L>(pr::precedence<L>::modulo - 1U);
 
 	// check duration validity
 	if (!right || dur.num == 0U || dur.den == 0U) {

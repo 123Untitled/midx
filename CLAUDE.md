@@ -4,7 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MIDILang is a domain-specific language for live MIDI sequencing and music composition. It features a custom lexer, Pratt parser, and real-time MIDI playback engine with CoreMIDI integration on macOS.
+MIDX is a domain-specific language for live MIDI sequencing and music composition.
+It features a custom lexer, Pratt parser, and real-time MIDI playback engine with CoreMIDI integration on macOS.
 
 ## Build System
 
@@ -17,7 +18,7 @@ This project uses a custom Zsh build script (`make.sh`) instead of Make or CMake
 ./make.sh run          # Build and run
 ./make.sh clean        # Clean build artifacts
 ./make.sh re           # Clean and rebuild
-./make.sh test         # Build and launch in tmux with nvim
+./make.sh test         # Build and launch in tmux with nvim to live edit test files
 ```
 
 The build script:
@@ -26,7 +27,7 @@ The build script:
 - Compiles all `.cpp` files in `sources/` directory
 - Links against CoreMIDI, CoreAudio, and CoreFoundation frameworks (macOS)
 - Generates `compile_commands.json` for IDE integration
-- Outputs executable: `./midilang`
+- Outputs executable: `./midx`
 
 ### Compiler Settings
 
@@ -136,9 +137,9 @@ The parser is undergoing a rework to use Pratt parsing with operator precedence:
 
 ## Language Syntax (MIDILang)
 
-MIDILang (`.midx` files) is a sequencing language with:
+MIDX (`.midx` files) is a sequencing language with:
 - Parameters: `:nt` (note), `:vl` (velocity), `:tr` (trigger), `:ga` (gate), `:ch` (channel), `:pr` (probability), `:oc` (octave), `:se` (semitone)
-- Operators: `|` (parallel), `\` (tempo decrease), `%` (clamp length), `^` (tempo increase)
+- Operators: `|` (parallel), `\` (tempo decrease), `%` (clamp length), `^` (tempo increase), `><` (crossfade)
 - References: `&name` to reference named sequences
 - Comments: `~` at start of line
 - See `hello.midx` for examples
@@ -150,7 +151,7 @@ MIDILang (`.midx` files) is a sequencing language with:
 1. Read relevant parser files first: `include/language/parser.hpp`, `sources/language/parser.cpp`
 2. Understand the Pratt parsing approach in `include/language/parser/precedence.hpp`
 3. The parser is currently being reworked - check recent git commits for context
-4. Test changes with example `.midx` files like `hello.midx`
+4. Test changes with example `.midx` files like `hello.midx` in `tests/` directory
 
 ### Making Changes to the AST
 
@@ -163,7 +164,7 @@ MIDILang (`.midx` files) is a sequencing language with:
 ### Testing
 
 - Run `./make.sh run` to build and execute
-- Test files are `.midx` files in the root directory
+- Test files are `.midx` files in the `tests/` directory
 - The application has built-in file watching - edit `.midx` files while running
 - Use `./make.sh test` to launch tmux session with nvim and the running executable
 

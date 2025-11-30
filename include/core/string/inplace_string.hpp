@@ -151,7 +151,7 @@ namespace ms {
 
 			template <typename... Tp>
 			static constexpr bool is_single_self =
-				(sizeof...(Tp) == 1U) && (ms::is_same<self, ms::remove_cvr<Tp>> && ...);
+				(sizeof...(Tp) == 1U) && (mx::is_same<self, ms::remove_cvr<Tp>> && ...);
 
 
 		public:

@@ -18,7 +18,7 @@
 namespace as {
 
 
-	auto highlight(std::stringstream&,
+	auto highlight(std::string&,
 				   const tk::const_token_view&,
 				   const char*) -> void;
 
@@ -88,7 +88,7 @@ namespace as {
 
 			tk::tokens* tokens;
 
-			auto play(std::stringstream&, mx::midi_engine&,
+			auto play(std::string&, mx::midi_engine&,
 										  const mx::frac&) const -> void;
 
 
@@ -731,6 +731,7 @@ namespace as {
 				std::cout << "End of AST Tree Debug\n\n";
 			}
 
+
 	}; // class arena
 
 
@@ -838,12 +839,13 @@ namespace as {
 						std::cout << "   ";
 				}
 
-				std::cout << (last ? "╰─" : "├─");
+				std::cout << (last ? "└─ " : "├─ ");
 
-				if (children.empty())
-					std::cout << "── ";
-				else
-					std::cout << "─╮ ";
+				//std::cout << (last ? "╰─" : "├─");
+				//if (children.empty())
+				//	std::cout << "── ";
+				//else
+				//	std::cout << "─╮ ";
 
 				std::cout << "\x1b[0m" << node_name(h) << " ";
 				std::cout << "\x1b[34m"

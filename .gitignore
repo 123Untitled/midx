@@ -20,7 +20,7 @@
 /compile_commands.json
 
 # ignore main executable
-/midilang
+/midx
 
 # ignore desktop service store
 /**/.DS_Store

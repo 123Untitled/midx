@@ -2,22 +2,26 @@
 
 #include <sstream>
 
-#include <numeric>
 
-auto as::highlight(std::stringstream& ss,
+auto as::highlight(std::string& ss,
 			   const tk::const_token_view& tv,
 			   const char* group) -> void {
 
 	tv.for_each_chunk(
-		[](const tk::chunk& ck, std::stringstream& ss, const char* group) static -> void {
+		[](const tk::chunk& ck, std::string& s, const char* group) static -> void {
 			//const char* group = "IncSearch";
 			//const char* group = "Underlined";
 			const auto& r = ck.range;
 
-			ss << "{\"l\":" << r.ln
-					   << ",\"s\":" << r.cs
-					   << ",\"e\":" << r.ce
-					   << ",\"g\":\"" << group << "\"},";
+			s.append("{\"l\":");
+			s.append(std::to_string(r.ln));
+			s.append(",\"s\":");
+			s.append(std::to_string(r.cs));
+			s.append(",\"e\":");
+			s.append(std::to_string(r.ce));
+			s.append(",\"g\":\"");
+			s.append(group);
+			s.append("\"},");
 		}, ss, group
 	);
 }
@@ -176,7 +180,7 @@ auto as::tree::play_program(play_ctx& ctx) const -> void {
 }
 
 
-auto as::tree::play(std::stringstream& hi,
+auto as::tree::play(std::string& hi,
 					mx::midi_engine& engine,
 					const mx::frac& time) const -> void {
 
@@ -245,6 +249,7 @@ auto as::tree::dispatch_play(play_ctx& ctx) const -> void {
 			throw std::runtime_error("Unhandled node type in dispatch_play");
 	}
 }
+
 
 auto as::tree::play_parallel(play_ctx& ctx) const -> void {
 
@@ -321,5 +326,10 @@ auto as::tree::play_crossfade(play_ctx& ctx) const -> void {
 //		local -= dur;
 //    }
 //}
+
+
+
+
+
 
 // GOOD IMPLEMENTATION FOR REFERENCE PLAYBACK
