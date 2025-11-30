@@ -12,6 +12,10 @@
 namespace tk {
 	class tokens;
 }
+
+namespace mx {
+	class highlight_tracker;
+}
 namespace mx {
 
 	class random final {
@@ -338,6 +342,9 @@ namespace as {
 			/* highlight stream */
 			std::string* _hi;
 
+			/* highlight tracker */
+			mx::highlight_tracker* _hl_tracker;
+
 			struct cross_state {
 				mx::frac time;
 				mx::f64 error;
@@ -384,7 +391,7 @@ namespace as {
 
 			/* init
 			   initialize evaluator */
-			auto init(as::tree&, const tk::tokens&) noexcept -> void;
+			auto init(as::tree&, const tk::tokens&, mx::highlight_tracker&) noexcept -> void;
 
 
 			/* evaluate

@@ -62,7 +62,8 @@ auto mx::player::stop(void) -> void {
 
 /* switch tree */
 auto mx::player::switch_tree(as::tree& tree) noexcept -> void {
-	_eval.init(tree, *tree.tokens);
+	_hl_tracker.init(*tree.tokens);
+	_eval.init(tree, *tree.tokens, _hl_tracker);
 	_tree = &tree;
 }
 
@@ -85,24 +86,19 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 	const auto time = mx::make_reduced_frac(_ticks, MIDI_PPQN);
 
 	static std::string s;
-	s.append("{\"type\":\"animation\",\"highlights\":[");
 
+	_hl_tracker.begin_frame();
 	_engine.off_pass();
-	//_tree->play(ss, _engine, time);
 	_eval.evaluate(s, _engine, time);
 	_engine.flush();
 
-	if (s.empty() == false) {
-
-		if (s.back() == ',')
-			s.pop_back();
-		s.append("]}\r\n");
-
+	// only send if highlights changed
+	if (_hl_tracker.end_frame(s)) {
+		s.insert(0, "{\"type\":\"animation\",");
+		s.append("}\r\n");
 		app.server().broadcast(s);
 	}
-	else {
-		std::cout << "EMPTY PLAYLOAD\n";
-	}
+
 	s.clear();
 	++_ticks;
 }

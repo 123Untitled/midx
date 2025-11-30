@@ -5,6 +5,7 @@
 #include "monitoring/watcher.hpp"
 #include "midi/midi_engine.hpp"
 #include "language/ast/eval.hpp"
+#include "language/highlight_tracker.hpp"
 
 
 namespace as { class tree; }
@@ -46,6 +47,9 @@ namespace mx {
 
 			/* midi engine */
 			mx::midi_engine _engine;
+
+			/* highlight tracker */
+			mx::highlight_tracker _hl_tracker;
 
 			/* ticks */
 			mx::usz _ticks;

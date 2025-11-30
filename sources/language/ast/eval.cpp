@@ -1,5 +1,6 @@
 #include "language/ast/eval.hpp"
 #include "language/ast/tree.hpp"
+#include "language/highlight_tracker.hpp"
 
 
 // -- E V A L -----------------------------------------------------------------
@@ -10,7 +11,8 @@
 as::eval::eval(void) noexcept
 : _tree{nullptr}, _tokens{nullptr},
   _hashes{},
-  _hi{nullptr} {
+  _hi{nullptr},
+  _hl_tracker{nullptr} {
 }
 
 
@@ -19,9 +21,11 @@ as::eval::eval(void) noexcept
 /* init
    initialize evaluator */
 auto as::eval::init(as::tree& tree,
-					const tk::tokens& tokens) noexcept -> void {
+					const tk::tokens& tokens,
+					mx::highlight_tracker& hl_tracker) noexcept -> void {
 	_tree   = &tree;
 	_tokens = &tokens;
+	_hl_tracker = &hl_tracker;
 
 	_cross.clear();
 	_hashes.clear();
@@ -103,8 +107,8 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 	}
 
 	// highlight
-	auto tv = _tokens->filtered_view(tk);
-	highlight(*_hi, tv, "Underlined");
+	auto hash = as::frame::compute_hash(f.hash, tk);
+	_hl_tracker->mark_active(hash, tk, "Underlined");
 }
 
 /* modulo
@@ -132,8 +136,8 @@ auto as::eval::modulo(const as::frame& f, T& r) -> void {
 	}
 
 	// highlight
-	auto tv = _tokens->filtered_view(tk);
-	highlight(*_hi, tv, "Underlined");
+	auto hash = as::frame::compute_hash(f.hash, tk);
+	_hl_tracker->mark_active(hash, tk, "Underlined");
 }
 
 /* parallel
@@ -260,8 +264,9 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 
 		r.accumulate(value, edge);
 
-		const auto tv = _tokens->filtered_view(a.token_start + step);
-		highlight(*_hi, tv, "IncSearch");
+		// highlight
+		auto hl_hash = as::frame::compute_hash(f.hash, a.token_start + step);
+		_hl_tracker->mark_active(hl_hash, a.token_start + step, "IncSearch");
 	}
 }
 
@@ -374,8 +379,8 @@ auto as::eval::references(const as::frame& f, T& r) -> void {
 	}
 
 	// highlight
-	auto tv = _tokens->filtered_view(tk);
-	highlight(*_hi, tv, "Underlined");
+	auto hash = as::frame::compute_hash(f.hash, tk);
+	_hl_tracker->mark_active(hash, tk, "Underlined");
 }
 
 
