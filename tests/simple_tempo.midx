@@ -1,0 +1,16 @@
+~ Simple tempo test
+
+test1
+	:tr 1 0 0 0
+;
+
+test2
+	:tr ^2 1 0 0 0
+;
+
+test3
+	^2 &test1
+;
+
+&test2
+&test3

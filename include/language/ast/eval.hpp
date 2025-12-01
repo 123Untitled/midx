@@ -61,30 +61,30 @@ namespace as {
 		mx::usz node;
 		mx::usz hash;
 		mx::frac time;
-		mx::frac speed;
+		mx::frac tempo_factor;  // Conversion factor: 1 unit local time = tempo_factor units global time
 
 		frame(void) noexcept
 		: node{0U},
 		  hash{0U},
 		  time{},
-		  speed{1U, 1U} {
+		  tempo_factor{1U, 1U} {
 		}
 
 		frame(const mx::frac& time) noexcept
 		: node{0U}, // root node
 		  hash{0U},
 		  time{time},
-		  speed{1U, 1U} {
+		  tempo_factor{1U, 1U} {
 		}
 
 		frame(const mx::usz node,
 			  const mx::usz hash,
 			  const mx::frac& time,
-			  const mx::frac& speed) noexcept
+			  const mx::frac& tempo_factor) noexcept
 		: node{node},
 		  hash{hash},
 		  time{time},
-		  speed{speed} {
+		  tempo_factor{tempo_factor} {
 		}
 
 			/* compute_hash
@@ -97,33 +97,31 @@ namespace as {
 			}
 
 			/* local time
-			   compute the local time of the frame */
+			   compute the local time of the frame (now just returns time) */
 			auto local_time(void) const noexcept -> mx::frac {
-				return time * speed;
+				return time;
 			}
 
 			/* fork
-			   create a new frame with given node and time */
+			   create a new frame with given node and time, propagating tempo_factor */
 			auto fork(const mx::usz n,
 					  const mx::frac& t) const noexcept -> as::frame {
-				return as::frame{n, compute_hash(hash, n),
-								(t / speed), speed};
+				return as::frame{n, compute_hash(hash, n), t, tempo_factor};
 			}
 
-			/* fork with speed
-			   create a new frame with given node, time and speed */
-			auto fork(const mx::usz n,
-					  const mx::frac& t,
-					  const mx::frac& s) const noexcept -> as::frame {
-				return as::frame{n, compute_hash(hash, n),
-								(t / speed), s * speed};
-			}
-
-			/* forward
-			   create a new frame with given node and scaled time */
+			/* forward (propagate tempo_factor)
+			   create a new frame with given node and time, keeping same tempo_factor */
 			auto forward(const mx::usz n,
 						 const mx::frac& t) const noexcept -> as::frame {
-				return as::frame{n, compute_hash(hash, n), t, speed};
+				return as::frame{n, compute_hash(hash, n), t, tempo_factor};
+			}
+
+			/* forward (with new tempo_factor)
+			   create a new frame with given node, time and new tempo_factor */
+			auto forward(const mx::usz n,
+						 const mx::frac& t,
+						 const mx::frac& tf) const noexcept -> as::frame {
+				return as::frame{n, compute_hash(hash, n), t, tf};
 			}
 
 	};
@@ -359,7 +357,7 @@ namespace as {
 
 					// reset error on time rewind
 					if (local < time) {
-						std::cout << "\n\x1b[32mResetting crossfade error\x1b[0m\n";
+						//std::cout << "\n\x1b[32mResetting crossfade error\x1b[0m\n";
 						error = 0.0;
 						side  = 0U;
 					}

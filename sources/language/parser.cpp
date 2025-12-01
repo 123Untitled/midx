@@ -687,12 +687,12 @@ auto pr::parser::eval_tempo(mx::usz left) -> mx::usz {
 	// get right header
 	const auto& rh = _tree->header(right);
 
-	// calculate total duration: sum of (child_dur / tempo) for each tempo
+	// Multiple tempos play sequentially: ^2 ^4 plays child at tempo x2, then at tempo x4
+	// Total duration = sum of (child_dur / each_tempo)
 	for (mx::usz i = 0U; i < count; ++i) {
 		const auto& tempo_frac = _tree->frac_at(frac_start + i);
 		dur += rh.dur / tempo_frac;
 	}
-
 	dur.reduce();
 
 	// make tempo node

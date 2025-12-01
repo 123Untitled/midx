@@ -108,7 +108,7 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 	// generate json output
 	if (_hls.has_changes() == true) {
 		auto json = _hls.generate_json();
-		std::cout << json << std::endl;
+		//std::cout << json << std::endl;
 		app.server().broadcast(std::move(json));
 	}
 

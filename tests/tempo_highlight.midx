@@ -1,0 +1,32 @@
+~ Test highlight duration with tempo
+
+~ Normal speed - each step should last 1 beat
+normal
+	:tr 1 0 0 0
+;
+
+~ Double speed - each step should last 0.5 beat
+fast
+	:tr ^2 1 0 0 0
+;
+
+~ Half speed - each step should last 2 beats
+slow
+	:tr \2 1 0 0 0
+;
+
+~ Via reference - should match inline
+ref_fast
+	^2 &normal
+;
+
+~ Nested tempo - 2x then 3x = 6x total
+nested
+	^2 (^3 :tr 1 0 0 0)
+;
+
+&normal
+&fast
+&slow
+&ref_fast
+&nested

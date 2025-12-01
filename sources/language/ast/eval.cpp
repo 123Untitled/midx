@@ -90,18 +90,42 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 		  auto  tk = t.token_start;
 	const auto end = t.frac_start + t.count;
 
-	for (; it < end; ++it, ++tk) {
-		const auto& frac = _tree->frac_at(it);
+	// Multiple tempos play sequentially: find which tempo segment we're in
+	// Each segment has duration = child.dur / tempo
+	const auto& child_dur = _tree->header(t.child).dur;
 
-		// duration of child at this tempo
-		const auto dur = _tree->header(t.child).dur;// / frac;
+	for (mx::usz i = 0U; i < t.count; ++i, ++tk) {
+		const auto& tempo_frac = _tree->frac_at(t.frac_start + i);
 
-		if (time < dur) {
-			// push child node with tempo-adjusted speed
-			as::eval::dispatch<T>(f.fork(t.child, time, frac), r);
+		// Duration of this tempo segment (wall-clock time)
+		const auto segment_dur = child_dur / tempo_frac;
+
+		if (time < segment_dur) {
+			// We're in this tempo segment
+			// Convert wall-clock time to child's local time: child_time = time * tempo
+			const auto child_time = time * tempo_frac;
+
+			// Calculate new tempo_factor for child
+			// If parent has factor X, and we apply tempo Y:
+			// 1 unit child time = (1/Y) units parent time = (1/Y * X) units global time
+			const auto child_tempo_factor = f.tempo_factor / tempo_frac;
+
+
+
+			// highlight with expiration			const auto& frac_value = _tree->frac_at(tk);
+			const auto remaining_local = segment_dur - time;
+			const auto remaining_global = remaining_local * f.tempo_factor;
+			const auto expire = _absolute + remaining_global;
+			_hls->mark_active(tk, "Underlined", expire);
+
+			// Evaluate child with new time and tempo_factor
+			as::eval::dispatch<T>(f.forward(t.child, child_time, child_tempo_factor), r);
+
 			break;
 		}
-		time -= dur;
+
+		// Move to next segment
+		time -= segment_dur;
 	}
 
 	// highlight with expiration
@@ -150,21 +174,13 @@ auto as::eval::parallel(const as::frame& f, T& r) -> void {
 		  auto it = p.range.start;
 	const auto end = p.range.end();
 
-	const auto time  = p.header.mod(f.local_time());
-	const auto local = time / f.speed;
+	const auto time = p.header.mod(f.local_time());
 
 	// loop over child nodes
 	for (; it < end; ++it) {
 		const auto node = _tree->remap_index(it);
-		const auto& h   = _tree->header(node);
 
-		as::eval::dispatch<T>(
-				as::frame{
-					node,
-					as::frame::compute_hash(f.hash, node),
-					local,
-					f.speed},
-		r);
+		as::eval::dispatch<T>(f.fork(node, time), r);
 	}
 }
 
@@ -189,8 +205,8 @@ auto as::eval::crossfade(const as::frame& f, T& r) -> void {
 			auto& c = _cross[f.hash];
 
 			if (lr.edge || rr.edge) {
-				c.evaluate(time, cf.header.progress(time / f.speed));
-				std::cout << (c.side ? "\x1b[35mB\x1b[0m" : "\x1b[33mA\x1b[0m") << std::flush;
+				c.evaluate(time, cf.header.progress(time));
+				//std::cout << (c.side ? "\x1b[35mB\x1b[0m" : "\x1b[33mA\x1b[0m") << std::flush;
 			}
 
 			// merge according to side
@@ -265,11 +281,9 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 		if (!edge)
 			return;
 
-		const auto next_step_local = mx::frac{step + 1, 1};
-		const auto expire = _absolute + (next_step_local - time) / f.speed;
-
-		//const auto remaining = mx::frac{1, 1} - (time - mx::frac{step, 1});
-		//const auto expire    = _absolute + (remaining / f.speed);
+		// Calculate when this step expires
+		const auto remaining = mx::frac{step + 1U, 1U} - time;
+		const auto expire    = _absolute + (remaining * f.tempo_factor);
 
 		const char* group    = "CurSearch";
 		_hls->mark_active(a.token_start + step, group, expire);
@@ -306,7 +320,7 @@ auto as::eval::track(const as::frame& f, T& expr) -> void {
 
     const auto& tr = _tree->node<as::track>(f.node);
 
-	const auto time = tr.header.mod(f.local_time());// / f.speed;
+	const auto time = tr.header.mod(f.local_time());
 
 
 	if constexpr (mx::is_same<T, as::expr_result>) {
@@ -378,26 +392,14 @@ auto as::eval::references(const as::frame& f, T& r) -> void {
 
 		if (time < dur) {
 
-			const auto fc = f.fork(node, time);
-			//const auto fc = f.forward(node, time);
-			//
-			//auto old = _hashes.find(fc.hash);
-			//bool edge = true;
-			//if (old != _hashes.end())
-			//	edge = time < old->second;
-			//_hashes[fc.hash] = time;
+			// highlight with expiration
+			const auto remaining_local = dur - time;
+			const auto remaining_global = remaining_local * f.tempo_factor;
+			const auto expire = _absolute + remaining_global;
+			_hls->mark_active(tk, "Underlined", expire);
 
-
-			//if (edge) {
-				// highlight with expiration
-				//const auto remaining_local = dur - time;
-				//const auto remaining_global = remaining_local / f.speed;
-				//const auto expire = _absolute + remaining_global;
-				//_hls->mark_active(tk, "IncSearch", expire);
-			//}
-
-			// push node and local tick
-			as::eval::dispatch<T>(fc, r);
+			// evaluate referenced node
+			as::eval::dispatch<T>(f.forward(node, time), r);
 			break;
 		}
 		time -= dur;
