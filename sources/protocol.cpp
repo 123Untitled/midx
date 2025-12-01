@@ -10,6 +10,7 @@ auto mx::protocol::_feed(const mx::u8* it, const mx::u8* end, mx::application& a
 
 	if (_cmd == command::UPDATE && _complete == true) {
 		app.reparse(std::move(_data));
+		_data = mx::string_pool::query();
 		self::reset();
 		return;
 	}

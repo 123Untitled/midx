@@ -269,9 +269,10 @@ std::vector<bool> perlinCrossfade(int length) {
 	return result;
 }
 
+
+
 auto main(int ac, char** av) -> int {
 
-	//
 	//auto N = 32;
 	////auto result = progressiveCrossfade(N);
 	//auto result = floydSteinbergCrossfade(N);

@@ -11,8 +11,7 @@
 as::eval::eval(void) noexcept
 : _tree{nullptr}, _tokens{nullptr},
   _hashes{},
-  _hi{nullptr},
-  _hl_tracker{nullptr} {
+  _hls{nullptr} {
 }
 
 
@@ -22,10 +21,10 @@ as::eval::eval(void) noexcept
    initialize evaluator */
 auto as::eval::init(as::tree& tree,
 					const tk::tokens& tokens,
-					mx::highlight_tracker& hl_tracker) noexcept -> void {
+					mx::highlight_tracker& hls) noexcept -> void {
 	_tree   = &tree;
 	_tokens = &tokens;
-	_hl_tracker = &hl_tracker;
+	_hls = &hls;
 
 	_cross.clear();
 	_hashes.clear();
@@ -34,12 +33,11 @@ auto as::eval::init(as::tree& tree,
 
 /* evaluate
    evaluate the AST and produce MIDI events */
-auto as::eval::evaluate(std::string& hi,
-					    mx::midi_engine& engine,
+auto as::eval::evaluate(mx::midi_engine& engine,
 					    const mx::frac& time) -> void {
 
-	_hi = &hi;
 	_engine = &engine;
+	_absolute = time;
 
 	//_hashes.swap_now();
 
@@ -96,7 +94,7 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 		const auto& frac = _tree->frac_at(it);
 
 		// duration of child at this tempo
-		const auto dur = _tree->header(t.child).dur / frac;
+		const auto dur = _tree->header(t.child).dur;// / frac;
 
 		if (time < dur) {
 			// push child node with tempo-adjusted speed
@@ -106,9 +104,10 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 		time -= dur;
 	}
 
-	// highlight
-	auto hash = as::frame::compute_hash(f.hash, tk);
-	_hl_tracker->mark_active(hash, tk, "Underlined");
+	// highlight with expiration
+	//const auto& frac_value = _tree->frac_at(tk);
+	//const auto expire = f.time + frac_value;
+	//_hl_tracker->mark_active(tk, "Underlined", expire, *_hi);
 }
 
 /* modulo
@@ -135,9 +134,10 @@ auto as::eval::modulo(const as::frame& f, T& r) -> void {
 		time -= frac;
 	}
 
-	// highlight
-	auto hash = as::frame::compute_hash(f.hash, tk);
-	_hl_tracker->mark_active(hash, tk, "Underlined");
+	// highlight with expiration
+	//const auto& frac_value = _tree->frac_at(tk);
+	//const auto expire = f.time + frac_value;
+	//_hl_tracker->mark_active(tk, "Underlined", expire, *_hi);
 }
 
 /* parallel
@@ -196,8 +196,6 @@ auto as::eval::crossfade(const as::frame& f, T& r) -> void {
 			// merge according to side
 			r.merge(c.side ? rr : lr);
 		}
-
-
 
 		// continuous (velo, octa, semi, gate, prob)
 		else if constexpr (T::is_continuous) {
@@ -264,9 +262,17 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 
 		r.accumulate(value, edge);
 
-		// highlight
-		auto hl_hash = as::frame::compute_hash(f.hash, a.token_start + step);
-		_hl_tracker->mark_active(hl_hash, a.token_start + step, "IncSearch");
+		if (!edge)
+			return;
+
+		const auto next_step_local = mx::frac{step + 1, 1};
+		const auto expire = _absolute + (next_step_local - time) / f.speed;
+
+		//const auto remaining = mx::frac{1, 1} - (time - mx::frac{step, 1});
+		//const auto expire    = _absolute + (remaining / f.speed);
+
+		const char* group    = "CurSearch";
+		_hls->mark_active(a.token_start + step, group, expire);
 	}
 }
 
@@ -371,16 +377,39 @@ auto as::eval::references(const as::frame& f, T& r) -> void {
 		const auto& dur = _tree->header(node).dur;
 
 		if (time < dur) {
+
+			const auto fc = f.fork(node, time);
+			//const auto fc = f.forward(node, time);
+			//
+			//auto old = _hashes.find(fc.hash);
+			//bool edge = true;
+			//if (old != _hashes.end())
+			//	edge = time < old->second;
+			//_hashes[fc.hash] = time;
+
+
+			//if (edge) {
+				// highlight with expiration
+				//const auto remaining_local = dur - time;
+				//const auto remaining_global = remaining_local / f.speed;
+				//const auto expire = _absolute + remaining_global;
+				//_hls->mark_active(tk, "IncSearch", expire);
+			//}
+
 			// push node and local tick
-			as::eval::dispatch<T>(f.fork(node, time), r);
+			as::eval::dispatch<T>(fc, r);
 			break;
 		}
 		time -= dur;
 	}
 
-	// highlight
-	auto hash = as::frame::compute_hash(f.hash, tk);
-	_hl_tracker->mark_active(hash, tk, "Underlined");
+
+
+	// highlight with expiration
+	//if (node != 0U) {
+	//	const auto expire = f.time + _tree->header(node).dur;
+	//	_hl_tracker->mark_active(tk, "Underlined", expire, *_hi);
+	//}
 }
 
 

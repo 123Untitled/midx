@@ -52,7 +52,7 @@ namespace mx {
 			// -- public methods ----------------------------------------------
 
 			/* broadcast */
-			auto broadcast(const std::string&) -> void;
+			auto broadcast(std::string&&) -> void;
 
 
 			// -- public overrides --------------------------------------------

@@ -1,5 +1,5 @@
 #include "language/highlight_tracker.hpp"
-#include <sstream>
+#include <algorithm>
 
 
 // -- H I G H L I G H T  T R A C K E R ----------------------------------------
@@ -32,61 +32,105 @@ static auto emit_highlight(std::string& out,
 
 // -- public methods ----------------------------------------------------------
 
-/* end frame
-   finalize frame and generate differential JSON
-   returns true if changes occurred */
-auto mx::highlight_tracker::end_frame(std::string& out) -> bool {
+/* mark active
+   mark a highlight as active with expiration time */
+auto mx::highlight_tracker::mark_active(const mx::usz token_index,
+										const char* group,
+										const mx::frac& expire) -> void {
 
 	if (_tokens == nullptr)
-		return false;
+		return;
 
-	bool changed = false;
-	bool has_added = false;
-	bool has_removed = false;
+	// check if token already exists
+	auto it = _map.find(token_index);
 
-	std::string added;
-	std::string removed;
+	if (it != _map.end()) {
 
-	// find removed highlights (in _active but not in _pending)
-	for (const auto& [hash, entry] : _active) {
-		if (_pending.find(hash) == _pending.end()) {
-			// emit removal JSON
-			const auto tv = _tokens->filtered_view(entry.token_idx);
-			emit_highlight(removed, tv, entry.group);
-			has_removed = true;
-			changed = true;
+		const auto& hi = *it->second;
+
+		// token exists, update if new expire is longer
+		if (expire > hi.expire) {
+			// remove old entry
+			_set.erase(hi);
+
+			// insert updated entry
+			auto inserted = _set.emplace(expire, token_index);
+			it->second = &(*inserted.first);
 		}
+		return;
 	}
 
-	// find added highlights (in _pending but not in _active)
-	for (const auto& [hash, entry] : _pending) {
-		if (_active.find(hash) == _active.end()) {
-			// emit addition JSON
-			const auto tv = _tokens->filtered_view(entry.token_idx);
-			emit_highlight(added, tv, entry.group);
-			has_added = true;
-			changed = true;
+	// new token
+	const auto inserted = _set.emplace(expire, token_index);
+	_map[token_index] = &(*inserted.first);
+
+	_added.push_back({token_index, group});
+}
+
+/* has changes
+   check if there are any changes recorded */
+auto mx::highlight_tracker::has_changes(void) const noexcept -> bool {
+	return _removed.empty() == false
+		  || _added.empty() == false;
+}
+
+auto mx::highlight_tracker::update(const mx::frac& time) -> void {
+
+	// loop over timeouts
+	for (auto it = _set.begin(); it != _set.end(); ) {
+
+		if (it->expire > time)
+			break;
+
+		_removed.push_back(it->token_index);
+
+		// remove from map
+		_map.erase(it->token_index);
+		it = _set.erase(it);
+	}
+}
+
+#include "string_pool.hpp"
+
+/* generate json
+   generate JSON output for current changes */
+auto mx::highlight_tracker::generate_json(void) -> std::string {
+
+	// get string from pool
+	auto json = mx::string_pool::query();
+
+	json.append("{\"type\":\"animation\",");
+
+	// added
+	if (_added.empty() == false) {
+
+		json.append("\"added\":[");
+		for (const auto& a : _added) {
+			const auto tv = _tokens->filtered_view(a.token_index);
+			emit_highlight(json, tv, a.group);
 		}
+		json.back() = ']'; // replace last comma
 	}
 
-	// build differential JSON if changes occurred
-	if (changed) {
-		// remove trailing commas
-		if (has_added && !added.empty() && added.back() == ',')
-			added.pop_back();
-		if (has_removed && !removed.empty() && removed.back() == ',')
-			removed.pop_back();
+	// removed
+	if (_removed.empty() == false) {
+		if (_added.empty() == false) {
+			json.append(",");
+		}
 
-		// build JSON structure
-		out.append("\"added\":[");
-		out.append(added);
-		out.append("],\"removed\":[");
-		out.append(removed);
-		out.append("]");
+		json.append("\"removed\":[");
+		for (const auto& r : _removed) {
+			const auto tv = _tokens->filtered_view(r);
+			emit_highlight(json, tv, "Removed");
+		}
+		json.back() = ']'; // replace last comma
 	}
 
-	// swap maps for next frame (efficient, avoids reallocation)
-	std::swap(_active, _pending);
+	json.append("}\r\n");
 
-	return changed;
+	// clear changes
+	_added.clear();
+	_removed.clear();
+
+	return json;
 }

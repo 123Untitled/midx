@@ -117,7 +117,7 @@ declare -rg cxxflags=($std
 					  '-gdwarf-4'
 					  '-Wall' '-Wextra' '-Werror' '-Wpedantic' '-Weffc++'
 					  '-ferror-limit=1'
-					  #'-fno-rtti'
+					  '-fno-rtti'
 					  '-Winline'
 					  '-Wno-unused' '-Wno-unused-variable' '-Wno-unused-parameter'
 					  '-Wno-unused-function' '-Wno-unused-private-field' '-Wno-unused-local-typedef'
@@ -128,8 +128,8 @@ declare -rg cxxflags=($std
 					  '-fdiagnostics-show-template-tree'
 					  '-Wshadow'
 
-					  '-fconstexpr-steps=200000000'
-					  '-fconstexpr-depth=1000'
+					  #'-fconstexpr-steps=200000000'
+					  #'-fconstexpr-depth=1000'
 
 					  #'-Wno-gnu-designator'
 					  #'-Wno-c99-designator'

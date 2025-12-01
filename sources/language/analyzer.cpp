@@ -1,10 +1,7 @@
 #include "language/analyzer.hpp"
 
-#include <unistd.h>
-#include <sstream>
 
-
-// -- P A R S E R -------------------------------------------------------------
+// -- A N A L Y Z E R ---------------------------------------------------------
 
 // -- public lifecycle --------------------------------------------------------
 
@@ -14,8 +11,7 @@ mx::analyzer::analyzer(void)
   _lexer{}, _parser{},
   _tokens{},
   _tree{},
-  _diagnostic{},
-  _highlights{} {
+  _diagnostic{} {
 }
 
 
@@ -36,77 +32,67 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 	// parse
 	_parser.parse(_tokens, _tree, _diagnostic);
 
+}
 
-	std::stringstream ss;
+#include "string_pool.hpp"
 
-	// --- premier objet : highlights ---
-	//ss << "{\"type\":\"highlight\",\"highlights\":[";
+/* highlights */
+auto mx::analyzer::highlights(void) -> std::string {
 
-	//bool first = true;
-	//for (mx::usz i = 0U; i < _tokens.raw_size(); ++i) {
-	//	const auto& t           = _tokens[i];
-	//	const char* group       = tk::vim_highlight[t.id];
-	//
-	//	if (!first)
-	//		ss << ",";
-	//	first = false;
-	//
-	//	ss << "{\"l\":" << t.range.ln
-	//	   << ",\"s\":" << t.range.cs
-	//	   << ",\"e\":" << t.range.ce
-	//	   << ",\"g\":\"" << group << "\"}";
-	//}
-	//
-	//ss << "]}\r\n";
+	auto str = mx::string_pool::query();
 
-	//_tokens.for_each
-
-	ss << "{\"type\":\"highlight\",\"highlights\":[";
+	// first object : highlights
+	str.append("{\"type\":\"highlight\",\"highlights\":[");
 	bool first = true;
 
 	_tokens.for_each(
-		[](const tk::const_token_view& tv, std::stringstream& ss, bool& first) static -> void {
+		[](const tk::const_token_view& tv, std::string& str, bool& first) static -> void {
 			const auto& group = tk::highlight[tv.id()];
 			tv.for_each_chunk(
-				[](const tk::chunk& ch, std::stringstream& ss, bool& first, const char* group) static -> void {
+				[](const tk::chunk& ch, std::string& str, bool& first, const char* group) static -> void {
 					if (!first)
-						ss << ",";
+						str.push_back(',');
 					else
 						first = false;
-					ss << "{\"l\":"   << ch.range.ln
-					   << ",\"s\":"   << ch.range.cs
-					   << ",\"e\":"   << ch.range.ce
-					   << ",\"g\":\"" << group
-					   << "\"}";
-			}, ss, first, group);
-	}, ss, first);
 
-	ss << "]}\r\n";
+					str.append("{\"l\":");
+					str.append(std::to_string(ch.range.ln));
+					str.append(",\"s\":");
+					str.append(std::to_string(ch.range.cs));
+					str.append(",\"e\":");
+					str.append(std::to_string(ch.range.ce));
+					str.append(",\"g\":\"");
+					str.append(group);
+					str.append("\"}");
+			}, str, first, group);
+	}, str, first);
+
+	str.append("]}\r\n");
 
 
 
-	// --- deuxième objet : diagnostics ---
-	ss << "{\"type\":\"diagnostic\",\"diagnostics\":[";
+	// second object : diagnostics
+	str.append("{\"type\":\"diagnostic\",\"diagnostics\":[");
 
 	first = true;
 	for (const auto& e : _diagnostic._entries) {
 
 		if (!first)
-			ss << ",";
+			str.push_back(',');
 		first = false;
 
-		ss << "{\"m\":\"" << e.msg
-		   << "\",\"l\":" << e.range.ln
-			<< ",\"s\":" << e.range.cs
-			<< ",\"e\":" << e.range.ce
-			<< "}";
+		str.append("{\"m\":\"");
+		str.append(e.msg);
+		str.append("\",\"l\":");
+		str.append(std::to_string(e.range.ln));
+		str.append(",\"s\":");
+		str.append(std::to_string(e.range.cs));
+		str.append(",\"e\":");
+		str.append(std::to_string(e.range.ce));
+		str.append("}");
 	}
 
-	ss << "]}\r\n";
+	str.append("]}\r\n");
 
-	_highlights = ss.str();
-
-	//std::string json = ss.str();
-
-	//_highlights = "Content-Length: " + std::to_string(json.size()) + "\r\n\r\n" + json;
+	return str;
 }

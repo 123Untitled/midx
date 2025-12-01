@@ -125,6 +125,7 @@ namespace as {
 						 const mx::frac& t) const noexcept -> as::frame {
 				return as::frame{n, compute_hash(hash, n), t, speed};
 			}
+
 	};
 
 
@@ -339,11 +340,12 @@ namespace as {
 			/* engine */
 			mx::midi_engine* _engine;
 
-			/* highlight stream */
-			std::string* _hi;
+			/* highlights */
+			mx::highlight_tracker* _hls;
 
-			/* highlight tracker */
-			mx::highlight_tracker* _hl_tracker;
+			/* absolute time */
+			mx::frac _absolute;
+
 
 			struct cross_state {
 				mx::frac time;
@@ -396,16 +398,13 @@ namespace as {
 
 			/* evaluate
 			   evaluate the AST and produce MIDI events */
-			auto evaluate(std::string&,
-						   mx::midi_engine&,
-					 const mx::frac&) -> void;
+			auto evaluate(mx::midi_engine&, const mx::frac&) -> void;
 
 
 			/* dispatch
 			   dispatch evaluation based on node type */
 			template <typename T>
 			auto dispatch(const as::frame&, T&) -> void;
-
 
 
 

@@ -30,12 +30,12 @@ mx::server::server(const mx::monitor& monitor)
 // -- public methods ----------------------------------------------------------
 
 /* broadcast */
-auto mx::server::broadcast(const std::string& msg) -> void {
+auto mx::server::broadcast(std::string&& msg) -> void {
 
 	if (_client.is_connected() == false)
 		return;
 
-	_client.send(msg);
+	_client.send(std::move(msg));
 }
 
 

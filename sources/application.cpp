@@ -46,12 +46,7 @@ auto mx::application::exit(void) noexcept -> void {
 
 /* toggle play */
 auto mx::application::toggle_play(void) noexcept -> void {
-	if (_player.is_playing() == true) {
-		_player.stop();
-	}
-	else {
-		_player.start();
-	}
+	_player.toggle();
 }
 
 /* run */

@@ -26,14 +26,14 @@ auto mx::client::initialize(mx::socket&& sck) -> void {
 }
 
 /* send */
-auto mx::client::send(const std::string& msg) -> void {
+auto mx::client::send(std::string&& msg) -> void {
 
 	// enable write event
 	if (_queue.empty() == true)
 		_monitor->add_write(*this);
 
 	// queue message
-	_queue.emplace_back(msg);
+	_queue.emplace_back(std::move(msg));
 }
 
 /* is connected */
@@ -137,8 +137,10 @@ auto mx::client::_write(mx::application& app) -> void {
 	msg.advance(static_cast<mx::usz>(sent));
 
 	// if message fully sent, remove from queue
-	if (msg.is_sent() == true)
+	if (msg.is_sent() == true) {
+		_queue.front().store();
 		_queue.pop_front();
+	}
 
 	// if all data sent, remove write event
 	if (_queue.empty())

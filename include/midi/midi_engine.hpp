@@ -99,7 +99,9 @@ namespace mx {
 				}
 
 				// add clock stop event
-				_evs.stop();
+				//_evs.stop();
+
+				reset();
 
 				// send events
 				_evs.send(_srcs[0U]);
@@ -167,21 +169,21 @@ namespace mx {
 					_active[_count++] = i;
 				}
 				else {
-					std::cout << "\x1b[33mWarning:\x1b[0m "
-							  << "Retriggering note before note off. "
-							  << "Ch " << static_cast<mx::usz>(ch)
-							  << " No " << static_cast<mx::usz>(no)
-							  << " Ticks " << ticks << std::endl;
+					//std::cout << "\x1b[33mWarning:\x1b[0m "
+					//		  << "Retriggering note before note off. "
+					//		  << "Ch " << static_cast<mx::usz>(ch)
+					//		  << " No " << static_cast<mx::usz>(no)
+					//		  << " Ticks " << ticks << std::endl;
 					// note off before note on
 					_evs.note_off(ch, no);
 				}
 
 				// note on event can be triggered here
 				_evs.note_on(ch, no, ve);
-				std::cout << "\x1b[32mNote On:\x1b[0m Ch " << static_cast<mx::usz>(ch)
-						  << " No " << static_cast<mx::usz>(no)
-						  << " Ve " << static_cast<mx::usz>(ve)
-						  << " Ticks " << ticks << std::endl;
+				//std::cout << "\x1b[32mNote On:\x1b[0m Ch " << static_cast<mx::usz>(ch)
+				//		  << " No " << static_cast<mx::usz>(no)
+				//		  << " Ve " << static_cast<mx::usz>(ve)
+				//		  << " Ticks " << ticks << std::endl;
 
 				st.epoch = _epoch;
 				st.ticks = ticks;
@@ -207,6 +209,8 @@ namespace mx {
 
 					// note off event can be triggered here
 					_evs.note_off(ch, no);
+					//std::cout << "\x1b[31mNote Off:\x1b[0m Ch " << static_cast<mx::usz>(ch)
+					//		  << " No " << static_cast<mx::usz>(no) << std::endl;
 
 					// swap pop
 					_active[i] = _active[--_count];

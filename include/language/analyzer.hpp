@@ -37,7 +37,6 @@ namespace mx {
 			/* parser */
 			pr::parser _parser;
 
-
 			/* tokens */
 			tk::tokens _tokens;
 
@@ -46,9 +45,6 @@ namespace mx {
 
 			/* diagnostic */
 			an::diagnostic _diagnostic;
-
-
-			std::string _highlights;
 
 
 		public:
@@ -65,9 +61,7 @@ namespace mx {
 			auto analyze(std::string&&) -> void;
 
 			/* highlights */
-			auto highlights(void) noexcept -> std::string& {
-				return _highlights;
-			}
+			auto highlights(void) -> std::string;
 
 			/* has errors */
 			auto has_errors(void) const noexcept -> bool {

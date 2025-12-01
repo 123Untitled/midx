@@ -110,7 +110,7 @@ auto mx::clock::_loop(void) noexcept -> void {
 	if (mx::realtime(_nano_clock))
 		return;
 
-	self::bpm(140U);
+	self::bpm(130U);
 	self::_init_clock();
 
 	// tick notification

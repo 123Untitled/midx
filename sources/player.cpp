@@ -1,16 +1,15 @@
 #include "player.hpp"
 #include "language/ast/tree.hpp"
-#include "time/signature.hpp"
 
 #include "monitoring/monitor.hpp"
 #include "monitoring/server.hpp"
 #include "application.hpp"
 
 
-#include <iostream>
-#include <sstream>
+#include "print.hpp"
 
 #include <sys/event.h>
+
 
 // -- P L A Y E R -------------------------------------------------------------
 
@@ -22,6 +21,7 @@ mx::player::player(const mx::monitor& monitor)
   _clock{monitor.kqueue(), *this},
   _tree{nullptr},
   _engine{},
+  _hls{},
   _ticks{0U} {
 
 	// add user event to monitor
@@ -58,13 +58,22 @@ auto mx::player::stop(void) -> void {
 
 	// send stop clock midi event
 	_engine.stop();
+
+	// reset highlights
+	_hls.reset();
+}
+
+/* toggle */
+auto mx::player::toggle(void) -> void {
+	is_playing() == true ? stop() : start();
 }
 
 /* switch tree */
 auto mx::player::switch_tree(as::tree& tree) noexcept -> void {
-	_hl_tracker.init(*tree.tokens);
-	_eval.init(tree, *tree.tokens, _hl_tracker);
+	_hls.init(*tree.tokens);
+	_eval.init(tree, *tree.tokens, _hls);
 	_tree = &tree;
+	_hls.reset();
 }
 
 /* is playing */
@@ -85,21 +94,24 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 	// make fractional time
 	const auto time = mx::make_reduced_frac(_ticks, MIDI_PPQN);
 
-	static std::string s;
+	// clear previous output
+	_hls.clear();
 
-	_hl_tracker.begin_frame();
+
 	_engine.off_pass();
-	_eval.evaluate(s, _engine, time);
+	_eval.evaluate(_engine, time);
 	_engine.flush();
 
-	// only send if highlights changed
-	if (_hl_tracker.end_frame(s)) {
-		s.insert(0, "{\"type\":\"animation\",");
-		s.append("}\r\n");
-		app.server().broadcast(s);
+
+	_hls.update(time);
+
+	// generate json output
+	if (_hls.has_changes() == true) {
+		auto json = _hls.generate_json();
+		std::cout << json << std::endl;
+		app.server().broadcast(std::move(json));
 	}
 
-	s.clear();
 	++_ticks;
 }
 

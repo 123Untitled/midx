@@ -8,6 +8,8 @@
 #include <string>
 #include <deque>
 
+#include "string_pool.hpp"
+
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
@@ -29,8 +31,8 @@ namespace mx {
 
 		public:
 
-			explicit send_buffer(const std::string& msg)
-			: _data{msg}, _sent{0U} {
+			explicit send_buffer(std::string&& msg)
+			: _data{std::move(msg)}, _sent{0U} {
 			}
 
 			auto data(void) const noexcept -> const char* {
@@ -40,12 +42,16 @@ namespace mx {
 			auto size(void) const noexcept -> mx::usz {
 				return _data.size() - _sent;
 			}
-			auto advance(const mx::usz n) noexcept -> void {
-				_sent += n;
+			auto advance(const mx::usz size) noexcept -> void {
+				_sent += size;
 			}
 
 			auto is_sent(void) const noexcept -> bool {
 				return _sent >= _data.size();
+			}
+
+			auto store(void) -> void {
+				mx::string_pool::store(std::move(_data));
 			}
 
 	}; // class send_buffer
@@ -115,7 +121,7 @@ namespace mx {
 			auto initialize(mx::socket&&) -> void;
 
 			/* send */
-			auto send(const std::string&) -> void;
+			auto send(std::string&&) -> void;
 
 			/* is connected */
 			auto is_connected(void) const noexcept -> bool;

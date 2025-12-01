@@ -49,7 +49,7 @@ namespace mx {
 			mx::midi_engine _engine;
 
 			/* highlight tracker */
-			mx::highlight_tracker _hl_tracker;
+			mx::highlight_tracker _hls;
 
 			/* ticks */
 			mx::usz _ticks;
@@ -73,6 +73,9 @@ namespace mx {
 
 			/* stop */
 			auto stop(void) -> void;
+
+			/* toggle */
+			auto toggle(void) -> void;
 
 			/* switch tree */
 			auto switch_tree(as::tree&) noexcept -> void;

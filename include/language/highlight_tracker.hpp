@@ -3,8 +3,10 @@
 
 #include "core/types.hpp"
 #include "language/tokens/tokens.hpp"
+#include "math.hpp"
 #include <unordered_map>
 #include <string>
+#include <set>
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
@@ -24,34 +26,59 @@ namespace mx {
 			/* self type */
 			using self = mx::highlight_tracker;
 
-			/* highlight entry */
-			struct entry final {
-				mx::usz token_idx;
-				const char* group;
 
-				entry(void) noexcept
-				: token_idx{0U}, group{nullptr} {
+			class highlight final {
+
+				private:
+					using self = highlight;
+				public:
+					mx::frac expire;
+					mx::usz token_index;
+
+				highlight(void) noexcept = default;
+
+				highlight(const mx::frac& exp, const mx::usz index) noexcept
+				: expire{exp}, token_index{index} {
 				}
 
-				entry(const mx::usz idx, const char* g) noexcept
-				: token_idx{idx}, group{g} {
+				auto operator<(const self& other) const noexcept -> bool {
+					//if (expire != other.expire)
+					//	return expire < other.expire;
+					//return token_index < other.token_index;
+					// optimized
+					return (expire < other.expire)
+						|| (expire == other.expire && token_index < other.token_index);
 				}
 			};
-
-			/* map type */
-			using map_type = std::unordered_map<mx::usz, entry>;
 
 
 			// -- private members ---------------------------------------------
 
-			/* current active highlights */
-			map_type _active;
+			using set_type = std::set<highlight>;
+			using map_type = std::unordered_map<mx::usz, const highlight*>;
 
-			/* pending highlights for this frame */
-			map_type _pending;
 
-			/* tokens reference */
+			/* sorted indices */
+			set_type _set;
+
+			/* token indices */
+			map_type _map;
+
+			/* tokens */
 			const tk::tokens* _tokens;
+
+
+			class light final {
+				public:
+					mx::usz token_index;
+					const char* group;
+			};
+
+			/* added */
+			std::vector<light> _added;
+
+			/* removed */
+			std::vector<mx::usz> _removed;
 
 
 		public:
@@ -60,7 +87,9 @@ namespace mx {
 
 			/* default constructor */
 			highlight_tracker(void) noexcept
-			: _active{}, _pending{}, _tokens{nullptr} {
+			: _set{},
+			  _map{},
+			  _tokens{nullptr} {
 			}
 
 			/* destructor */
@@ -75,24 +104,36 @@ namespace mx {
 				_tokens = &tokens;
 			}
 
-			/* begin frame
-			   prepare for new evaluation frame */
-			auto begin_frame(void) noexcept -> void {
-				_pending.clear();
-			}
-
 			/* mark active
-			   mark a highlight as active for this frame */
-			auto mark_active(const mx::usz hash,
-							 const mx::usz token_idx,
-							 const char* group) -> void {
-				_pending.emplace(hash, entry{token_idx, group});
+			   mark a highlight as active with expiration time */
+			auto mark_active(const mx::usz, const char*, const mx::frac&) -> void;
+
+			auto update(const mx::frac&) -> void;
+
+			/* has changes
+			   check if there are any changes recorded */
+			auto has_changes(void) const noexcept -> bool;
+
+			/* generate json
+			   generate the JSON output for added and removed highlights */
+			auto generate_json(void) -> std::string;
+
+
+			/* clear output
+			   clear the accumulated JSON output buffer */
+			auto clear(void) noexcept -> void {
+				_removed.clear();
+				  _added.clear();
 			}
 
-			/* end frame
-			   finalize frame and generate differential JSON
-			   returns true if changes occurred */
-			auto end_frame(std::string& out) -> bool;
+			/* reset
+			   reset the tracker */
+			auto reset(void) noexcept -> void {
+				_removed.clear();
+				  _added.clear();
+					_map.clear();
+					_set.clear();
+			}
 
 
 			// -- public accessors --------------------------------------------

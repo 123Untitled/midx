@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include "reader.hpp"
+#include "string_pool.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
