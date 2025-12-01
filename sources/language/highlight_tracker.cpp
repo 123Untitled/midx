@@ -53,13 +53,19 @@ auto mx::highlight_tracker::mark_active(const mx::usz token_index,
 			// remove old entry
 			_set.erase(hi);
 
+			//std::cout << "\x1b[33mUpdating\x1b[0m: " << token_index << " to expire at " << expire << "\n";
+
 			// insert updated entry
 			auto inserted = _set.emplace(expire, token_index);
 			it->second = &(*inserted.first);
 		}
+		else {
+			//std::cout << "\x1b[34mIgnoring\x1b[0m: " << token_index << " with expire at " << expire << "\n";
+		}
 		return;
 	}
 
+	//std::cout << "\x1b[32mAdding\x1b[0m: " << token_index << " to expire at " << expire << "\n";
 	// new token
 	const auto inserted = _set.emplace(expire, token_index);
 	_map[token_index] = &(*inserted.first);

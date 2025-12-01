@@ -1,0 +1,40 @@
+~ Test highlight duration with modulo operator
+
+~ Normal sequence - 4 steps, each lasts 1 beat
+normal
+	:tr 1 0 0 0
+;
+
+~ Modulo cuts at 3 - only 3 steps shown, last step should end at beat 3
+modulo3
+	%3 :tr 1 0 0 0
+;
+
+~ Modulo + tempo - modulo %2, tempo x2
+~ Duration: 2 beats local → 1 beat global
+~ Each step: 0.5 beat global, but only 2 steps (cut at %2)
+modulo_tempo
+	%2 ^2 :tr 1 0 0 0
+;
+
+~ Tempo + modulo - tempo x2, then modulo %3
+~ Child duration: 4 beats → 2 beats (tempo x2)
+~ Modulo cuts at 3 beats → final = 2 beats (min of both)
+tempo_modulo
+	^2 (%3 :tr 1 0 0 0)
+;
+
+~ Via reference with modulo
+ref
+	:tr 1 0 0 0
+;
+
+modulo_ref
+	%2 &ref
+;
+
+&normal
+&modulo3
+&modulo_tempo
+&tempo_modulo
+&modulo_ref

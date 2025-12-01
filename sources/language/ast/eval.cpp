@@ -69,7 +69,7 @@ auto as::eval::group(const as::frame& f, T& r) -> void {
 		const auto& dur = _tree->header(node).dur;
 
 		if (time < dur) {
-			as::eval::dispatch<T>(f.fork(node, time), r);
+			as::eval::dispatch<T>(f.propagate(node, time), r);
 			return;
 		}
 
@@ -94,8 +94,8 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 	// Each segment has duration = child.dur / tempo
 	const auto& child_dur = _tree->header(t.child).dur;
 
-	for (mx::usz i = 0U; i < t.count; ++i, ++tk) {
-		const auto& tempo_frac = _tree->frac_at(t.frac_start + i);
+	for (; it < end; ++it, ++tk) {
+		const auto& tempo_frac = _tree->frac_at(it);
 
 		// Duration of this tempo segment (wall-clock time)
 		const auto segment_dur = child_dur / tempo_frac;
@@ -110,22 +110,34 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 			// 1 unit child time = (1/Y) units parent time = (1/Y * X) units global time
 			const auto child_tempo_factor = f.tempo_factor / tempo_frac;
 
+			// Calculate new modulo_limit for child
+			// If parent has modulo_limit in wall-clock space, convert to child's local space
+			// child_limit = parent_limit * tempo (because tempo speeds up time)
+			const auto child_modulo_limit = f.modulo_limit * tempo_frac;
 
+			// Evaluate child with new time, tempo_factor and modulo_limit
+			as::eval::dispatch<T>(f.forward(t.child, child_time, child_tempo_factor, child_modulo_limit), r);
 
-			// highlight with expiration			const auto& frac_value = _tree->frac_at(tk);
-			const auto remaining_local = segment_dur - time;
-			const auto remaining_global = remaining_local * f.tempo_factor;
-			const auto expire = _absolute + remaining_global;
-			_hls->mark_active(tk, "Underlined", expire);
+			if (has_edge(time, f.hash.re_hash(it))) {
+				static int c = 0;
+					std::cout << ++c << " EDGE\n";
 
-			// Evaluate child with new time and tempo_factor
-			as::eval::dispatch<T>(f.forward(t.child, child_time, child_tempo_factor), r);
+					// highlight with expiration
+					const auto actual_end = (f.modulo_limit < segment_dur) ? f.modulo_limit : segment_dur;
+					const auto remaining_local = actual_end - time;
+					const auto remaining_global = remaining_local * f.tempo_factor;
+					const auto expire = _absolute + remaining_global;
+					_hls->mark_active(tk, "Underlined", expire);
+			}
+			_hashes[f.hash] = time;
+
 
 			break;
 		}
 
 		// Move to next segment
 		time -= segment_dur;
+
 	}
 
 	// highlight with expiration
@@ -151,8 +163,12 @@ auto as::eval::modulo(const as::frame& f, T& r) -> void {
 		const auto& frac = _tree->frac_at(it);
 
 		if (time < frac) {
-			// push child node with modulated time
-			as::eval::dispatch<T>(f.fork(m.child, time), r);
+			// Calculate modulo_limit for child: take minimum of parent limit and this modulo
+			const auto child_modulo_limit = (frac < f.modulo_limit) ? frac : f.modulo_limit;
+			//const auto child_modulo_limit = frac;
+
+			// Evaluate child with modulo limit
+			as::eval::dispatch<T>(f.forward(m.child, time, f.tempo_factor, child_modulo_limit), r);
 			break;
 		}
 		time -= frac;
@@ -171,16 +187,15 @@ auto as::eval::parallel(const as::frame& f, T& r) -> void {
 
 	const auto& p = _tree->node<as::parallel>(f.node);
 
-		  auto it = p.range.start;
-	const auto end = p.range.end();
-
-	const auto time = p.header.mod(f.local_time());
+		  auto it   = p.range.start;
+	const auto end  = p.range.end();
+	const auto time = p.header.mod(f.time);
 
 	// loop over child nodes
 	for (; it < end; ++it) {
 		const auto node = _tree->remap_index(it);
 
-		as::eval::dispatch<T>(f.fork(node, time), r);
+		as::eval::dispatch<T>(f.propagate(node, time), r);
 	}
 }
 
@@ -190,12 +205,12 @@ template <typename T>
 auto as::eval::crossfade(const as::frame& f, T& r) -> void {
 
 	const auto&  cf = _tree->node<as::crossfade>(f.node);
-	const auto time = cf.header.mod(f.local_time());
+	const auto time = cf.header.mod(f.time);
 
 
 	T lr, rr;
-	as::eval::dispatch(f.fork(cf.left,  time), lr);
-	as::eval::dispatch(f.fork(cf.right, time), rr);
+	as::eval::dispatch(f.propagate(cf.left,  time), lr);
+	as::eval::dispatch(f.propagate(cf.right, time), rr);
 
 	if constexpr (as::is_param_accum<T>) {
 
@@ -263,15 +278,15 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 		const auto step = a.header.dur.num != 1U ? time.num / time.den : 0U;
 
 
-		const auto hash = f.compute_hash(f.hash, step);
-		const auto it   = _hashes.find(hash);
+		bool edge = has_edge(time, f.hash.re_hash(step));
 
-		bool edge  = true;
+		//const auto it   = _hashes.find(hash);
+		//bool edge = true;
 
-		if (it != _hashes.end())
-			edge = time < it->second;
-
-		_hashes[hash] = time;
+		//if (it != _hashes.end())
+		//	edge = time < it->second;
+		//
+		//_hashes[hash] = time;
 
 		// get value at step
 		const typename T::type value = _tree->value_at/*<T::type>*/(a.value_start + step);
@@ -281,9 +296,13 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 		if (!edge)
 			return;
 
-		// Calculate when this step expires
-		const auto remaining = mx::frac{step + 1U, 1U} - time;
-		const auto expire    = _absolute + (remaining * f.tempo_factor);
+		// Calculate when this step expires (limited by modulo if present)
+		const auto next_step = mx::frac{step + 1U, 1U};
+		const auto actual_end = (f.modulo_limit < next_step) ? f.modulo_limit : next_step;
+
+		const auto remaining_local = actual_end - time;
+		const auto remaining_global = remaining_local * f.tempo_factor;
+		const auto expire = _absolute + remaining_global;
 
 		const char* group    = "CurSearch";
 		_hls->mark_active(a.token_start + step, group, expire);
@@ -306,7 +325,7 @@ auto as::eval::param(const as::frame& f, T& r) -> void {
 		const auto& dur = _tree->header(node).dur;
 
 		if (time < dur) {
-			as::eval::dispatch<T>(f.fork(node, time), r);
+			as::eval::dispatch<T>(f.propagate(node, time), r);
 			return;
 		}
 
@@ -328,43 +347,43 @@ auto as::eval::track(const as::frame& f, T& expr) -> void {
 		as::track_result r;
 
 		if (tr.params[pa::trig]) {
-			const auto n = tr.params[pa::trig];
-			as::eval::param(f.forward(n, time), r.trig);
+			as::eval::param(f.propagate(tr.params[pa::trig],
+										time), r.trig);
 		}
 
 		if (tr.params[pa::note]) {
-			const auto n = tr.params[pa::note];
-			as::eval::param(f.forward(n, time), r.note);
+			as::eval::param(f.propagate(tr.params[pa::note],
+										time), r.note);
 		}
 
 		if (tr.params[pa::chan]) {
-			const auto n = tr.params[pa::chan];
-			as::eval::param(f.forward(n, time), r.chan);
+			as::eval::param(f.propagate(tr.params[pa::chan],
+										time), r.chan);
 		}
 
 		if (tr.params[pa::velo]) {
-			const auto n = tr.params[pa::velo];
-			as::eval::param(f.forward(n, time), r.velo);
+			as::eval::param(f.propagate(tr.params[pa::velo],
+										time), r.velo);
 		}
 
 		if (tr.params[pa::gate]) {
 			const auto n = tr.params[pa::gate];
-			as::eval::param(f.forward(n, time), r.gate);
+			as::eval::param(f.propagate(n, time), r.gate);
 		}
 
 		if (tr.params[pa::prob]) {
 			const auto n = tr.params[pa::prob];
-			as::eval::param(f.forward(n, time), r.prob);
+			as::eval::param(f.propagate(n, time), r.prob);
 		}
 
 		if (tr.params[pa::octa]) {
 			const auto n = tr.params[pa::octa];
-			as::eval::param(f.forward(n, time), r.octa);
+			as::eval::param(f.propagate(n, time), r.octa);
 		}
 
 		if (tr.params[pa::semi]) {
 			const auto n = tr.params[pa::semi];
-			as::eval::param(f.forward(n, time), r.semi);
+			as::eval::param(f.propagate(n, time), r.semi);
 		}
 
 		expr.accumulate(r);
@@ -392,14 +411,16 @@ auto as::eval::references(const as::frame& f, T& r) -> void {
 
 		if (time < dur) {
 
-			// highlight with expiration
-			const auto remaining_local = dur - time;
+			// highlight with expiration (limited by modulo if present)
+			const auto actual_end = (f.modulo_limit < dur) ? f.modulo_limit : dur;
+
+			const auto remaining_local = actual_end - time;
 			const auto remaining_global = remaining_local * f.tempo_factor;
 			const auto expire = _absolute + remaining_global;
-			_hls->mark_active(tk, "Underlined", expire);
+			//_hls->mark_active(tk, "Underlined", expire);
 
 			// evaluate referenced node
-			as::eval::dispatch<T>(f.forward(node, time), r);
+			as::eval::dispatch<T>(f.propagate(node, time), r);
 			break;
 		}
 		time -= dur;
@@ -428,7 +449,7 @@ auto as::eval::program(const as::frame& f, T& r) -> void {
 	// loop over child nodes
 	for (; it < end; ++it) {
 		const auto node = _tree->remap_index(it);
-		as::eval::dispatch(f.fork(node, f.time), r); // optimize this
+		as::eval::dispatch(f.propagate(node, f.time), r); // optimize this
 	}
 }
 

@@ -57,44 +57,92 @@ namespace as {
 	class tree;
 
 
+	struct hash final {
+
+		private:
+			// -- private types -----------------------------------------------
+
+			/* self type */
+			using self = as::hash;
+
+			// -- private members ---------------------------------------------
+			mx::usz _hash;
+
+
+		public:
+
+			// -- public lifecycle --------------------------------------------
+
+			/* default constructor */
+			hash(void) noexcept = default;
+
+			/* constructor */
+			hash(const mx::usz h) noexcept
+			: _hash{h} {
+			}
+
+			auto re_hash(const mx::usz v) noexcept -> self& {
+				_hash ^= v + 0x9e3779b97f4a7c15ULL
+					   + (_hash << 6U)
+					   + (_hash >> 2U);
+				return *this;
+			}
+
+			auto re_hash(const mx::usz v) const noexcept -> self {
+				return self{_hash}.re_hash(v);
+			}
+
+			operator mx::usz(void) const noexcept {
+				return _hash;
+			}
+
+	}; // struct hash
+
+
 	struct frame final {
 		mx::usz node;
-		mx::usz hash;
+		as::hash hash;
+		//mx::usz hash;
 		mx::frac time;
-		mx::frac tempo_factor;  // Conversion factor: 1 unit local time = tempo_factor units global time
+		mx::frac tempo_factor;   // Conversion factor: 1 unit local time = tempo_factor units global time
+		mx::frac modulo_limit;   // Maximum local time before wrap/cut (max value = no limit)
 
 		frame(void) noexcept
 		: node{0U},
 		  hash{0U},
 		  time{},
-		  tempo_factor{1U, 1U} {
+		  tempo_factor{1U, 1U},
+		  modulo_limit{UINT32_MAX, 1U} {
 		}
 
 		frame(const mx::frac& time) noexcept
 		: node{0U}, // root node
 		  hash{0U},
 		  time{time},
-		  tempo_factor{1U, 1U} {
+		  tempo_factor{1U, 1U},
+		  modulo_limit{UINT32_MAX, 1U} {
 		}
 
 		frame(const mx::usz node,
 			  const mx::usz hash,
 			  const mx::frac& time,
-			  const mx::frac& tempo_factor) noexcept
+			  const mx::frac& tempo_factor,
+			  const mx::frac& modulo_limit) noexcept
 		: node{node},
 		  hash{hash},
 		  time{time},
-		  tempo_factor{tempo_factor} {
+		  tempo_factor{tempo_factor},
+		  modulo_limit{modulo_limit} {
 		}
 
 			/* compute_hash
 			   compute a hash for a given frame */
-			static auto compute_hash(mx::u64 h, const mx::u64 v) noexcept -> mx::usz {
-				h ^= v + 0x9e3779b97f4a7c15ULL
-					   + (h << 6U)
-					   + (h >> 2U);
-				return h;
-			}
+			//static auto compute_hash(mx::u64 h, const mx::u64 v) noexcept -> mx::usz {
+			//	h ^= v + 0x9e3779b97f4a7c15ULL
+			//		   + (h << 6U)
+			//		   + (h >> 2U);
+			//	return h;
+			//}
 
 			/* local time
 			   compute the local time of the frame (now just returns time) */
@@ -102,26 +150,47 @@ namespace as {
 				return time;
 			}
 
-			/* fork
-			   create a new frame with given node and time, propagating tempo_factor */
-			auto fork(const mx::usz n,
+			/* propagate
+			   create a new frame with given node and time, keeping same tempo_factor and modulo_limit */
+			auto propagate(const mx::usz n,
 					  const mx::frac& t) const noexcept -> as::frame {
-				return as::frame{n, compute_hash(hash, n), t, tempo_factor};
+				return as::frame{n, 
+					// compute_hash(hash, n),
+					hash.re_hash(n),
+					t, tempo_factor, modulo_limit};
 			}
 
-			/* forward (propagate tempo_factor)
-			   create a new frame with given node and time, keeping same tempo_factor */
-			auto forward(const mx::usz n,
-						 const mx::frac& t) const noexcept -> as::frame {
-				return as::frame{n, compute_hash(hash, n), t, tempo_factor};
-			}
+			/* forward (propagate both factors)
+			   create a new frame with given node and time, keeping same tempo_factor and modulo_limit */
+			//auto forward(const mx::usz n,
+			//			 const mx::frac& t) const noexcept -> as::frame {
+			//	return as::frame{n,
+			//		hash.re_hash(n),
+			//		//compute_hash(hash, n),
+			//		t, tempo_factor, modulo_limit};
+			//}
 
 			/* forward (with new tempo_factor)
-			   create a new frame with given node, time and new tempo_factor */
+			   create a new frame with given node, time and new tempo_factor, propagating modulo_limit */
 			auto forward(const mx::usz n,
 						 const mx::frac& t,
 						 const mx::frac& tf) const noexcept -> as::frame {
-				return as::frame{n, compute_hash(hash, n), t, tf};
+				return as::frame{n,
+					// compute_hash(hash, n),
+					hash.re_hash(n),
+					t, tf, modulo_limit};
+			}
+
+			/* forward (with new tempo_factor and modulo_limit)
+			   create a new frame with given node, time, tempo_factor and modulo_limit */
+			auto forward(const mx::usz n,
+						 const mx::frac& t,
+						 const mx::frac& tf,
+						 const mx::frac& ml) const noexcept -> as::frame {
+				return as::frame{n,
+					// compute_hash(hash, n),
+					hash.re_hash(n),
+					t, tf, ml};
 			}
 
 	};
@@ -377,6 +446,17 @@ namespace as {
 			};
 
 			std::unordered_map<mx::usz, cross_state> _cross;
+
+
+			auto has_edge(const mx::frac& time,
+						  const mx::usz   hash) -> bool {
+				bool edge = true;
+				if (const auto it = _hashes.find(hash); it != _hashes.end())
+					edge = time < it->second;
+				_hashes[hash] = time;
+				return edge;
+			}
+
 
 		public:
 
