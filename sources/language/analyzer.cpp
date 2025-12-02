@@ -1,4 +1,5 @@
 #include "language/analyzer.hpp"
+#include "string_pool.hpp"
 
 
 // -- A N A L Y Z E R ---------------------------------------------------------
@@ -19,6 +20,7 @@ mx::analyzer::analyzer(void)
 
 auto mx::analyzer::analyze(std::string&& data) -> void {
 
+	mx::string_pool::store(std::move(_data));
 	_data = std::move(data);
 
 		_tokens.clear();

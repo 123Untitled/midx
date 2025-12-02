@@ -110,10 +110,10 @@ declare -rg std='-std=c++23'
 
 # cxx flags
 declare -rg cxxflags=($std
-					  '-O0'
-					  '-g3'
+					  '-O3'
+					  #'-g3'
 					  #'-fsanitize=thread'
-					  '-fsanitize=address'
+					  #'-fsanitize=address'
 					  '-gdwarf-4'
 					  '-Wall' '-Wextra' '-Werror' '-Wpedantic' '-Weffc++'
 					  '-ferror-limit=1'
@@ -127,22 +127,13 @@ declare -rg cxxflags=($std
 					  '-fdiagnostics-show-location=once'
 					  '-fdiagnostics-show-template-tree'
 					  '-Wshadow'
-
-					  #'-fconstexpr-steps=200000000'
-					  #'-fconstexpr-depth=1000'
-
-					  #'-Wno-gnu-designator'
-					  #'-Wno-c99-designator'
-					  #'-Wno-initializer-overrides'
-					  #'-Wno-gnu-anonymous-struct'
-					  #'-Wno-nested-anon-types'
 					  '-I'$inc_dir
 				)
 
 # linker flags
 declare -rg ldflags=($os_dependencies
 					 #'-fsanitize=thread'
-					 '-fsanitize=address'
+					 #'-fsanitize=address'
 )
 
 

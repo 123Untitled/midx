@@ -11,7 +11,10 @@
 as::eval::eval(void) noexcept
 : _tree{nullptr}, _tokens{nullptr},
   _hashes{},
-  _hls{nullptr} {
+  _engine{nullptr},
+  _hls{nullptr},
+  _absolute{0, 1},
+  _last{0, 1} {
 }
 
 
@@ -39,14 +42,33 @@ auto as::eval::evaluate(mx::midi_engine& engine,
 	_engine = &engine;
 	_absolute = time;
 
-	//_hashes.swap_now();
-
 	as::expr_result r;
 
-	// call dispatch on root frame
-	dispatch(as::frame{time}, r);
+	// evaluate root node
+	as::eval::program(time, r);
 
+	// flush midi events
 	r.flush(*_engine);
+}
+
+
+/* program
+   evaluate a program node */
+template <typename T>
+auto as::eval::program(const mx::frac& time, T& r) -> void {
+
+	const auto& p = _tree->node<as::program>(0U);
+
+		  auto it   = p.range.start;
+	const auto end  = p.range.end();
+		  auto fr   = as::frame{time};
+
+	// loop over child nodes
+	for (; it < end; ++it) {
+		fr.node = _tree->remap_index(it);
+		fr.hash = as::hash{}.re_hash(fr.node);
+		as::eval::dispatch(fr, r);
+	}
 }
 
 
@@ -61,18 +83,55 @@ auto as::eval::group(const as::frame& f, T& r) -> void {
 		  auto it  = g.range.start;
 	const auto end = g.range.end();
 
-	auto time = g.header.mod(f.local_time());
+	auto time = g.header.mod(f.time);
 
-	// loop over child nodes
+	if (f.last.den == 0U)
+		goto diverged;
+
+	{
+		auto last = g.header.mod(f.last);
+
+		// loop over child nodes
+		for (; it < end; ++it) {
+
+			const auto node = _tree->remap_index(it);
+			const auto& dur = _tree->header(node).dur;
+
+			if (time < dur) {
+				if (last >= dur)
+					last.den = 0U;
+
+				const as::frame fr{node, f.hash.re_hash(node),
+								   time, last};
+
+				as::eval::dispatch(fr, r);
+				return;
+			}
+
+			time -= dur;
+
+			if (last < dur) {
+				++it; goto diverged;
+			}
+
+			last -= dur;
+		}
+	}
+
+	diverged:
 	for (; it < end; ++it) {
 		const auto node = _tree->remap_index(it);
 		const auto& dur = _tree->header(node).dur;
 
 		if (time < dur) {
-			as::eval::dispatch<T>(f.propagate(node, time), r);
+			const as::frame fr{
+				node, f.hash.re_hash(node),
+				time, mx::frac{nullptr}
+			};
+
+			as::eval::dispatch(fr, r);
 			return;
 		}
-
 		time -= dur;
 	}
 }
@@ -84,66 +143,72 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 
 	const auto& t = _tree->node<as::tempo>(f.node);
 
-	auto time = t.header.mod(f.local_time());
+	auto time = t.header.mod(f.time);
+
+	const auto& dur = _tree->header(t.child).dur;
 
 		  auto  it = t.frac_start;
 		  auto  tk = t.token_start;
 	const auto end = t.frac_start + t.count;
 
-	// Multiple tempos play sequentially: find which tempo segment we're in
-	// Each segment has duration = child.dur / tempo
-	const auto& child_dur = _tree->header(t.child).dur;
 
-	for (; it < end; ++it, ++tk) {
-		const auto& tempo_frac = _tree->frac_at(it);
+	if (f.last.den == 0U)
+		goto diverged;
 
-		// Duration of this tempo segment (wall-clock time)
-		const auto segment_dur = child_dur / tempo_frac;
+	{
+		auto last = t.header.mod(f.last);
 
-		if (time < segment_dur) {
-			// We're in this tempo segment
-			// Convert wall-clock time to child's local time: child_time = time * tempo
-			const auto child_time = time * tempo_frac;
+		for (; it < end; ++it, ++tk) {
 
-			// Calculate new tempo_factor for child
-			// If parent has factor X, and we apply tempo Y:
-			// 1 unit child time = (1/Y) units parent time = (1/Y * X) units global time
-			const auto child_tempo_factor = f.tempo_factor / tempo_frac;
+			const auto&    tempo = _tree->frac_at(it);
+			const auto local_dur = dur / tempo;
 
-			// Calculate new modulo_limit for child
-			// If parent has modulo_limit in wall-clock space, convert to child's local space
-			// child_limit = parent_limit * tempo (because tempo speeds up time)
-			const auto child_modulo_limit = f.modulo_limit * tempo_frac;
+			if (time < local_dur) {
+				if (last >= local_dur)
+					last.den = 0U;
 
-			// Evaluate child with new time, tempo_factor and modulo_limit
-			as::eval::dispatch<T>(f.forward(t.child, child_time, child_tempo_factor, child_modulo_limit), r);
+				const as::frame fr{
+					t.child, f.hash.re_hash(t.child),
+					time * tempo,
+					last * tempo
+				};
 
-			if (has_edge(time, f.hash.re_hash(it))) {
-				static int c = 0;
-					std::cout << ++c << " EDGE\n";
-
-					// highlight with expiration
-					const auto actual_end = (f.modulo_limit < segment_dur) ? f.modulo_limit : segment_dur;
-					const auto remaining_local = actual_end - time;
-					const auto remaining_global = remaining_local * f.tempo_factor;
-					const auto expire = _absolute + remaining_global;
-					_hls->mark_active(tk, "Underlined", expire);
+				as::eval::dispatch(fr, r);
+				_hls->mark_active(tk, "Underlined");
+				return;
 			}
-			_hashes[f.hash] = time;
 
+			// Move to next segment
+			time -= local_dur;
 
-			break;
+			if (last < local_dur) {
+				++it; ++tk; goto diverged;
+			}
+			last -= local_dur;
 		}
-
-		// Move to next segment
-		time -= segment_dur;
-
 	}
 
-	// highlight with expiration
-	//const auto& frac_value = _tree->frac_at(tk);
-	//const auto expire = f.time + frac_value;
-	//_hl_tracker->mark_active(tk, "Underlined", expire, *_hi);
+	diverged:
+
+	for (; it < end; ++it, ++tk) {
+
+		const auto&    tempo = _tree->frac_at(it);
+		const auto local_dur = dur / tempo;
+
+		if (time < local_dur) {
+
+			const as::frame fr{
+				t.child, f.hash.re_hash(t.child),
+				time * tempo, mx::frac{nullptr}
+			};
+
+			as::eval::dispatch(fr, r);
+			_hls->mark_active(tk, "Underlined");
+			return;
+		}
+
+		time -= local_dur;
+	}
 }
 
 /* modulo
@@ -153,31 +218,67 @@ auto as::eval::modulo(const as::frame& f, T& r) -> void {
 
 	const auto& m = _tree->node<as::modulo>(f.node);
 
-	auto time = m.header.mod(f.local_time());
-
 		  auto  it = m.frac_start;
 		  auto  tk = m.token_start;
 	const auto end = m.frac_start + m.count;
 
-	for (; it < end; ++it, ++tk) {
-		const auto& frac = _tree->frac_at(it);
+	auto time = m.header.mod(f.time);
 
-		if (time < frac) {
-			// Calculate modulo_limit for child: take minimum of parent limit and this modulo
-			const auto child_modulo_limit = (frac < f.modulo_limit) ? frac : f.modulo_limit;
-			//const auto child_modulo_limit = frac;
+	if (f.last.den == 0U)
+		goto diverged;
 
-			// Evaluate child with modulo limit
-			as::eval::dispatch<T>(f.forward(m.child, time, f.tempo_factor, child_modulo_limit), r);
-			break;
+	{
+		auto last = m.header.mod(f.last);
+
+		// loop over modulus
+		for (; it < end; ++it, ++tk) {
+
+			const auto& mod = _tree->frac_at(it);
+
+			if (time < mod) {
+				if (last >= mod)
+					last.den = 0U;
+
+				const as::frame fr{
+					m.child, f.hash.re_hash(m.child),
+					time, last
+				};
+
+				as::eval::dispatch(fr, r);
+				_hls->mark_active(tk, "Underlined");
+				return;
+			}
+
+			time -= mod;
+
+			if (last < mod) {
+				++it; ++tk; goto diverged;
+			}
+
+			last -= mod;
 		}
-		time -= frac;
 	}
 
-	// highlight with expiration
-	//const auto& frac_value = _tree->frac_at(tk);
-	//const auto expire = f.time + frac_value;
-	//_hl_tracker->mark_active(tk, "Underlined", expire, *_hi);
+	diverged:
+
+	for (; it < end; ++it, ++tk) {
+
+		const auto& mod = _tree->frac_at(it);
+
+		if (time < mod) {
+
+			const as::frame fr{
+				m.child, f.hash.re_hash(m.child),
+				time, mx::frac{nullptr}
+			};
+
+			as::eval::dispatch(fr, r);
+			_hls->mark_active(tk, "Underlined");
+			return;
+		}
+
+		time -= mod;
+	}
 }
 
 /* parallel
@@ -190,12 +291,13 @@ auto as::eval::parallel(const as::frame& f, T& r) -> void {
 		  auto it   = p.range.start;
 	const auto end  = p.range.end();
 	const auto time = p.header.mod(f.time);
+	const auto last = f.last.den != 0U ? p.header.mod(f.last) : mx::frac{nullptr};
 
 	// loop over child nodes
 	for (; it < end; ++it) {
 		const auto node = _tree->remap_index(it);
-
-		as::eval::dispatch<T>(f.propagate(node, time), r);
+		const as::frame fr{node, f.hash.re_hash(node), time, last};
+		as::eval::dispatch(fr, r);
 	}
 }
 
@@ -209,8 +311,8 @@ auto as::eval::crossfade(const as::frame& f, T& r) -> void {
 
 
 	T lr, rr;
-	as::eval::dispatch(f.propagate(cf.left,  time), lr);
-	as::eval::dispatch(f.propagate(cf.right, time), rr);
+	as::eval::dispatch(f.propagate(cf.left,  time, f.last), lr);
+	as::eval::dispatch(f.propagate(cf.right, time, f.last), rr);
 
 	if constexpr (as::is_param_accum<T>) {
 
@@ -239,8 +341,8 @@ auto as::eval::crossfade(const as::frame& f, T& r) -> void {
 
 			const auto interpolated = lvalue * (1.0 - progress) + rvalue * progress;
 			// clear screen and go home
-			std::cout << "\x1b[2K\x1b[H";
-			std::cout << interpolated << " " << std::flush;
+			//std::cout << "\x1b[2K\x1b[H";
+			//std::cout << interpolated << " " << std::flush;
 
 			r.accumulate(static_cast<typename T::type>(interpolated),
 							lr.edge || rr.edge);
@@ -274,38 +376,33 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 
 		const auto& a = _tree->node<as::atomics>(f.node);
 
-		const auto time = a.header.mod(f.local_time());
-		const auto step = a.header.dur.num != 1U ? time.num / time.den : 0U;
+		const auto time = a.header.mod(f.time);
 
+		auto step = 0U;
+		bool edge = true;
 
-		bool edge = has_edge(time, f.hash.re_hash(step));
+			// step = ? time.num / time.den : 0U;
+		if (a.header.dur.num == 1U) {
 
-		//const auto it   = _hashes.find(hash);
-		//bool edge = true;
+			if (f.last.den != 0U)
+				edge = time < a.header.mod(f.last); // maybe just time(not mod) < last
+		}
+		else {
 
-		//if (it != _hashes.end())
-		//	edge = time < it->second;
-		//
-		//_hashes[hash] = time;
+			if (f.last.den != 0U) {
+				const auto last = a.header.mod(f.last);
+				step = time.num / time.den;
+				edge = step != (last.num / last.den);
+			}
+		}
 
 		// get value at step
 		const typename T::type value = _tree->value_at/*<T::type>*/(a.value_start + step);
 
 		r.accumulate(value, edge);
 
-		if (!edge)
-			return;
-
-		// Calculate when this step expires (limited by modulo if present)
-		const auto next_step = mx::frac{step + 1U, 1U};
-		const auto actual_end = (f.modulo_limit < next_step) ? f.modulo_limit : next_step;
-
-		const auto remaining_local = actual_end - time;
-		const auto remaining_global = remaining_local * f.tempo_factor;
-		const auto expire = _absolute + remaining_global;
-
-		const char* group    = "CurSearch";
-		_hls->mark_active(a.token_start + step, group, expire);
+		const char* group = "CurSearch";
+		_hls->mark_active(a.token_start + step, group);
 	}
 }
 
@@ -313,22 +410,59 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 template <typename T>
 auto as::eval::param(const as::frame& f, T& r) -> void {
 
-	const auto& p = _tree->node<as::parameter>(f.node);
+	// same as group node
 
-	auto time = p.header.mod(f.local_time());
+	const auto& p = _tree->node<as::parameter>(f.node);
 
 		  auto it  = p.range.start;
 	const auto end = p.range.end();
 
+	auto time = p.header.mod(f.time);
+
+	if (f.last.den == 0U)
+		goto diverged;
+
+	{
+		auto last = p.header.mod(f.last);
+
+		// loop over child nodes
+		for (; it < end; ++it) {
+			const auto node = _tree->remap_index(it);
+			const auto& dur = _tree->header(node).dur;
+
+			if (time < dur) {
+				if (last >= dur)
+					last.den = 0U;
+
+				const as::frame fr{node, f.hash.re_hash(node),
+								   time, last};
+				as::eval::dispatch(fr, r);
+				return;
+			}
+
+			time -= dur;
+
+			if (last < dur) {
+				++it; goto diverged;
+			}
+
+			last -= dur;
+		}
+	}
+
+	diverged:
 	for (; it < end; ++it) {
 		const auto node = _tree->remap_index(it);
 		const auto& dur = _tree->header(node).dur;
 
 		if (time < dur) {
-			as::eval::dispatch<T>(f.propagate(node, time), r);
+			const as::frame fr{
+				node, f.hash.re_hash(node),
+				time, mx::frac{nullptr}
+			};
+			as::eval::dispatch(fr, r);
 			return;
 		}
-
 		time -= dur;
 	}
 }
@@ -339,7 +473,8 @@ auto as::eval::track(const as::frame& f, T& expr) -> void {
 
     const auto& tr = _tree->node<as::track>(f.node);
 
-	const auto time = tr.header.mod(f.local_time());
+	const auto time  = tr.header.mod(f.time);
+	const auto last  = f.last.den != 0U ? tr.header.mod(f.last) : mx::frac{nullptr};
 
 
 	if constexpr (mx::is_same<T, as::expr_result>) {
@@ -348,42 +483,42 @@ auto as::eval::track(const as::frame& f, T& expr) -> void {
 
 		if (tr.params[pa::trig]) {
 			as::eval::param(f.propagate(tr.params[pa::trig],
-										time), r.trig);
+										time, last), r.trig);
 		}
 
 		if (tr.params[pa::note]) {
 			as::eval::param(f.propagate(tr.params[pa::note],
-										time), r.note);
+										time, last), r.note);
 		}
 
 		if (tr.params[pa::chan]) {
 			as::eval::param(f.propagate(tr.params[pa::chan],
-										time), r.chan);
+										time, last), r.chan);
 		}
 
 		if (tr.params[pa::velo]) {
 			as::eval::param(f.propagate(tr.params[pa::velo],
-										time), r.velo);
+										time, last), r.velo);
 		}
 
 		if (tr.params[pa::gate]) {
 			const auto n = tr.params[pa::gate];
-			as::eval::param(f.propagate(n, time), r.gate);
+			as::eval::param(f.propagate(n, time, last), r.gate);
 		}
 
 		if (tr.params[pa::prob]) {
 			const auto n = tr.params[pa::prob];
-			as::eval::param(f.propagate(n, time), r.prob);
+			as::eval::param(f.propagate(n, time, last), r.prob);
 		}
 
 		if (tr.params[pa::octa]) {
 			const auto n = tr.params[pa::octa];
-			as::eval::param(f.propagate(n, time), r.octa);
+			as::eval::param(f.propagate(n, time, last), r.octa);
 		}
 
 		if (tr.params[pa::semi]) {
 			const auto n = tr.params[pa::semi];
-			as::eval::param(f.propagate(n, time), r.semi);
+			as::eval::param(f.propagate(n, time, last), r.semi);
 		}
 
 		expr.accumulate(r);
@@ -402,56 +537,60 @@ auto as::eval::references(const as::frame& f, T& r) -> void {
 		  auto tk  = ref.tok_start;
 	const auto end = ref.ref_start + ref.count;
 
-	auto time = ref.header.mod(f.local_time());
+	auto time = ref.header.mod(f.time);
 
-	// loop over referenced nodes
+	if (f.last.den == 0U)
+		goto diverged;
+
+	{
+		auto last = ref.header.mod(f.last);
+
+		// loop over referenced nodes
+		for (; it < end; ++it, ++tk) {
+			const auto node = _tree->ref_at(it);
+			const auto& dur = _tree->header(node).dur;
+
+			if (time < dur) {
+				if (last >= dur)
+					last.den = 0U;
+
+				const as::frame fr{
+					node, f.hash.re_hash(node),
+					time, last
+				};
+
+				as::eval::dispatch(fr, r);
+				_hls->mark_active(tk, "Underlined");
+				return;
+			}
+			time -= dur;
+
+			if (last < dur) {
+				++it; ++tk; goto diverged;
+			}
+			last -= dur;
+		}
+	}
+
+	diverged:
 	for (; it < end; ++it, ++tk) {
 		const auto node = _tree->ref_at(it);
 		const auto& dur = _tree->header(node).dur;
 
 		if (time < dur) {
+			const as::frame fr{
+				node, f.hash.re_hash(node),
+				time, mx::frac{nullptr}
+			};
 
-			// highlight with expiration (limited by modulo if present)
-			const auto actual_end = (f.modulo_limit < dur) ? f.modulo_limit : dur;
-
-			const auto remaining_local = actual_end - time;
-			const auto remaining_global = remaining_local * f.tempo_factor;
-			const auto expire = _absolute + remaining_global;
-			//_hls->mark_active(tk, "Underlined", expire);
-
-			// evaluate referenced node
-			as::eval::dispatch<T>(f.propagate(node, time), r);
-			break;
+			as::eval::dispatch(fr, r);
+			_hls->mark_active(tk, "Underlined");
+			return;
 		}
 		time -= dur;
 	}
-
-
-
-	// highlight with expiration
-	//if (node != 0U) {
-	//	const auto expire = f.time + _tree->header(node).dur;
-	//	_hl_tracker->mark_active(tk, "Underlined", expire, *_hi);
-	//}
 }
 
-
-/* program
-   evaluate a program node */
-template <typename T>
-auto as::eval::program(const as::frame& f, T& r) -> void {
-
-	const auto& p = _tree->node<as::program>(f.node);
-
-		  auto it  = p.range.start;
-	const auto end = p.range.end();
-
-	// loop over child nodes
-	for (; it < end; ++it) {
-		const auto node = _tree->remap_index(it);
-		as::eval::dispatch(f.propagate(node, f.time), r); // optimize this
-	}
-}
 
 
 template <typename T>
@@ -495,13 +634,11 @@ auto as::eval::dispatch(const as::frame& f, T& r) -> void {
 			return;
 
 		case as::type::permutation:
+			// not implemented...
 			break;
 
-		case as::type::program:
-			as::eval::program<T>(f, r);
-			return;
-
 		default:
+			std::cout << _tree->what_is(f.node) << "\n";
 			throw std::runtime_error("Unhandled node type in dispatch_play");
 	}
 }

@@ -95,6 +95,11 @@ namespace mx {
 			: num{num}, den{1U} {
 			}
 
+			/* sentinel constructor */
+			constexpr explicit frac(decltype(nullptr)) noexcept
+			: num{0U}, den{0U} {
+			}
+
 			//static constexpr auto sqrt(void) noexcept -> value_type {
 			//	// compute compile time square root of mx::usz max
 			//	constexpr value_type x = mx::usz(-1);

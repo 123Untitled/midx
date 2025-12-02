@@ -60,7 +60,7 @@ auto mx::player::stop(void) -> void {
 	_engine.stop();
 
 	// reset highlights
-	_hls.reset();
+	_hls.clear();
 }
 
 /* toggle */
@@ -73,7 +73,6 @@ auto mx::player::switch_tree(as::tree& tree) noexcept -> void {
 	_hls.init(*tree.tokens);
 	_eval.init(tree, *tree.tokens, _hls);
 	_tree = &tree;
-	_hls.reset();
 }
 
 /* is playing */
@@ -87,28 +86,22 @@ auto mx::player::is_playing(void) const noexcept -> bool {
 /* on event */
 auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> void {
 
-	if (_eval.is_evaluable() == false) {
+	if (_eval.is_evaluable() == false)
 		return;
-	}
 
 	// make fractional time
 	const auto time = mx::make_reduced_frac(_ticks, MIDI_PPQN);
 
-	// clear previous output
-	_hls.clear();
-
+	_hls.swap_now();
 
 	_engine.off_pass();
 	_eval.evaluate(_engine, time);
 	_engine.flush();
 
 
-	_hls.update(time);
-
 	// generate json output
 	if (_hls.has_changes() == true) {
 		auto json = _hls.generate_json();
-		//std::cout << json << std::endl;
 		app.server().broadcast(std::move(json));
 	}
 

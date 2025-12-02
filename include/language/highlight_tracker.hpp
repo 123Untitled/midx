@@ -6,7 +6,6 @@
 #include "math.hpp"
 #include <unordered_map>
 #include <string>
-#include <set>
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
@@ -27,58 +26,23 @@ namespace mx {
 			using self = mx::highlight_tracker;
 
 
-			class highlight final {
-
-				private:
-					using self = highlight;
-				public:
-					mx::frac expire;
-					mx::usz token_index;
-
-				highlight(void) noexcept = default;
-
-				highlight(const mx::frac& exp, const mx::usz index) noexcept
-				: expire{exp}, token_index{index} {
-				}
-
-				auto operator<(const self& other) const noexcept -> bool {
-					//if (expire != other.expire)
-					//	return expire < other.expire;
-					//return token_index < other.token_index;
-					// optimized
-					return (expire < other.expire)
-						|| (expire == other.expire && token_index < other.token_index);
-				}
-			};
-
-
 			// -- private members ---------------------------------------------
 
-			using set_type = std::set<highlight>;
-			using map_type = std::unordered_map<mx::usz, const highlight*>;
+			using map_type = std::unordered_map<mx::usz, const char*>;
 
+			using mark_fn = auto (self::*)(const mx::usz, const char*) -> void;
 
-			/* sorted indices */
-			set_type _set;
+			map_type _now;
+			map_type _old;
 
-			/* token indices */
-			map_type _map;
+			mark_fn _mark;
 
 			/* tokens */
 			const tk::tokens* _tokens;
 
 
-			class light final {
-				public:
-					mx::usz token_index;
-					const char* group;
-			};
-
-			/* added */
-			std::vector<light> _added;
-
-			/* removed */
-			std::vector<mx::usz> _removed;
+			auto _mark_active_check(const mx::usz, const char*) -> void;
+			auto _mark_active_force(const mx::usz, const char*) -> void;
 
 
 		public:
@@ -87,8 +51,7 @@ namespace mx {
 
 			/* default constructor */
 			highlight_tracker(void) noexcept
-			: _set{},
-			  _map{},
+			: _now{}, _old{}, _mark{&self::_mark_active_check},
 			  _tokens{nullptr} {
 			}
 
@@ -102,13 +65,14 @@ namespace mx {
 			   initialize the tracker with tokens reference */
 			auto init(const tk::tokens& tokens) noexcept -> void {
 				_tokens = &tokens;
+				_now.clear();
+				_old.clear();
+				_mark = &self::_mark_active_check;
 			}
 
 			/* mark active
 			   mark a highlight as active with expiration time */
-			auto mark_active(const mx::usz, const char*, const mx::frac&) -> void;
-
-			auto update(const mx::frac&) -> void;
+			auto mark_active(const mx::usz, const char*) -> void;
 
 			/* has changes
 			   check if there are any changes recorded */
@@ -119,28 +83,18 @@ namespace mx {
 			auto generate_json(void) -> std::string;
 
 
-			/* clear output
-			   clear the accumulated JSON output buffer */
+			/* swap now
+			   swap current and old maps */
+			auto swap_now(void) noexcept -> void {
+				_old.clear();
+				_old.swap(_now);
+				_mark = &self::_mark_active_check;
+			}
+
+			/* clear
+			   clear all highlights */
 			auto clear(void) noexcept -> void {
-				_removed.clear();
-				  _added.clear();
-			}
-
-			/* reset
-			   reset the tracker */
-			auto reset(void) noexcept -> void {
-				_removed.clear();
-				  _added.clear();
-					_map.clear();
-					_set.clear();
-			}
-
-
-			// -- public accessors --------------------------------------------
-
-			/* is initialized */
-			auto is_initialized(void) const noexcept -> bool {
-				return _tokens != nullptr;
+				_now.clear();
 			}
 
 
