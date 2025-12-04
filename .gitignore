@@ -25,5 +25,5 @@
 # ignore desktop service store
 /**/.DS_Store
 
-
-/traim
+# ignore cast files
+/**/*.cast
