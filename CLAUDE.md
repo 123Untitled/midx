@@ -83,10 +83,16 @@ sources/          # Implementation files (.cpp)
    - Located in: `include/language/analyzer.hpp`, `sources/language/analyzer.cpp`
    - Coordinates lexer and parser
 
-5. **Player** (`mx::player`): Real-time MIDI playback from AST
+5. **Evaluator** (`as::eval`): Real-time AST evaluation engine
+   - Located in: `include/language/ast/eval.hpp`, `sources/language/ast/eval.cpp`
+   - Core evaluation system that traverses the AST and generates MIDI events
+   - Uses a two-phase time-based evaluation strategy for edge detection
+   - Integrates with `mx::midi_engine` and `mx::highlight_tracker`
+
+6. **Player** (`mx::player`): Real-time MIDI playback controller
    - Located in: `include/player.hpp`, `sources/player.cpp`
-   - Evaluates AST nodes based on musical time
-   - Interfaces with `mx::midi_engine`
+   - Orchestrates the evaluation process based on musical clock time
+   - Interfaces with `as::eval` and `mx::midi_engine`
 
 ### Key Subsystems
 
@@ -111,6 +117,105 @@ sources/          # Implementation files (.cpp)
 - C++ wrapper around macOS CoreMIDI framework
 - Classes: `coremidi::client`, `coremidi::output`, `coremidi::input`, `coremidi::source`, `coremidi::destination`
 - Located in: `include/coremidi/`, `sources/coremidi/`
+
+**Highlight Tracker**
+- `mx::highlight_tracker`: Tracks active tokens during evaluation for editor highlighting
+- Located in: `include/language/highlight_tracker.hpp`, `sources/language/highlight_tracker.cpp`
+- Maintains two maps (_now and _old) to detect changes between evaluation cycles
+- Generates JSON output for real-time syntax highlighting in the editor
+- Uses an optimization strategy: switches from checking mode to force mode when changes are detected
+
+### Evaluation System
+
+The evaluation system is the core of MIDX's real-time MIDI sequencing. It traverses the AST and produces MIDI events based on musical time.
+
+**Core Components**
+
+1. **Evaluator (`as::eval`)**
+   - Main evaluation engine that walks the AST recursively
+   - Maintains references to the AST tree, tokens, and highlight tracker
+   - Handles edge detection using a hash-based system to trigger notes only at boundaries
+   - Supports crossfade state management for smooth transitions between sequences
+
+2. **Evaluation Frame (`as::frame`)**
+   - Represents a single evaluation context as the evaluator traverses the AST
+   - Contains:
+     - `node`: Current AST node index
+     - `hash`: Computed hash for edge detection (uses rehashing for uniqueness)
+     - `time`: Current local time within this node
+     - `last`: Previous evaluation time (used for edge detection)
+   - `propagate()` method creates child frames with updated hash
+
+3. **Track Result (`as::track_result`)**
+   - Accumulates MIDI parameters for a single track evaluation
+   - Contains accumulators for: trigger, note, channel, velocity, gate, probability, octave, semitone
+   - `flush()` sends accumulated MIDI events to the engine (currently unused, replaced by expr_result)
+
+4. **Expression Result (`as::expr_result`)**
+   - Accumulates MIDI events across multiple notes and channels
+   - Uses a sparse array indexed by (channel << 7 | note) for efficient event storage
+   - Tracks active events and their counts for averaging
+   - `accumulate()` processes track results, handling probability and parameter application
+   - `merge()` combines results from parallel or crossfade evaluations
+   - `flush()` computes averaged gate/velocity and sends events to MIDI engine
+
+5. **Random Generator (`mx::random`)**
+   - Simple random number generator for probability parameter
+   - Seeded with process ID
+   - Used to randomly skip notes based on `:pr` (probability) parameter
+
+**Two-Phase Evaluation Strategy**
+
+The evaluator uses two time values (`time` and `last`) to detect edges:
+- `time`: Current evaluation time
+- `last`: Previous evaluation time (denominator 0 indicates no previous time)
+
+**Edge Detection**:
+- Edges trigger new notes and parameter changes
+- Detected when crossing node boundaries or when time wraps
+- Uses an optimization: when `last` is valid, evaluates nodes converging until paths diverge
+- After divergence, sets `last.den = 0` and continues with single-phase evaluation
+
+**Node Evaluation Methods**
+
+Each AST node type has a specialized evaluation function:
+
+- **`program`**: Root node, iterates over all top-level children
+- **`group`**: Sequential composition, selects child based on accumulated durations
+- **`parallel`**: Evaluates all children with same time, merges results
+- **`tempo`**: Time scaling, divides child duration by tempo factors, highlights active tempo
+- **`modulo`**: Time wrapping, clamps time within modulo values, highlights active modulo
+- **`track`**: MIDI track container, evaluates parameter nodes and accumulates into track_result
+- **`parameter`**: Like group, but for parameter sequences (`:nt`, `:vl`, etc.)
+- **`atomics`**: Leaf values, computes step index and retrieves value, marks token as highlighted
+- **`references`**: Indirection, looks up referenced node and evaluates it
+- **`crossfade`**: Blends two sequences:
+  - Discrete parameters (note, trig, chan): alternates between sides using error accumulation
+  - Continuous parameters (velo, gate, prob, octa, semi): linear interpolation
+  - Maintains per-node crossfade state in `_cross` map
+
+**Evaluation Flow**
+
+1. `evaluate()` is called with current musical time
+2. Creates an `expr_result` to accumulate events
+3. Calls `program()` which dispatches to child nodes
+4. Each node:
+   - Applies modulo to wrap time within its duration
+   - Uses two-phase strategy to detect edges
+   - Calls specialized evaluation based on node type
+   - Marks active tokens for highlighting
+5. Parameter accumulators detect edges and accumulate values
+6. Track results are accumulated into expr_result
+7. Final `flush()` averages values and sends MIDI events
+
+**Highlight Integration**
+
+During evaluation, active tokens are marked for highlighting:
+- `atomics` nodes: Highlights the active value token
+- `tempo` nodes: Highlights the active tempo modifier
+- `modulo` nodes: Highlights the active modulo operator
+- `references` nodes: Highlights the active reference token
+- Highlight tracker generates JSON for the editor to display
 
 ### AST Node System
 
@@ -160,6 +265,19 @@ MIDX (`.midx` files) is a sequencing language with:
 3. Remember: AST uses arena allocation with alignment requirements
 4. All nodes must start with `as::header`
 5. Use `make_node<T>()` for proper alignment
+
+### Making Changes to the Evaluation System
+
+1. Core evaluator is in `include/language/ast/eval.hpp` and `sources/language/ast/eval.cpp`
+2. Each node type requires a specialized evaluation method (e.g., `group()`, `tempo()`, `track()`)
+3. Understand the two-phase evaluation strategy: `time` and `last` are used for edge detection
+4. When adding new node types:
+   - Add evaluation method to `as::eval` class
+   - Update `dispatch()` switch statement to handle new type
+   - Decide if node should mark tokens for highlighting
+   - Ensure proper frame propagation with hash updates
+5. Parameter accumulators are in `include/language/ast/param_accum.hpp`
+6. Test with various time signatures and tempo changes to verify edge detection
 
 ### Testing
 

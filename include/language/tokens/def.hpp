@@ -300,11 +300,11 @@ namespace tk {
 
 
 		// tempo ^2 \2
-		"StorageClass",
-		"StorageClass",
+		"Type",
+		"Type",
 
 		// modulo %
-		"Keyword",
+		"Type",
 
 
 		// parallel |
@@ -318,7 +318,7 @@ namespace tk {
 		"Comment",
 
 		// parameter
-		"Type",
+		"Keyword",
 
 		// references
 		"Function",
