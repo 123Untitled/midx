@@ -9,7 +9,7 @@
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 
 	// -- R E M O V E  R E F E R E N C E --------------------------------------
@@ -43,7 +43,7 @@ namespace ms {
 
 	/* remove reference */
 	template <typename T>
-	using remove_reference = typename ms::impl::remove_reference<T>::type;
+	using remove_reference = typename mx::impl::remove_reference<T>::type;
 
 
 
@@ -95,7 +95,7 @@ namespace ms {
 
 	/* remove pointer */
 	template <typename T>
-	using remove_pointer = typename ms::impl::remove_pointer<T>::type;
+	using remove_pointer = typename mx::impl::remove_pointer<T>::type;
 
 
 
@@ -129,7 +129,7 @@ namespace ms {
 
 	/* remove extent */
 	template <typename T>
-	using remove_extent = typename ms::impl::remove_extent<T>::type;
+	using remove_extent = typename mx::impl::remove_extent<T>::type;
 
 
 
@@ -140,7 +140,7 @@ namespace ms {
 
 	/* remove const volatile reference */
 	template <typename T>
-	using remove_cvr = ms::remove_cv<ms::remove_reference<T>>;
+	using remove_cvr = mx::remove_cv<mx::remove_reference<T>>;
 
 
 
@@ -148,21 +148,21 @@ namespace ms {
 
 	/* remove const volatile pointer */
 	template <typename T>
-	using remove_cvp = ms::remove_cv<ms::remove_pointer<T>>;
+	using remove_cvp = mx::remove_cv<mx::remove_pointer<T>>;
 
 
 	// -- R E M O V E  C V E --------------------------------------------------
 
 	/* remove const volatile extent */
 	template <typename T>
-	using remove_cve = ms::remove_cv<ms::remove_extent<T>>;
+	using remove_cve = mx::remove_cv<mx::remove_extent<T>>;
 
 
 	// -- R E M O V E  C V P E ------------------------------------------------
 
 	/* remove const volatile pointer extent */
 	template <typename T>
-	using remove_cvpe = ms::remove_cv<ms::remove_pointer<ms::remove_extent<T>>>;
+	using remove_cvpe = mx::remove_cv<mx::remove_pointer<mx::remove_extent<T>>>;
 
 
 
@@ -197,11 +197,11 @@ namespace ms {
 
 	/* is array */
 	template <typename T>
-	concept is_array = ms::impl::is_array<T>::value;
+	concept is_array = mx::impl::is_array<T>::value;
 
 	/* is array of */
 	template <typename T, typename U>
-	concept is_array_of = ms::is_array<T> && mx::is_same<ms::remove_cve<T>, U>;
+	concept is_array_of = mx::is_array<T> && mx::is_same<mx::remove_cve<T>, U>;
 
 
 	// -- I S  P O I N T E R --------------------------------------------------
@@ -224,7 +224,7 @@ namespace ms {
 
 		/* helper */
 		template <typename T>
-		struct is_pointer_helper final : public ms::impl::is_pointer<ms::remove_cv<T>> {
+		struct is_pointer_helper final : public mx::impl::is_pointer<mx::remove_cv<T>> {
 			non_instantiable(is_pointer_helper);
 		};
 
@@ -233,19 +233,19 @@ namespace ms {
 
 	/* is pointer */
 	template<typename T>
-	concept is_pointer = ms::impl::is_pointer_helper<T>::value;
+	concept is_pointer = mx::impl::is_pointer_helper<T>::value;
 
 
 	/* is pointer of */
 	template <typename T, typename U>
-	concept is_pointer_of = ms::is_pointer<T> && mx::is_same<ms::remove_cvp<T>, U>;
+	concept is_pointer_of = mx::is_pointer<T> && mx::is_same<mx::remove_cvp<T>, U>;
 
 
 	// -- I S  B O O L --------------------------------------------------------
 
 	/* is bool */
 	template <typename T>
-	concept is_bool = mx::is_same<ms::remove_cv<T>, bool>;
+	concept is_bool = mx::is_same<mx::remove_cv<T>, bool>;
 
 
 
@@ -254,7 +254,7 @@ namespace ms {
 
 	/* is floating point */
 	template <typename T>
-	concept is_floating_point = mx::is_one_of<ms::remove_cv<T>,
+	concept is_floating_point = mx::is_one_of<mx::remove_cv<T>,
 		float, double, long double>;
 
 
@@ -262,13 +262,13 @@ namespace ms {
 
 	/* is arithmetic */
 	template <typename T>
-	concept is_arithmetic = ms::is_integral<T> || ms::is_floating_point<T>;
+	concept is_arithmetic = mx::is_integral<T> || mx::is_floating_point<T>;
 
 
 	// -- I S  C H A R --------------------------------------------------------
 
 	template <typename T>
-	concept is_character = mx::is_one_of<ms::remove_cv<T>,
+	concept is_character = mx::is_one_of<mx::remove_cv<T>,
 		char, wchar_t, char8_t, char16_t, char32_t>;
 
 
@@ -297,7 +297,7 @@ namespace ms {
 
 	/* is lvalue reference */
 	template <typename T>
-	concept is_lvalue_reference = ms::impl::is_lvalue_reference<T>::value;
+	concept is_lvalue_reference = mx::impl::is_lvalue_reference<T>::value;
 
 
 	// -- E X T E N T ---------------------------------------------------------
@@ -322,7 +322,7 @@ namespace ms {
 		/* extent for unbounded array types (subsequent dimensions) */
 		template <typename T, unsigned D>
 		struct extent<T[], D> final {
-			static constexpr unsigned value = ms::impl::extent<T, D - 1U>::value;
+			static constexpr unsigned value = mx::impl::extent<T, D - 1U>::value;
 			non_instantiable(extent);
 		};
 
@@ -336,7 +336,7 @@ namespace ms {
 		/* extent for bounded array types (subsequent dimensions) */
 		template <typename T, unsigned N, unsigned D>
 		struct extent<T[N], D> final {
-			static constexpr unsigned value = ms::impl::extent<T, D - 1U>::value;
+			static constexpr unsigned value = mx::impl::extent<T, D - 1U>::value;
 			non_instantiable(extent);
 		};
 
@@ -345,7 +345,7 @@ namespace ms {
 
 	/* extent */
 	template <typename T, unsigned D = 0U>
-	constexpr unsigned extent = ms::impl::extent<T, D>::value;
+	constexpr unsigned extent = mx::impl::extent<T, D>::value;
 
 
 
@@ -353,33 +353,15 @@ namespace ms {
 
 	/* forward lvalue helper */
 	template <typename T>
-	using to_lvalue = ms::remove_reference<T>&;
+	using to_lvalue = mx::remove_reference<T>&;
 
 
 	// -- T O  R V A L U E  R E F E R E N C E ---------------------------------
 
 	/* forward rvalue helper */
 	template <typename T>
-	using to_rvalue = ms::remove_reference<T>&&;
+	using to_rvalue = mx::remove_reference<T>&&;
 
 
 
-	//// -- A L W A Y S  F A L S E ----------------------------------------------
-	//
-	//namespace impl {
-	//
-	//
-	//	template <typename...>
-	//	struct always_false {
-	//		static constexpr bool value = false;
-	//		non_instantiable(always_false);
-	//	};
-	//
-	//} // namespace impl
-	//
-	//
-	///* always false */
-	//template <typename... Tp>
-	//concept always_false = ms::impl::always_false<Tp...>::value;
-
-} // namespace ms
+} // namespace mx

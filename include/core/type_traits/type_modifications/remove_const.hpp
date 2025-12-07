@@ -1,11 +1,12 @@
-#pragma once
+#ifndef type_modifications_remove_const_hpp
+#define type_modifications_remove_const_hpp
 
 #include "core/config/class.hpp"
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 
 	// -- R E M O V E  C O N S T ----------------------------------------------
@@ -32,6 +33,8 @@ namespace ms {
 
 	/* remove const */
 	template <typename T>
-	using remove_const = typename ms::impl::remove_const<T>::type;
+	using remove_const = typename mx::impl::remove_const<T>::type;
 
-} // namespace ms
+} // namespace mx
+
+#endif // type_modifications_remove_const_hpp

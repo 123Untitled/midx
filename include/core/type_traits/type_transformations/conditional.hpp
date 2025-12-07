@@ -1,5 +1,5 @@
-#ifndef core_type_traits_type_transformations_conditional_hpp
-#define core_type_traits_type_transformations_conditional_hpp
+#ifndef type_transformations_conditional_hpp
+#define type_transformations_conditional_hpp
 
 #include "core/config/class.hpp"
 
@@ -40,4 +40,4 @@ namespace mx {
 
 } // namespace mx
 
-#endif // core_type_traits_type_transformations_conditional_hpp
+#endif // type_transformations_conditional_hpp

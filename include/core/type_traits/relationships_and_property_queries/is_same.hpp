@@ -1,5 +1,5 @@
-#ifndef core_type_traits_is_same_hpp
-#define core_type_traits_is_same_hpp
+#ifndef relationships_and_property_queries_is_same_hpp
+#define relationships_and_property_queries_is_same_hpp
 
 #include "core/config/class.hpp"
 
@@ -43,4 +43,4 @@ namespace mx {
 
 } // namespace mx
 
-#endif // core_type_traits_is_same_hpp
+#endif // relationships_and_property_queries_is_same_hpp

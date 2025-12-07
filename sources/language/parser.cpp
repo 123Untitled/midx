@@ -16,14 +16,14 @@
 /* default constructor */
 pr::parser::parser(void)
 : _tree{nullptr},
-  _tokens{nullptr},
-  _diag{nullptr},
-  _it{},
-  _end{},
-  _depth{0U},
-  _back{false},
-  _last_param{pa::invalid},
-  _tempo{}
+ _tokens{nullptr},
+ _diag{nullptr},
+ _it{},
+ _end{},
+ _depth{0U},
+ _back{false},
+ _last_param{pa::invalid},
+ _tempo{}
 {
 }
 
@@ -203,7 +203,7 @@ auto pr::parser::parse_expr(const mx::uint min_pre) -> mx::usz {
 		debug_level<L>("parse_expr loop", "current token", *_it);
 
 		auto& tk = _it.token();
-		auto eval = pr::eval_of<L>(tk);
+		auto eval = pr::parse_of<L>(tk);
 
 		if (!eval)
 			break;
@@ -233,7 +233,7 @@ auto debug(const char* msg, const tk::iterator& it) -> void {
 // -- N U D S -----------------------------------------------------------------
 
 /* nud atomic value */
-auto pr::parser::eval_atomic_value(mx::usz left) -> mx::usz {
+auto pr::parser::parse_atomics(mx::usz left) -> mx::usz {
 
 	debug("NUD atomic value", _it);
 
@@ -321,7 +321,7 @@ auto pr::parser::eval_atomic_value(mx::usz left) -> mx::usz {
 
 
 /* nud track reference */
-auto pr::parser::eval_references(const mx::usz left) -> mx::usz {
+auto pr::parser::parse_references(const mx::usz left) -> mx::usz {
 
 	debug("NUD references", _it);
 
@@ -389,7 +389,7 @@ auto pr::parser::eval_references(const mx::usz left) -> mx::usz {
 
 /* nud group */
 template <pr::level L>
-auto pr::parser::eval_group(const mx::usz left) -> mx::usz {
+auto pr::parser::parse_group(const mx::usz left) -> mx::usz {
 
 	debug("NUD group", _it);
 	const auto it = _it;
@@ -435,7 +435,7 @@ auto pr::parser::eval_group(const mx::usz left) -> mx::usz {
 
 /* nud permutation */
 template <pr::level L>
-auto pr::parser::eval_permutation(const mx::usz left) -> mx::usz {
+auto pr::parser::parse_permutation(const mx::usz left) -> mx::usz {
 
 	debug("NUD permutation", _it);
 	const auto it = _it;
@@ -508,7 +508,7 @@ auto pr::parser::eval_permutation(const mx::usz left) -> mx::usz {
 }
 
 /* nud parameter */
-auto pr::parser::eval_parameter(mx::usz left) -> mx::usz {
+auto pr::parser::parse_parameter(mx::usz left) -> mx::usz {
 
 	debug("NUD parameter", _it);
 
@@ -621,7 +621,7 @@ auto pr::parser::eval_parameter(mx::usz left) -> mx::usz {
 
 /* nud tempo */
 template <pr::level L>
-auto pr::parser::eval_tempo(mx::usz left) -> mx::usz {
+auto pr::parser::parse_tempo(mx::usz left) -> mx::usz {
 
 	// save tempo
 	auto old = _tempo;
@@ -665,7 +665,7 @@ auto pr::parser::eval_tempo(mx::usz left) -> mx::usz {
 
 	mx::usz right;
 	if (_it != _end && _it.token() == tk::modulo) {
-		right = eval_modulo<L>(0);
+		right = parse_modulo<L>(0);
 	}
 	else {
 		right = parse_expr<L>(pr::precedence<L>::tempo);
@@ -723,7 +723,7 @@ auto pr::parser::eval_tempo(mx::usz left) -> mx::usz {
 
 /* nud modulo */
 template <pr::level L>
-auto pr::parser::eval_modulo(mx::usz left) -> mx::usz {
+auto pr::parser::parse_modulo(mx::usz left) -> mx::usz {
 
 	//tk::iterator it;
 
@@ -752,7 +752,7 @@ auto pr::parser::eval_modulo(mx::usz left) -> mx::usz {
 
 	if (_it != _end && (_it.token() == tk::tempo_fast
 					 || _it.token() == tk::tempo_slow)) {
-		right = eval_tempo<L>(0);
+		right = parse_tempo<L>(0);
 	}
 	else {
 		right = parse_expr<L>(pr::precedence<L>::modulo);
@@ -799,7 +799,7 @@ auto pr::parser::eval_modulo(mx::usz left) -> mx::usz {
 
 
 //template <pr::level L>
-//auto pr::parser::eval_tempo(mx::usz left) -> mx::usz {
+//auto pr::parser::parse_tempo(mx::usz left) -> mx::usz {
 //
 //	// save tempo
 //	auto old = _tempo;
@@ -888,7 +888,7 @@ auto pr::parser::eval_modulo(mx::usz left) -> mx::usz {
 // -- L E D S -----------------------------------------------------------------
 
 
-auto pr::parser::eval_track_separator(const mx::usz left) -> mx::usz {
+auto pr::parser::parse_track_separator(const mx::usz left) -> mx::usz {
 
 	// skip consecutive track separators
 	do { ++_it; } while
@@ -900,7 +900,7 @@ auto pr::parser::eval_track_separator(const mx::usz left) -> mx::usz {
 
 /* led parallel */
 template <pr::level L>
-auto pr::parser::eval_parallel(const mx::usz left) -> mx::usz {
+auto pr::parser::parse_parallel(const mx::usz left) -> mx::usz {
 
 	// get current token
 	const auto& tk = _it.token();
@@ -932,7 +932,7 @@ auto pr::parser::eval_parallel(const mx::usz left) -> mx::usz {
 
 /* led crossfade */
 template <pr::level L>
-auto pr::parser::eval_crossfade(const mx::usz left) -> mx::usz {
+auto pr::parser::parse_crossfade(const mx::usz left) -> mx::usz {
 
 	debug("LED crossfade", _it);
 

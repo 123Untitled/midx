@@ -5,12 +5,10 @@
 #include "core/type_traits/traits.hpp"
 #include <type_traits>
 
-//#include <intrin.h>
-
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 
 	// -- L I M I T S ---------------------------------------------------------
@@ -30,28 +28,28 @@ namespace ms {
 			// -- public types ------------------------------------------------
 
 			/* self type */
-			using self = ms::limits<T>;
+			using self = mx::limits<T>;
 
 
 			// -- public static methods ---------------------------------------
 
 			/* max bool */
-			static consteval auto max(void) noexcept -> T requires ms::is_bool<T> {
+			static consteval auto max(void) noexcept -> T requires mx::is_bool<T> {
 				return true;
 			}
 
 			/* min bool */
-			static consteval auto min(void) noexcept -> T requires ms::is_bool<T> {
+			static consteval auto min(void) noexcept -> T requires mx::is_bool<T> {
 				return false;
 			}
 
 
 			/* max integral */
-			static consteval auto max(void) noexcept -> T requires (ms::is_integral<T>
-																&& !ms::is_bool<T>) {
+			static consteval auto max(void) noexcept -> T requires (mx::is_integral<T>
+																&& !mx::is_bool<T>) {
 
 				// number of bits in type
-				constexpr T bits = static_cast<T>((ms::bits<T>) - std::is_signed_v<T>);
+				constexpr T bits = static_cast<T>((mx::bits<T>) - std::is_signed_v<T>);
 
 				T count = static_cast<T>(0);
 
@@ -64,15 +62,15 @@ namespace ms {
 			}
 
 			/* min integral */
-			static consteval auto min(void) noexcept -> T requires (ms::is_integral<T>
-																&& !ms::is_bool<T>) {
+			static consteval auto min(void) noexcept -> T requires (mx::is_integral<T>
+																&& !mx::is_bool<T>) {
 				T max = self::max();
 				return ~max;
 			}
 
 
 			/* max floating point */
-			static consteval auto max(void) noexcept -> T requires ms::is_floating_point<T> {
+			static consteval auto max(void) noexcept -> T requires mx::is_floating_point<T> {
 
 				if constexpr (sizeof(T) == 4U)
 					// return IEEE 754 single precision max
@@ -84,7 +82,7 @@ namespace ms {
 			}
 
 			/* min floating point */
-			static consteval auto min(void) noexcept -> T requires ms::is_floating_point<T> {
+			static consteval auto min(void) noexcept -> T requires mx::is_floating_point<T> {
 
 				if constexpr (sizeof(T) == 4U)
 					// return IEEE 754 single precision min
@@ -120,29 +118,31 @@ namespace ms {
 
 	/* count leading zeros */
 	template <typename T>
-	constexpr auto countl_zero(const T num) noexcept -> ms::usz {
+	constexpr auto countl_zero(const T num) noexcept -> mx::usz {
 
-		static_assert(ms::is_integral<T>, "countl_zero only supports integral types");
+		static_assert(mx::is_integral<T>, "countl_zero only supports integral types");
 		static_assert(sizeof(T) <= 8U, "countl_zero only supports integral types up to 64 bits");
 
 		if (num == static_cast<T>(0))
-			return ms::bits<T>;
+			return mx::bits<T>;
 
 		if !consteval {
 
 			unsigned long index;
 
 			if constexpr (sizeof(T) > 4U)
-				static_cast<void>(::_BitScanReverse64(&index, static_cast<ms::u64>(num)));
+				index = 31U - __builtin_clzll(static_cast<mx::u64>(num));
+				//static_cast<void>(::_BitScanReverse64(&index, static_cast<mx::u64>(num)));
 			else
-				static_cast<void>(::_BitScanReverse(&index, static_cast<unsigned long>(num)));
+				index = 31U - __builtin_clz(static_cast<unsigned long>(num));
+				//static_cast<void>(::_BitScanReverse(&index, static_cast<unsigned long>(num)));
 
-			return (ms::bits<T> - 1U) - index;
+			return (mx::bits<T> - 1U) - index;
 		}
 		else {
 
-			ms::usz count = 0;
-			for (ms::usz i = ms::bits<T>; i > 0U; --i) {
+			mx::usz count = 0;
+			for (mx::usz i = mx::bits<T>; i > 0U; --i) {
 				if (num & (T{1} << (i - 1U)))
 					break;
 				++count;
@@ -153,8 +153,8 @@ namespace ms {
 
 
 	/* count digits */
-	template <ms::is_integral T>
-	constexpr auto count_digits(const T value) noexcept -> ms::usz {
+	template <mx::is_integral T>
+	constexpr auto count_digits(const T value) noexcept -> mx::usz {
 
 
 		using U = std::make_unsigned_t<T>;
@@ -172,12 +172,12 @@ namespace ms {
 		if (n == 0) return 1;
 
 		// bits used in the number
-		const ms::usz bits_used = ms::bits<U> - ms::countl_zero(n);
+		const mx::usz bits_used = mx::bits<U> - mx::countl_zero(n);
 
 		// approx log10
-		const ms::usz log10 = (bits_used * 1233U) >> 12U;
+		const mx::usz log10 = (bits_used * 1233U) >> 12U;
 
-		static constexpr ms::u64 powers_of_10[] {
+		static constexpr mx::u64 powers_of_10[] {
 			1ULL,
 			10ULL,
 			100ULL,

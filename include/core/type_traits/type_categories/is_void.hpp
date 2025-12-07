@@ -1,5 +1,5 @@
-#ifndef core_type_traits_is_void_hpp
-#define core_type_traits_is_void_hpp
+#ifndef type_categories_is_void_hpp
+#define type_categories_is_void_hpp
 
 #include "core/type_traits/relationships_and_property_queries/is_same.hpp"
 #include "core/type_traits/type_modifications/remove_cv.hpp"
@@ -14,8 +14,8 @@ namespace mx {
 
 	/* is void */
 	template <typename T>
-	concept is_void = mx::is_same<ms::remove_cv<T>, void>;
+	concept is_void = mx::is_same<mx::remove_cv<T>, void>;
 
 } // namespace mx
 
-#endif // core_type_traits_is_void_hpp
+#endif // type_categories_is_void_hpp

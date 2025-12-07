@@ -26,6 +26,15 @@ namespace mx {
 		}
 	}
 
+	/* copy safe */
+	template <typename T>
+	constexpr auto memcpy(T* dst, T* end, const T* src, const mx::usz count) noexcept -> mx::usz {
+		const auto left = static_cast<mx::usz>(end - dst);
+		const auto size = count < left ? count : left;
+		mx::memcpy(dst, src, size);
+		return size;
+	}
+
 } // namespace mx
 
 #endif // core_memory_memcpy_hpp

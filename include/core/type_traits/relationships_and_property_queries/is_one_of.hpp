@@ -1,5 +1,5 @@
-#ifndef core_type_traits_is_one_of_hpp
-#define core_type_traits_is_one_of_hpp
+#ifndef relationships_and_property_queries_is_one_of_hpp
+#define relationships_and_property_queries_is_one_of_hpp
 
 #include "core/type_traits/relationships_and_property_queries/is_same.hpp"
 
@@ -17,4 +17,4 @@ namespace mx {
 
 } // namespace mx
 
-#endif // core_type_traits_is_one_of_hpp
+#endif // relationships_and_property_queries_is_one_of_hpp

@@ -57,8 +57,15 @@ int main2()
 }
 
 
+#include "core/string/string.hpp"
 
 auto main(int ac, char** av) -> int {
+
+	const char* ptr = "Hello";
+
+	mx::string str{ptr, ' ', "World", 42};
+	std::cout << str.data() << "\n";
+	return 0;
 
 	//mx::frac time{0, MIDI_PPQN};
 	//const mx::frac tick{1U, MIDI_PPQN};

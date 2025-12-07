@@ -122,36 +122,36 @@ namespace pr {
 
 
 			template <pr::level>
-			auto eval_tempo(const mx::usz) -> mx::usz;
+			auto parse_tempo(const mx::usz) -> mx::usz;
 
 			template <pr::level>
-			auto eval_modulo(const mx::usz) -> mx::usz;
+			auto parse_modulo(const mx::usz) -> mx::usz;
 
-			auto eval_value(const mx::usz) -> mx::usz;
+			auto parse_value(const mx::usz) -> mx::usz;
 
-			auto eval_atomic_value(const mx::usz) -> mx::usz;
+			auto parse_atomics(const mx::usz) -> mx::usz;
 
 
-			auto eval_references(const mx::usz) -> mx::usz;
+			auto parse_references(const mx::usz) -> mx::usz;
 
 
 			template <pr::level L>
-			auto eval_group(const mx::usz) -> mx::usz;
+			auto parse_group(const mx::usz) -> mx::usz;
 
-			auto eval_parameter(const mx::usz) -> mx::usz;
+			auto parse_parameter(const mx::usz) -> mx::usz;
 
-			auto eval_track_separator(const mx::usz) -> mx::usz;
+			auto parse_track_separator(const mx::usz) -> mx::usz;
 
 			template <pr::level L>
-			auto eval_permutation(const mx::usz) -> mx::usz;
+			auto parse_permutation(const mx::usz) -> mx::usz;
 
 
 
 			template <pr::level>
-			auto eval_parallel(const mx::usz) -> mx::usz;
+			auto parse_parallel(const mx::usz) -> mx::usz;
 
 			template <pr::level>
-			auto eval_crossfade(const mx::usz) -> mx::usz;
+			auto parse_crossfade(const mx::usz) -> mx::usz;
 
 
 

@@ -5,26 +5,26 @@
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 
 	/* forward (lvalue) */
 	template <typename T>
-	constexpr auto forward(ms::to_lvalue<T> arg) noexcept -> T&& {
+	constexpr auto forward(mx::to_lvalue<T> arg) noexcept -> T&& {
 		return static_cast<T&&>(arg);
 	}
 
 	/* forward (rvalue) */
 	template <typename T>
-	constexpr auto forward(ms::to_rvalue<T> arg) noexcept -> T&& {
-		static_assert(!ms::is_lvalue_reference<T>, "forward<T> requires an rvalue reference type");
+	constexpr auto forward(mx::to_rvalue<T> arg) noexcept -> T&& {
+		static_assert(!mx::is_lvalue_reference<T>, "forward<T> requires an rvalue reference type");
 		return static_cast<T&&>(arg);
 	}
 
 	/* move */
 	template <typename T>
-	constexpr auto move(T&& arg) noexcept -> ms::to_rvalue<T> {
-		return static_cast<ms::to_rvalue<T>>(arg);
+	constexpr auto move(T&& arg) noexcept -> mx::to_rvalue<T> {
+		return static_cast<mx::to_rvalue<T>>(arg);
 	}
 
-} // namespace ms
+} // namespace mx

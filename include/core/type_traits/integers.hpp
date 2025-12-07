@@ -148,13 +148,13 @@ namespace mx {
 	using sint_of = typename mx::integer_selector<B>::signed_type;
 
 	/* wider integral */
-	template <ms::is_integral T>
+	template <mx::is_integral T>
 	using wider_integral = mx::conditional<std::is_signed_v<T>,
 								typename mx::integer_selector<mx::bits<T> * 2U>::signed_type,
 								typename mx::integer_selector<mx::bits<T> * 2U>::unsign_type>;
 
 	/* narrower integral */
-	template <ms::is_integral T>
+	template <mx::is_integral T>
 	using narrower_integral = mx::conditional<std::is_signed_v<T>,
 								typename mx::integer_selector<mx::bits<T> / 2U>::signed_type,
 								typename mx::integer_selector<mx::bits<T> / 2U>::unsign_type>;

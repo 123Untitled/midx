@@ -1,4 +1,5 @@
-#pragma once
+#ifndef core_string_string_view_hpp
+#define core_string_string_view_hpp
 
 #include "core/type_traits/traits.hpp"
 #include "core/string/char_traits.hpp"
@@ -6,20 +7,12 @@
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 
-	// -- B A S I C  S T R I N G  V I E W -------------------------------------
+	// -- S T R I N G  V I E W ------------------------------------------------
 
-	template <typename T>
-	class basic_string_view final {
-
-
-		// -- assertions ------------------------------------------------------
-
-		/* requires char type */
-		static_assert(ms::is_character<T>,
-					  "basic_string_view requires a character type (char, wchar_t, char8_t, char16_t, char32_t)");
+	class string_view final {
 
 
 		private:
@@ -27,10 +20,7 @@ namespace ms {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self            = ms::basic_string_view<T>;
-
-			/* traits type */
-			using traits          = ms::char_traits<T>;
+			using self          = mx::string_view;
 
 
 		public:
@@ -38,13 +28,13 @@ namespace ms {
 			// -- public types ------------------------------------------------
 
 			/* char type */
-			using char_type       = traits::char_type;
+			using char_type     = char;
 
 			/* const pointer type */
-			using const_pointer   = traits::const_pointer;
+			using const_pointer = const char*;
 
 			/* size type */
-			using size_type       = traits::size_type;
+			using size_type     = mx::usz;
 
 
 		private:
@@ -58,18 +48,21 @@ namespace ms {
 			size_type _size;
 
 
+			static constexpr const char* _empty = "";
+
+
 		public:
 
 			// -- public lifecycle ---------------------------------------------
 
 			/* default constructor */
-			constexpr basic_string_view(void) noexcept
-			: _data{traits::empty}, _size{0U} {
+			constexpr string_view(void) noexcept
+			: _data{self::_empty}, _size{0U} {
 			}
 
 			/* buffer constructor */
-			explicit constexpr basic_string_view(const_pointer data) noexcept
-			: _data{data}, _size{traits::length(data)} {
+			explicit constexpr string_view(const_pointer data) noexcept
+			: _data{data}, _size{mx::strlen(data)} {
 
 				// do not check for better performance
 				/*
@@ -81,18 +74,18 @@ namespace ms {
 			}
 
 			/* members constructor */
-			constexpr basic_string_view(const_pointer data, const size_type size) noexcept
+			constexpr string_view(const_pointer data, const size_type size) noexcept
 			: _data{data}, _size{size} {
 			}
 
 			/* copy constructor */
-			constexpr basic_string_view(const self&) noexcept = default;
+			constexpr string_view(const self&) noexcept = default;
 
 			/* move constructor */
-			constexpr basic_string_view(self&&) noexcept = default;
+			constexpr string_view(self&&) noexcept = default;
 
 			/* destructor */
-			constexpr ~basic_string_view(void) noexcept = default;
+			constexpr ~string_view(void) noexcept = default;
 
 
 			// -- public assignment operators ---------------------------------
@@ -105,7 +98,7 @@ namespace ms {
 
 			/* buffer assignment operator */
 			constexpr auto operator=(const_pointer data) noexcept -> void {
-				_size = traits::length(data);
+				_size = mx::strlen(data);
 				_data = data;
 			}
 
@@ -140,37 +133,12 @@ namespace ms {
 
 			/* clear */
 			constexpr auto clear(void) noexcept -> void {
-				_data = traits::empty;
+				_data = self::_empty;
 				_size = 0U;
 			}
 
-	}; // class basic_string_view
+	}; // class string_view
 
+} // namespace mx
 
-
-	// -- aliases -------------------------------------------------------------
-
-	/* string view */
-	using string_view    = ms::basic_string_view<char>;
-
-	/* wide string view */
-	using wstring_view   = ms::basic_string_view<wchar_t>;
-
-	/* u8 string view */
-	using u8string_view  = ms::basic_string_view<char8_t>;
-
-	/* u16 string view */
-	using u16string_view = ms::basic_string_view<char16_t>;
-
-	/* u32 string view */
-	using u32string_view = ms::basic_string_view<char32_t>;
-
-
-	/* wstrv */
-	using wstrv = ms::wstring_view;
-
-	/* u8strv */
-	using u8strv = ms::u8string_view;
-
-
-} // namespace ms
+#endif // core_string_string_view_hpp

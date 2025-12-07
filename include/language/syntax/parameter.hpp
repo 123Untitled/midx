@@ -63,6 +63,80 @@ namespace pa {
 		return t.find(lm);
 	}
 
+
+
+	struct trig final {
+		non_instantiable_class(trig);
+		using type = mx::u8;
+		static constexpr type min = 0U;
+		static constexpr type max = 0U;
+		static constexpr bool neg = false;
+		static constexpr pa::id id = pa::trig;
+	}; // struct trig
+
+	struct note final {
+		non_instantiable_class(note);
+		using type = mx::u8;
+		static constexpr type min = 0U;
+		static constexpr type max = 127U;
+		static constexpr bool neg = false;
+		static constexpr pa::id id = pa::note;
+	}; // struct note
+
+	struct gate final {
+		non_instantiable_class(gate);
+		using type = mx::u16;
+		static constexpr type min = 0U;
+		static constexpr type max = 65535U;
+		static constexpr bool neg = false;
+		static constexpr pa::id id = pa::gate;
+	}; // struct gate
+
+	struct velo final {
+		non_instantiable_class(velo);
+		using type = mx::u8;
+		static constexpr type min = 0U;
+		static constexpr type max = 127U;
+		static constexpr bool neg = false;
+		static constexpr pa::id id = pa::velo;
+	}; // struct velo
+
+	struct octa final {
+		non_instantiable_class(octa);
+		using type = mx::i8;
+		static constexpr type min = -10;
+		static constexpr type max = +10;
+		static constexpr bool neg = true;
+		static constexpr pa::id id = pa::octa;
+	}; // struct octa
+
+	struct semi final {
+		non_instantiable_class(semi);
+		using type = mx::i8;
+		static constexpr type min = -128;
+		static constexpr type max = +127;
+		static constexpr bool neg = true;
+		static constexpr pa::id id = pa::semi;
+	}; // struct semi
+
+	struct chan final {
+		non_instantiable_class(chan);
+		using type = mx::u8;
+		static constexpr type min = 0U;
+		static constexpr type max = 15U;
+		static constexpr bool neg = false;
+		static constexpr pa::id id = pa::chan;
+	}; // struct chan
+
+	struct prob final {
+		non_instantiable_class(prob);
+		using type = mx::u8;
+		static constexpr type min = 0U;
+		static constexpr type max = 100U;
+		static constexpr bool neg = false;
+		static constexpr pa::id id = pa::prob;
+	}; // struct prob
+
 } // namespace pa
 
 #endif // language_syntax_parameter_hpp

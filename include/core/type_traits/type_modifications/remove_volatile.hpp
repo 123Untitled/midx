@@ -1,11 +1,12 @@
-#pragma once
+#ifndef type_modifications_remove_volatile_hpp
+#define type_modifications_remove_volatile_hpp
 
 #include "core/config/class.hpp"
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 
 	// -- R E M O V E  V O L A T I L E ----------------------------------------
@@ -32,6 +33,8 @@ namespace ms {
 
 	/* remove volatile */
 	template <typename T>
-	using remove_volatile = typename ms::impl::remove_volatile<T>::type;
+	using remove_volatile = typename mx::impl::remove_volatile<T>::type;
 
-} // namespace ms
+} // namespace mx
+
+#endif // t

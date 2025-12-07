@@ -2,6 +2,7 @@
 #define language_ast_param_accum_hpp
 
 #include "core/types.hpp"
+#include "language/syntax/parameter.hpp"
 
 
 // -- A S  N A M E S P A C E --------------------------------------------------
@@ -28,6 +29,9 @@ namespace as {
 
 			// -- public constants --------------------------------------------
 
+			/* id */
+			static constexpr pa::id id = pa::trig;
+
 			/* is discrete */
 			static constexpr bool is_discrete = true;
 
@@ -36,6 +40,12 @@ namespace as {
 
 			/* default trigger */
 			static constexpr mx::u8 default_value = 0U;
+
+			/* min */
+			static constexpr mx::u8 min = 0U;
+
+			/* max */
+			static constexpr mx::u8 max = 1U;
 
 
 			// -- public members ----------------------------------------------
@@ -97,6 +107,9 @@ namespace as {
 
 			// -- public constants --------------------------------------------
 
+			/* id */
+			static constexpr pa::id id = pa::note;
+
 			/* is discrete */
 			static constexpr bool is_discrete = true;
 
@@ -105,6 +118,12 @@ namespace as {
 
 			/* default note */
 			static constexpr type default_value = 60U;
+
+			/* min */
+			static constexpr type min = 0U;
+
+			/* max */
+			static constexpr type max = 127U;
 
 
 			// -- public lifecycle --------------------------------------------
@@ -167,6 +186,9 @@ namespace as {
 
 			// -- public constants --------------------------------------------
 
+			/* id */
+			static constexpr pa::id id = pa::velo;
+
 			/* is discrete */
 			static constexpr bool is_discrete = false;
 
@@ -175,6 +197,12 @@ namespace as {
 
 			/* default velocity */
 			static constexpr type default_value = 100U;
+
+			/* min */
+			static constexpr type min = 0U;
+
+			/* max */
+			static constexpr type max = 127U;
 
 
 			mx::usz total;
@@ -238,6 +266,9 @@ namespace as {
 
 			// -- public constants --------------------------------------------
 
+			/* id */
+			static constexpr pa::id id = pa::chan;
+
 			/* is discrete */
 			static constexpr bool is_discrete = true;
 
@@ -246,6 +277,12 @@ namespace as {
 
 			/* default channel */
 			static constexpr type default_value = 0U;
+
+			/* min */
+			static constexpr type min = 0U;
+
+			/* max */
+			static constexpr type max = 15U;
 
 
 			mx::u8 states[16U];
@@ -317,6 +354,9 @@ namespace as {
 
 
 			// -- public constants --------------------------------------------
+
+			/* id */
+			static constexpr pa::id id = pa::octa;
 
 			/* is discrete */
 			static constexpr bool is_discrete = false;
@@ -427,6 +467,9 @@ namespace as {
 
 			// -- public constants --------------------------------------------
 
+			/* id */
+			static constexpr pa::id id = pa::semi;
+
 			/* is discrete */
 			static constexpr bool is_discrete = false;
 
@@ -437,7 +480,7 @@ namespace as {
 			static constexpr type default_value = 0;
 
 			/* positive limit */
-			static constexpr type max = 127;
+			static constexpr type max = +127;
 
 			/* negative limit */
 			static constexpr type min = -128;
@@ -519,6 +562,9 @@ namespace as {
 
 			// -- public constants --------------------------------------------
 
+			/* id */
+			static constexpr pa::id id = pa::gate;
+
 			/* is discrete */
 			static constexpr bool is_discrete = false;
 
@@ -527,6 +573,12 @@ namespace as {
 
 			/* default gate */
 			static constexpr type default_value = 10U;
+
+			/* min */
+			static constexpr type min = 0U;
+
+			/* max */
+			static constexpr type max = 65535U;
 
 
 			mx::usz total;
@@ -590,6 +642,9 @@ namespace as {
 
 			// -- public constants --------------------------------------------
 
+			/* id */
+			static constexpr pa::id id = pa::prob;
+
 			/* is discrete */
 			static constexpr bool is_discrete = false;
 
@@ -598,6 +653,12 @@ namespace as {
 
 			/* default probability */
 			static constexpr type default_value = 100U;
+
+			/* min */
+			static constexpr type min = 0U;
+
+			/* max */
+			static constexpr type max = 100U;
 
 
 			mx::u8 total;

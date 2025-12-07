@@ -18,7 +18,7 @@ namespace pr {
 	consteval auto rule_number(void) -> pr::rule {
 		return pr::rule {
 			.eval = L == pr::level::seq ?
-				&pr::parser::eval_atomic_value
+				&pr::parser::parse_atomics
 				: nullptr,
 			.pre  = pr::precedence<L>::value,
 		};
@@ -37,7 +37,7 @@ namespace pr {
 	template <pr::level L>
 	consteval auto rule_tempo(void) -> pr::rule {
 		return pr::rule {
-			.eval = &pr::parser::eval_tempo<L>,
+			.eval = &pr::parser::parse_tempo<L>,
 			.pre = pr::precedence<L>::tempo,
 		};
 	}
@@ -47,7 +47,7 @@ namespace pr {
 	consteval auto rule_parameter(void) -> pr::rule {
 		return pr::rule {
 			.eval = L == pr::level::expr ?
-						&pr::parser::eval_parameter :
+						&pr::parser::parse_parameter :
 						nullptr,
 			.pre = pr::precedence<L>::parameter,
 		};
@@ -59,7 +59,7 @@ namespace pr {
 	consteval auto rule_track_separator(void) -> pr::rule {
 		return pr::rule {
 			// nud
-			.eval = L == pr::level::expr ? &pr::parser::eval_track_separator : nullptr,
+			.eval = L == pr::level::expr ? &pr::parser::parse_track_separator : nullptr,
 			// precedence
 			.pre = pr::precedence<L>::track_separator,
 		};
@@ -96,7 +96,7 @@ namespace pr {
 		// modulo %
 		{
 			// led
-			&pr::parser::eval_modulo<L>,
+			&pr::parser::parse_modulo<L>,
 			// precedence
 			pr::precedence<L>::modulo,
 		},
@@ -104,7 +104,7 @@ namespace pr {
 		// parallel
 		{
 			// led
-			&pr::parser::eval_parallel<L>,
+			&pr::parser::parse_parallel<L>,
 			// precedence
 			pr::precedence<L>::parallel,
 		},
@@ -112,7 +112,7 @@ namespace pr {
 		// crossfade
 		{
 			// led
-			&pr::parser::eval_crossfade<L>,
+			&pr::parser::parse_crossfade<L>,
 			// precedence
 			pr::precedence<L>::crossfade,
 		},
@@ -127,7 +127,7 @@ namespace pr {
 		// reference
 		{
 			// nud
-			&pr::parser::eval_references,
+			&pr::parser::parse_references,
 			// precedence
 			pr::precedence<L>::reference,
 		},
@@ -161,7 +161,7 @@ namespace pr {
 		// priority_open,
 		{
 			// nud
-			&pr::parser::eval_group<L>,
+			&pr::parser::parse_group<L>,
 			// precedence
 			pr::precedence<L>::grouping,
 		},
@@ -171,7 +171,7 @@ namespace pr {
 		// permutation_open,
 		{
 			// nud
-			&pr::parser::eval_permutation<L>,
+			&pr::parser::parse_permutation<L>,
 			// precedence
 			pr::precedence<L>::grouping,
 		},
@@ -209,7 +209,7 @@ namespace pr {
 
 	/* nud of */
 	template <pr::level L>
-	inline auto eval_of(const tk::token& token) noexcept -> pr::rule::eval_type {
+	inline auto parse_of(const tk::token& token) noexcept -> pr::rule::eval_type {
 		return rules<L>[token.id].eval;
 	}
 
