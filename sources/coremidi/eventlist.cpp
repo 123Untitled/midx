@@ -1,5 +1,7 @@
 #include "coremidi/eventlist.hpp"
 
+#if defined(midx_macos)
+
 /* default constructor */
 cm::eventlist::eventlist(void)
 : _buffer{}, _list{nullptr}, _packet{nullptr},
@@ -166,3 +168,5 @@ auto cm::eventlist::_resize(void) -> bool {
 
 	return true;
 }
+
+#endif // midx_macos

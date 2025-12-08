@@ -1,5 +1,9 @@
-#ifndef midilang_coremidi_object_hpp
-#define midilang_coremidi_object_hpp
+#ifndef coremidi_object_hpp
+#define coremidi_object_hpp
+
+#include "os.hpp"
+
+#if defined(midx_macos)
 
 #include "coremidi/types.hpp"
 #include "coremidi/exception.hpp"
@@ -183,7 +187,9 @@ namespace cm {
 
 } // namespace coremidi
 
-#endif // midilang_coremidi_object_hpp
+#endif // midx_macos
+
+#endif // coremidi_object_hpp
 
 
 	//midi::set_string_property(_client, kMIDIPropertyName, name);

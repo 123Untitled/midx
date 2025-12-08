@@ -1,5 +1,9 @@
-#ifndef midilang_coremidi_string_hpp
-#define midilang_coremidi_string_hpp
+#ifndef coremidi_string_hpp
+#define coremidi_string_hpp
+
+#include "os.hpp"
+
+#if defined(midx_macos)
 
 #include <CoreFoundation/CoreFoundation.h>
 
@@ -103,4 +107,6 @@ namespace cm {
 
 } // namespace coremidi
 
-#endif // midilang_coremidi_string_hpp
+#endif // midx_macos
+
+#endif // coremidi_string_hpp

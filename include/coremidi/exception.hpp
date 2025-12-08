@@ -1,5 +1,9 @@
-#ifndef midilang_coremidi_exception_hpp
-#define midilang_coremidi_exception_hpp
+#ifndef coremidi_exception_hpp
+#define coremidi_exception_hpp
+
+#include "os.hpp"
+
+#if defined(midx_macos)
 
 #include <exception>
 #include "coremidi/types.hpp"
@@ -80,4 +84,6 @@ namespace cm {
 
 } // namespace coremidi
 
-#endif // midilang_coremidi_exception_hpp
+#endif // midx_macos
+
+#endif // coremidi_exception_hpp

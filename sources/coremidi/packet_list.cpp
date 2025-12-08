@@ -1,5 +1,7 @@
 #include "coremidi/packet_list.hpp"
 
+#if defined(midx_macos)
+
 
 /* default constructor */
 cm::packet_list::packet_list(void)
@@ -183,3 +185,5 @@ auto cm::packet_list::_resize(void) -> bool {
 
 	return true;
 }
+
+#endif // midx_macos

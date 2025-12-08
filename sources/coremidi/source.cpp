@@ -1,6 +1,8 @@
 #include "coremidi/source.hpp"
 #include "coremidi/string.hpp"
 
+#if defined(midx_macos)
+
 
 // -- S O U R C E -------------------------------------------------------------
 
@@ -86,3 +88,5 @@ auto cm::source::_dispose(void) noexcept -> void {
 		::MIDIEndpointDispose(_ref)
 		);
 }
+
+#endif // midx_macos

@@ -1,6 +1,8 @@
 #include "coremidi/client.hpp"
 #include "coremidi/string.hpp"
 
+#if defined(midx_macos)
+
 #include <unistd.h>
 
 
@@ -120,3 +122,5 @@ auto cm::client::_notification(const MIDINotification *message, void* data) noex
 			::write(STDIN_FILENO, "unknown notification", 20);
 	}
 }
+
+#endif // midx_macos

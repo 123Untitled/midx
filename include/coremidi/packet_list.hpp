@@ -1,6 +1,10 @@
 #ifndef coremidi_packet_list_hpp
 #define coremidi_packet_list_hpp
 
+#include "os.hpp"
+
+#if defined(midx_macos)
+
 #include "coremidi/source.hpp"
 #include "coremidi/types.hpp"
 #include <vector>
@@ -136,5 +140,7 @@ namespace cm {
 	}; // class packet_list
 
 } // namespace cm
+
+#endif // midx_macos
 
 #endif // coremidi_packet_list_hpp

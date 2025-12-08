@@ -1,6 +1,8 @@
 #include "coremidi/coremidi.hpp"
 #include "coremidi/types.hpp"
 
+#if defined(midx_macos)
+
 /* sources */
 auto cm::sources(void) -> std::vector<cm::source> {
 
@@ -48,3 +50,5 @@ auto cm::destinations(void) -> std::vector<cm::destination> {
 	// return destinations
 	return destinations;
 }
+
+#endif // midx_macos

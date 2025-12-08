@@ -1,11 +1,17 @@
-#ifndef ml_monitoring_monitor_hpp
-#define ml_monitoring_monitor_hpp
+#ifndef monitoring_monitor_hpp
+#define monitoring_monitor_hpp
 
 #include "core/types.hpp"
 #include "system/unix_descriptor.hpp"
 #include "monitoring/watcher.hpp"
 
-#include <sys/event.h>
+#include "os.hpp"
+
+#if defined(midx_macos)
+#	include <sys/event.h>
+#elif defined(midx_linux)
+#	include <sys/epoll.h>
+#endif
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -47,7 +53,11 @@ namespace mx {
 			mx::unix_descriptor _kqueue;
 
 			/* events */
+			#if defined(midx_macos)
 			struct ::kevent _events[BUFFER_SIZE];
+			#elif defined(midx_linux)
+			struct ::epoll_event _events[BUFFER_SIZE];
+			#endif
 
 
 			// -- private methods ---------------------------------------------
@@ -132,4 +142,4 @@ namespace mx {
 
 } // namespace mx
 
-#endif // ml_monitoring_monitor_hpp
+#endif // monitoring_monitor_hpp

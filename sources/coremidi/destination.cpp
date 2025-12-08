@@ -1,6 +1,7 @@
 #include "coremidi/destination.hpp"
 #include "coremidi/string.hpp"
 
+#if defined(midx_macos)
 
 // -- D E S T I N A T I O N ---------------------------------------------------
 
@@ -123,3 +124,5 @@ auto cm::destination::_read_midi(const ::MIDIEventList& evtlist) -> void {
 	}
 
 }
+
+#endif // midx_macos

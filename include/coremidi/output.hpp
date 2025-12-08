@@ -1,5 +1,9 @@
-#ifndef midilang_coremidi_output_hpp
-#define midilang_coremidi_output_hpp
+#ifndef coremidi_output_hpp
+#define coremidi_output_hpp
+
+#include "os.hpp"
+
+#if defined(midx_macos)
 
 #include "coremidi/string.hpp"
 #include "coremidi/client.hpp"
@@ -110,4 +114,6 @@ namespace cm {
 
 } // namespace coremidi
 
-#endif // midilang_coremidi_output_hpp
+#endif // midx_macos
+
+#endif // coremidi_output_hpp

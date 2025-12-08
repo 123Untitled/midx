@@ -1,5 +1,9 @@
-#ifndef midilang_coremidi_eventlist_hpp
-#define midilang_coremidi_eventlist_hpp
+#ifndef coremidi_eventlist_hpp
+#define coremidi_eventlist_hpp
+
+#include "os.hpp"
+
+#if defined(midx_macos)
 
 #include "coremidi/source.hpp"
 #include "coremidi/types.hpp"
@@ -135,4 +139,6 @@ namespace cm {
 
 }; // namespace coremidi
 
-#endif // midilang_coremidi_eventlist_hpp
+#endif // midx_macos
+
+#endif // coremidi_eventlist_hpp
