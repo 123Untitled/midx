@@ -1,7 +1,7 @@
 #ifndef string_pool_hpp
 #define string_pool_hpp
 
-#include <string>
+#include "core/string/string.hpp"
 #include <vector>
 
 
@@ -9,6 +9,8 @@
 
 namespace mx {
 
+
+	// -- S T R I N G  P O O L ------------------------------------------------
 
 	class string_pool final {
 
@@ -24,7 +26,7 @@ namespace mx {
 			// -- private members ---------------------------------------------
 
 			/* storage */
-			std::vector<std::string> _storage;
+			std::vector<mx::string> _storage;
 
 
 			// -- private lifecycle -------------------------------------------
@@ -48,18 +50,18 @@ namespace mx {
 			// -- public static methods ---------------------------------------
 
 			/* store */
-			static auto store(std::string&& str) -> void {
+			static auto store(mx::string&& str) -> void {
 				auto& pool = self::shared();
 				str.clear();
 				pool._storage.emplace_back(std::move(str));
 			}
 
 			/* query */
-			static auto query(void) noexcept -> std::string {
+			static auto query(void) noexcept -> mx::string {
 				auto& pool = self::shared();
 
 				if (pool._storage.empty())
-					return std::string{};
+					return mx::string{};
 
 				auto str = std::move(pool._storage.back());
 				pool._storage.pop_back();

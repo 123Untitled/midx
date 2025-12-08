@@ -53,14 +53,6 @@ namespace as {
 			  param{param} {
 			}
 
-
-			// -- public methods ----------------------------------------------
-
-			/* play
-			   play atomics node */
-			auto play(as::play_ctx&) const -> void;
-
-
 	}; // struct atomic_values
 
 } // namespace as

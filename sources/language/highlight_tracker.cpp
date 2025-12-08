@@ -1,4 +1,5 @@
 #include "language/highlight_tracker.hpp"
+#include "string_pool.hpp"
 
 
 // -- H I G H L I G H T  T R A C K E R ----------------------------------------
@@ -7,23 +8,19 @@
 
 /* emit highlight JSON
    helper to generate JSON for a single highlight */
-static auto emit_highlight(std::string& out,
+static auto emit_highlight(mx::string& out,
 						   const tk::const_token_view& tv,
 						   const char* group) -> void {
 
 	tv.for_each_chunk(
-		[](const tk::chunk& ck, std::string& s, const char* group) static -> void {
+		[](const tk::chunk& ck, mx::string& s, const char* group) static -> void {
 			const auto& r = ck.range;
 
-			s.append("{\"l\":");
-			s.append(std::to_string(r.ln));
-			s.append(",\"s\":");
-			s.append(std::to_string(r.cs));
-			s.append(",\"e\":");
-			s.append(std::to_string(r.ce));
-			s.append(",\"g\":\"");
-			s.append(group);
-			s.append("\"},");
+			s.append("{\"l\":", r.ln,
+					 ",\"s\":", r.cs,
+					 ",\"e\":", r.ce,
+					 ",\"g\":\"", group, "\"},");
+
 		}, out, group
 	);
 }
@@ -67,12 +64,11 @@ auto mx::highlight_tracker::has_changes(void) const noexcept -> bool {
 }
 
 
-#include "string_pool.hpp"
 
 
 /* generate json
    generate JSON output for current changes */
-auto mx::highlight_tracker::generate_json(void) -> std::string {
+auto mx::highlight_tracker::generate_json(void) -> mx::string {
 
 	// get string from pool
 	auto json = mx::string_pool::query();
@@ -87,9 +83,13 @@ auto mx::highlight_tracker::generate_json(void) -> std::string {
 			group
 		);
 	}
+
 	// remove trailing comma
-	json.back() = ']';
-	json.append("}\r\n");
+	if (json.back() == ',')
+		json.pop_back();
+
+	// close array
+	json.append("]}\r\n");
 
 	return json;
 }

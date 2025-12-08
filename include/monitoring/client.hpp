@@ -25,13 +25,13 @@ namespace mx {
 	class send_buffer final {
 
 		private:
-			std::string _data;
+			mx::string _data;
 			mx::usz _sent;
 
 
 		public:
 
-			explicit send_buffer(std::string&& msg)
+			explicit send_buffer(mx::string&& msg)
 			: _data{std::move(msg)}, _sent{0U} {
 			}
 
@@ -121,7 +121,7 @@ namespace mx {
 			auto initialize(mx::socket&&) -> void;
 
 			/* send */
-			auto send(std::string&&) -> void;
+			auto send(mx::string&&) -> void;
 
 			/* is connected */
 			auto is_connected(void) const noexcept -> bool;

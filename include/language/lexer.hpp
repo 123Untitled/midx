@@ -14,6 +14,10 @@ namespace an {
 	class diagnostic;
 } // namespace an
 
+namespace mx {
+	class string;
+} // namespace mx
+
 
 // -- L X  N A M E S P A C E --------------------------------------------------
 
@@ -120,7 +124,7 @@ namespace lx {
 			// -- public methods ----------------------------------------------
 
 			/* lex */
-			auto lex(const std::string&, tk::tokens&, an::diagnostic&) -> void;
+			auto lex(const mx::string&, tk::tokens&, an::diagnostic&) -> void;
 
 	}; // class lexer
 

@@ -1,4 +1,5 @@
 #include "application.hpp"
+#include "core/utility/type_operations.hpp"
 
 
 // -- A P P L I C A T I O N ---------------------------------------------------
@@ -20,20 +21,20 @@ mx::application::application(void)
 
 // -- private methods ---------------------------------------------------------
 
-auto mx::application::reparse(std::string&& data) -> void {
+auto mx::application::reparse(mx::string&& data) -> void {
 
 	auto& analyzer = _analyzers[_active];
 
-	analyzer.analyze(std::move(data));
+	analyzer.analyze(mx::move(data));
 	_server.broadcast(analyzer.highlights());
 
-	if (analyzer.has_errors() == true)
+	if (analyzer.has_errors() == true) {
+		std::cout << "\x1b[31mErrors detected, playback aborted.\x1b[0m" << std::endl;
 		return;
-
-	//return;
+	}
 
 	// switch tree
-	_player.switch_tree(analyzer.tree());
+	_player.switch_tree(analyzer.tree(), analyzer.tokens());
 	_active = (_active == 0U) ? 1U : 0U;
 }
 
@@ -43,7 +44,7 @@ auto mx::application::exit(void) noexcept -> void {
 }
 
 /* toggle play */
-auto mx::application::toggle_play(void) noexcept -> void {
+auto mx::application::toggle(void) -> void {
 	_player.toggle();
 }
 

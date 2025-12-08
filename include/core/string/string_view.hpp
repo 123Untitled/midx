@@ -1,8 +1,8 @@
 #ifndef core_string_string_view_hpp
 #define core_string_string_view_hpp
 
-#include "core/type_traits/traits.hpp"
-#include "core/string/char_traits.hpp"
+#include "core/types.hpp"
+#include "core/string/strlen.hpp"
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
@@ -23,37 +23,24 @@ namespace mx {
 			using self          = mx::string_view;
 
 
-		public:
-
-			// -- public types ------------------------------------------------
-
-			/* char type */
-			using char_type     = char;
-
-			/* const pointer type */
-			using const_pointer = const char*;
-
-			/* size type */
-			using size_type     = mx::usz;
-
-
-		private:
-
 			// -- private members ---------------------------------------------
 
 			/* data */
-			const_pointer _data;
+			const char* _data;
 
 			/* size */
-			size_type _size;
+			mx::usz _size;
 
 
+			// -- private static members --------------------------------------
+
+			/* empty string */
 			static constexpr const char* _empty = "";
 
 
 		public:
 
-			// -- public lifecycle ---------------------------------------------
+			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
 			constexpr string_view(void) noexcept
@@ -61,7 +48,7 @@ namespace mx {
 			}
 
 			/* buffer constructor */
-			explicit constexpr string_view(const_pointer data) noexcept
+			explicit constexpr string_view(const char* data) noexcept
 			: _data{data}, _size{mx::strlen(data)} {
 
 				// do not check for better performance
@@ -74,7 +61,7 @@ namespace mx {
 			}
 
 			/* members constructor */
-			constexpr string_view(const_pointer data, const size_type size) noexcept
+			constexpr string_view(const char* data, const mx::usz size) noexcept
 			: _data{data}, _size{size} {
 			}
 
@@ -97,7 +84,7 @@ namespace mx {
 			constexpr auto operator=(self&&) noexcept -> self& = default;
 
 			/* buffer assignment operator */
-			constexpr auto operator=(const_pointer data) noexcept -> void {
+			constexpr auto operator=(const char* data) noexcept -> void {
 				_size = mx::strlen(data);
 				_data = data;
 			}
@@ -106,12 +93,12 @@ namespace mx {
 			// -- public accessors --------------------------------------------
 
 			/* data */
-			constexpr auto data(void) const noexcept -> const_pointer {
+			constexpr auto data(void) const noexcept -> const char* {
 				return _data;
 			}
 
 			/* size */
-			constexpr auto size(void) const noexcept -> size_type {
+			constexpr auto size(void) const noexcept -> mx::usz {
 				return _size;
 			}
 
@@ -124,7 +111,7 @@ namespace mx {
 			// -- public element access ---------------------------------------
 
 			/* operator[] */
-			constexpr auto operator[](const size_type pos) const noexcept -> char_type {
+			constexpr auto operator[](const mx::usz pos) const noexcept -> char {
 				return _data[pos];
 			}
 
@@ -140,5 +127,12 @@ namespace mx {
 	}; // class string_view
 
 } // namespace mx
+
+
+// overload operator << for mx::string_view
+#include <ostream>
+inline auto operator<<(std::ostream& os, const mx::string_view& sv) -> std::ostream& {
+	return os.write(sv.data(), static_cast<std::streamsize>(sv.size()));
+}
 
 #endif // core_string_string_view_hpp

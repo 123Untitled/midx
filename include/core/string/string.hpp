@@ -10,14 +10,9 @@
 
 // fix limit and overflow in extend and try extend methods
 
-#include "core/type_traits/traits.hpp"
-#include "core/type_traits/index_sequence.hpp"
 #include "core/utility/exchange.hpp"
-
-#include "core/string/char_traits.hpp"
 #include "core/string/chars_encoder.hpp"
-
-#include <iostream>
+#include "core/string/strcmp.hpp"
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
@@ -110,9 +105,9 @@ namespace mx {
 
 			/* move constructor */
 			string(self&& other) noexcept
-			: _capacity{ms::exchange(other._capacity, 0U)},
-				  _data{ms::exchange(other._data, self::_empty())},
-				  _size{ms::exchange(other._size, 0U)} {
+			: _capacity{mx::exchange(other._capacity, 0U)},
+				  _data{mx::exchange(other._data, self::_empty())},
+				  _size{mx::exchange(other._size, 0U)} {
 				// other is now empty
 			}
 
@@ -164,9 +159,9 @@ namespace mx {
 				self::_deallocate();
 
 				// move members
-				_capacity = ms::exchange(other._capacity, 0U);
-				_data     = ms::exchange(other._data, self::_empty());
-				_size     = ms::exchange(other._size, 0U);
+				_capacity = mx::exchange(other._capacity, 0U);
+				_data     = mx::exchange(other._data, self::_empty());
+				_size     = mx::exchange(other._size, 0U);
 
 				return *this;
 			}
@@ -382,32 +377,32 @@ namespace mx {
 
 			/* equal */
 			auto operator==(const self& other) const noexcept -> bool {
-				return self::_compare(other) == 0;
+				return mx::str_equal(*this, other);
 			}
 
 			/* not equal */
 			auto operator!=(const self& other) const noexcept -> bool {
-				return self::_compare(other) != 0;
+				return !mx::str_equal(*this, other);
 			}
 
 			/* less than */
 			auto operator <(const self& other) const noexcept -> bool {
-				return self::_compare(other) < 0;
+				return mx::str_lexicographical(*this, other) < 0;
 			}
 
 			/* greater than */
 			auto operator >(const self& other) const noexcept -> bool {
-				return self::_compare(other) > 0;
+				return mx::str_lexicographical(*this, other) > 0;
 			}
 
 			/* less than or equal to */
 			auto operator<=(const self& other) const noexcept -> bool {
-				return self::_compare(other) <= 0;
+				return mx::str_lexicographical(*this, other) <= 0;
 			}
 
 			/* greater than or equal to */
 			auto operator>=(const self& other) const noexcept -> bool {
-				return self::_compare(other) >= 0;
+				return mx::str_lexicographical(*this, other) >= 0;
 			}
 
 
@@ -420,14 +415,14 @@ namespace mx {
 				return mx::allocate<char>(size + 1U);
 			}
 
+			/* empty data pointer */
+			static auto _empty(void) noexcept -> char* {
+				static char str[1U] {'\0'};
+				return str;
+			}
+
 
 			// -- private methods ---------------------------------------------
-
-			/* empty data pointer */
-			auto _empty(void) noexcept -> char* {
-				static char _empty[1U] {'\0'};
-				return _empty;
-			}
 
 			/* reallocate */
 			auto _reallocate(const mx::usz size) -> char* {
@@ -478,31 +473,15 @@ namespace mx {
 			}
 
 
-			// -- private comparison methods ----------------------------------
-
-			/* compare */
-			auto _compare(const self& other) const noexcept -> int {
-
-				// compare size
-				if (_size != other._size)
-					return _size < other._size ? -1 : 1;
-
-				// compare data
-				const char* s1 = _data;
-				const char* s2 = other._data;
-				for (; *s1 != '\0'; ++s1, ++s2) {
-
-					// check inequality
-					if (*s1 != *s2)
-						return *s1 < *s2 ? -1 : 1;
-				}
-
-				// return equal
-				return 0;
-			}
-
 	}; // class string
 
 } // namespace mx
+
+
+// overload operator << for mx::string
+#include <ostream>
+inline auto operator<<(std::ostream& os, const mx::string& str) -> std::ostream& {
+	return os.write(str.data(), static_cast<std::streamsize>(str.size()));
+}
 
 #endif // core_string_hpp

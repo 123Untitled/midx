@@ -58,14 +58,27 @@ int main2()
 
 
 #include "core/string/string.hpp"
+#include "core/string/strcmp.hpp"
 
 auto main(int ac, char** av) -> int {
 
-	const char* ptr = "Hello";
 
-	mx::string str{ptr, ' ', "World", 42};
-	std::cout << str.data() << "\n";
-	return 0;
+	//const char* ptr = "Hello";
+	//
+	//mx::string str{ptr, ' ', "World", 42};
+	//std::cout << str.data() << "\n";
+	//str.append(' ', 3.14159f, "!", '\n');
+	//
+	//if (str < 'a') {
+	//}
+	const char* s1 = "hello";
+	const char* s2 = "hello2";
+
+	if (s1 < s2) {
+		std::cout << "hello < hello2\n";
+	}
+
+	//return 0;
 
 	//mx::frac time{0, MIDI_PPQN};
 	//const mx::frac tick{1U, MIDI_PPQN};
@@ -74,7 +87,6 @@ auto main(int ac, char** av) -> int {
 	//std::cout << "Time: " << time << "\n";
 	//std::cout << "Prev: " << prev << "\n";
 	//std::cout << "Tick: " << tick << "\n";
-	//return 0;
 
 	try {
 		mx::application::run();

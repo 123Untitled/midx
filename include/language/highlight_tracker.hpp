@@ -3,14 +3,15 @@
 
 #include "core/types.hpp"
 #include "language/tokens/tokens.hpp"
-#include "math.hpp"
+//#include "math.hpp"
 #include <unordered_map>
-#include <string>
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
 namespace mx {
+
+	class string;
 
 
 	// -- H I G H L I G H T  T R A C K E R ------------------------------------
@@ -80,7 +81,7 @@ namespace mx {
 
 			/* generate json
 			   generate the JSON output for added and removed highlights */
-			auto generate_json(void) -> std::string;
+			auto generate_json(void) -> mx::string;
 
 
 			/* swap now

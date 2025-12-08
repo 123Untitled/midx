@@ -18,7 +18,7 @@ mx::analyzer::analyzer(void)
 
 // -- public modifiers --------------------------------------------------------
 
-auto mx::analyzer::analyze(std::string&& data) -> void {
+auto mx::analyzer::analyze(mx::string&& data) -> void {
 
 	mx::string_pool::store(std::move(_data));
 	_data = std::move(data);
@@ -33,67 +33,58 @@ auto mx::analyzer::analyze(std::string&& data) -> void {
 
 	// parse
 	_parser.parse(_tokens, _tree, _diagnostic);
-
 }
 
-#include "string_pool.hpp"
 
 /* highlights */
-auto mx::analyzer::highlights(void) -> std::string {
+auto mx::analyzer::highlights(void) -> mx::string {
 
 	auto str = mx::string_pool::query();
 
-	// first object : highlights
+	// highlights object
 	str.append("{\"type\":\"highlight\",\"highlights\":[");
-	bool first = true;
 
 	_tokens.for_each(
-		[](const tk::const_token_view& tv, std::string& str, bool& first) static -> void {
+		[](const tk::const_token_view& tv, mx::string& str) static -> void {
+
 			const auto& group = tk::highlight[tv.id()];
+
 			tv.for_each_chunk(
-				[](const tk::chunk& ch, std::string& str, bool& first, const char* group) static -> void {
-					if (!first)
-						str.push_back(',');
-					else
-						first = false;
+				[](const tk::chunk& ch, mx::string& str, const char* group) static -> void {
 
-					str.append("{\"l\":");
-					str.append(std::to_string(ch.range.ln));
-					str.append(",\"s\":");
-					str.append(std::to_string(ch.range.cs));
-					str.append(",\"e\":");
-					str.append(std::to_string(ch.range.ce));
-					str.append(",\"g\":\"");
-					str.append(group);
-					str.append("\"}");
-			}, str, first, group);
-	}, str, first);
+					str.append("{\"l\":", ch.range.ln,
+							   ",\"s\":", ch.range.cs,
+							   ",\"e\":", ch.range.ce,
+							   ",\"g\":\"", group, "\"},");
 
+			}, str, group);
+	}, str);
+
+	// remove last comma and close array
+	if (str.back() == ',')
+		str.pop_back();
+	// close object
 	str.append("]}\r\n");
 
 
 
-	// second object : diagnostics
+	// diagnostics object
 	str.append("{\"type\":\"diagnostic\",\"diagnostics\":[");
 
-	first = true;
 	for (const auto& e : _diagnostic._entries) {
 
-		if (!first)
-			str.push_back(',');
-		first = false;
-
-		str.append("{\"m\":\"");
-		str.append(e.msg);
-		str.append("\",\"l\":");
-		str.append(std::to_string(e.range.ln));
-		str.append(",\"s\":");
-		str.append(std::to_string(e.range.cs));
-		str.append(",\"e\":");
-		str.append(std::to_string(e.range.ce));
-		str.append("}");
+		str.append("{\"m\":\"", e.msg,
+				"\",\"l\":", e.range.ln,
+				",\"s\":",   e.range.cs,
+				",\"e\":",   e.range.ce,
+				"},"
+				);
 	}
 
+	// remove last comma and close array
+	if (str.back() == ',')
+		str.pop_back();
+	// close object
 	str.append("]}\r\n");
 
 	return str;

@@ -1,12 +1,12 @@
-#pragma once
+#ifndef core_string_inplace_string_hpp
+#define core_string_inplace_string_hpp
 
-#include "core/string/char_traits.hpp"
 #include "core/string/chars_encoder.hpp"
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 	// string name ideas:
 
@@ -63,8 +63,8 @@ namespace ms {
 
 	// -- I N P L A C E  B A S I C  S T R I N G -------------------------------
 
-	template <typename C, unsigned N>
-	class inplace_basic_string final {
+	template <unsigned N>
+	class inplace_string final {
 
 
 		// -- assertions ------------------------------------------------------
@@ -78,80 +78,52 @@ namespace ms {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self            = ms::inplace_basic_string<C, N>;
+			using self = mx::inplace_string<N>;
 
-			/* traits type */
-			using traits          = ms::char_traits<C>;
-
-
-		public:
-
-			// -- public types ------------------------------------------------
-
-			/* char type */
-			using char_type       = traits::char_type;
-
-			/* reference type */
-			using reference       = traits::reference;
-
-			/* const reference type */
-			using const_reference = traits::const_reference;
-
-			/* pointer type */
-			using pointer         = traits::pointer;
-
-			/* const pointer type */
-			using const_pointer   = traits::const_pointer;
-
-			/* size type */
-			using size_type       = traits::size_type;
-
-
-		private:
 
 			// -- private members ---------------------------------------------
 
 			/* data */
-			char_type _data[N];
+			char _data[N];
 
 			/* size */
-			size_type _size;
+			mx::usz _size;
 
 
 			// -- private static members --------------------------------------
 
 			/* capacity */
-			static constexpr size_type _capacity = N - 1U; // reserve space for null terminator
+			static constexpr mx::usz _capacity = N - 1U; // reserve space for null terminator
 
 
 			// -- private lifecycle -------------------------------------------
 
 			/* encoder constructor */
 			template <typename... Tp>
-			constexpr explicit inplace_basic_string(const ms::chars_encoder<C, Tp...>& encoder) noexcept
+			constexpr explicit inplace_string(const mx::chars_encoder<Tp...>& encoder) noexcept
 			/* uninitialized */ {
 
 				// initialize at compile time
 				if consteval {
-					for (size_type i = 0U; i < N; ++i)
-						_data[i] = traits::null; }
+					for (mx::usz i = 0U; i < N; ++i)
+						_data[i] = '\0';
+				}
 
 				// encode
 				_size = encoder.encode(_data, _data + _capacity);
 
 				// null terminate
-				_data[_size] = traits::null;
+				_data[_size] = '\0';
 			}
 
 
 
 			template <typename... Tp>
-			static constexpr bool any_encoder =
-				(ms::is_chars_encoder<Tp> || ...);
+			static constexpr bool any_encoder = (mx::is_chars_encoder<Tp> || ...);
 
 			template <typename... Tp>
 			static constexpr bool is_single_self =
-				(sizeof...(Tp) == 1U) && (mx::is_same<self, ms::remove_cvr<Tp>> && ...);
+				(sizeof...(Tp) == 1U) && (mx::is_same<self, mx::remove_cvr<Tp>> && ...);
 
 
 		public:
@@ -159,45 +131,47 @@ namespace ms {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			constexpr inplace_basic_string(void) noexcept
+			constexpr inplace_string(void) noexcept
 			: /* uninitialized */ _size{0U} {
 
 				// initialize at compile time
 				if consteval {
-					for (size_type i = 0U; i < N; ++i)
-						_data[i] = traits::null; }
+					for (mx::usz i = 0U; i < N; ++i)
+						_data[i] = '\0';
+				}
 
-				*_data = traits::null;
+				*_data = '\0';
 			}
 
 			/* variadic constructor */
 			template <typename... Tp> requires (not any_encoder<Tp...>)
 											&& (not is_single_self<Tp...>)
 											&& (sizeof...(Tp) > 0U)
-			constexpr explicit inplace_basic_string(Tp&&... args) noexcept
-			: inplace_basic_string{ms::chars_encoder<C, Tp...>{ms::forward<Tp>(args)...}} {
+			constexpr explicit inplace_string(Tp&&... args) noexcept
+			: inplace_string{mx::chars_encoder<Tp...>{mx::forward<Tp>(args)...}} {
 			}
 
 			/* copy constructor */
-			constexpr inplace_basic_string(const self& other) noexcept
+			constexpr inplace_string(const self& other) noexcept
 			: /* uninitialized */ _size{other._size} {
 
 				// initialize at compile time
 				if consteval {
-					for (size_type i = 0U; i < N; ++i)
-						_data[i] = traits::null; }
+					for (mx::usz i = 0U; i < N; ++i)
+						_data[i] = '\0';
+				}
 
-				traits::copy(_data, other._data, _size);
-				_data[_size] = traits::null;
+				mx::memcpy(_data, other._data, _size);
+				_data[_size] = '\0';
 			}
 
 			/* move constructor */
-			constexpr inplace_basic_string(self&& other) noexcept
-			: inplace_basic_string{other} {
+			constexpr inplace_string(self&& other) noexcept
+			: inplace_string{other} {
 			}
 
 			/* destructor */
-			constexpr ~inplace_basic_string(void) noexcept = default;
+			constexpr ~inplace_string(void) noexcept = default;
 
 
 			// -- public assignment operators ---------------------------------
@@ -205,8 +179,8 @@ namespace ms {
 			/* copy assignment operator */
 			constexpr auto operator=(const self& other) noexcept -> self& {
 				_size = other._size;
-				traits::copy(_data, other._data, _size);
-				_data[_size] = traits::null;
+				mx::memcpy(_data, other._data, _size);
+				_data[_size] = '\0';
 				return *this;
 			}
 
@@ -219,22 +193,22 @@ namespace ms {
 			// -- public accessors --------------------------------------------
 
 			/* data */
-			constexpr auto data(void) noexcept -> pointer {
+			constexpr auto data(void) noexcept -> char* {
 				return _data;
 			}
 
 			/* const data */
-			constexpr auto data(void) const noexcept -> const_pointer {
+			constexpr auto data(void) const noexcept -> const char* {
 				return _data;
 			}
 
 			/* size */
-			constexpr auto size(void) const noexcept -> size_type {
+			constexpr auto size(void) const noexcept -> mx::usz {
 				return _size;
 			}
 
 			/* capacity */
-			constexpr auto capacity(void) const noexcept -> size_type {
+			constexpr auto capacity(void) const noexcept -> mx::usz {
 				return _capacity;
 			}
 
@@ -247,12 +221,12 @@ namespace ms {
 			// -- public subscript operators ----------------------------------
 
 			/* operator [] */
-			constexpr auto operator[](const size_type pos) noexcept -> reference {
+			constexpr auto operator[](const mx::usz pos) noexcept -> char& {
 				return _data[pos];
 			}
 
 			/* operator [] */
-			constexpr auto operator[](const size_type pos) const noexcept -> char_type {
+			constexpr auto operator[](const mx::usz pos) const noexcept -> const char& {
 				return _data[pos];
 			}
 
@@ -260,13 +234,13 @@ namespace ms {
 			// -- public modifiers --------------------------------------------
 
 			/* resize */
-			constexpr auto resize(const size_type size) noexcept -> void {
+			constexpr auto resize(const mx::usz size) noexcept -> void {
 
 				// set new size
 				_size = (size < _capacity) ? size : _capacity;
 
 				// null terminate
-				_data[_size] = traits::null;
+				_data[_size] = '\0';
 			}
 
 			/* clear */
@@ -276,7 +250,7 @@ namespace ms {
 				_size = 0U;
 
 				// null terminate
-				_data[_size] = traits::null;
+				_data[_size] = '\0';
 			}
 
 			/* append */
@@ -287,13 +261,13 @@ namespace ms {
 				if constexpr (sizeof...(args) > 0U) {
 
 					// create encoder
-					const ms::chars_encoder<C, Tp...> encoder{ms::forward<Tp>(args)...};
+					const mx::chars_encoder<Tp...> encoder{mx::forward<Tp>(args)...};
 
 					// encode
 					_size += encoder.encode(_data + _size, _data + _capacity);
 
 					// null terminate
-					_data[_size] = traits::null;
+					_data[_size] = '\0';
 				}
 			}
 
@@ -305,7 +279,7 @@ namespace ms {
 				if constexpr (sizeof...(args) > 0U) {
 
 					// create encoder
-					const ms::chars_encoder<C, Tp...> encoder{ms::forward<Tp>(args)...};
+					const mx::chars_encoder<Tp...> encoder{mx::forward<Tp>(args)...};
 
 					// encode
 					_size = encoder.encode(_data, _data + _capacity);
@@ -316,34 +290,11 @@ namespace ms {
 				}
 
 				// null terminate
-				_data[_size] = traits::null;
+				_data[_size] = '\0';
 			}
 
-	}; // class inplace_basic_string
+	}; // class inplace_string
 
+} // namespace mx
 
-
-	// -- aliases -------------------------------------------------------------
-
-	/* inplace string */
-	template <unsigned N>
-	using inplace_string    = ms::inplace_basic_string<char, N>;
-
-	/* inplace wstring */
-	template <unsigned N>
-	using inplace_wstring   = ms::inplace_basic_string<wchar_t, N>;
-
-	/* inplace u8string */
-	template <unsigned N>
-	using inplace_u8string  = ms::inplace_basic_string<char8_t, N>;
-
-	/* inplace u16string */
-	template <unsigned N>
-	using inplace_u16string = ms::inplace_basic_string<char16_t, N>;
-
-	/* inplace u32string */
-	template <unsigned N>
-	using inplace_u32string = ms::inplace_basic_string<char32_t, N>;
-
-
-} // namespace ms
+#endif // core_string_inplace_string_hpp

@@ -39,9 +39,6 @@ namespace mx {
 			/* clock */
 			mx::clock _clock;
 
-			/* tree reference */
-			as::tree* _tree;
-
 			/* evaluator */
 			as::eval _eval;
 
@@ -78,7 +75,7 @@ namespace mx {
 			auto toggle(void) -> void;
 
 			/* switch tree */
-			auto switch_tree(as::tree&) noexcept -> void;
+			auto switch_tree(const as::tree&, const tk::tokens&) noexcept -> void;
 
 			/* is playing */
 			auto is_playing(void) const noexcept -> bool;

@@ -30,7 +30,7 @@ mx::server::server(const mx::monitor& monitor)
 // -- public methods ----------------------------------------------------------
 
 /* broadcast */
-auto mx::server::broadcast(std::string&& msg) -> void {
+auto mx::server::broadcast(mx::string&& msg) -> void {
 
 	if (_client.is_connected() == false)
 		return;

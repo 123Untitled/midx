@@ -5,6 +5,8 @@
 #include "core/type_traits/traits.hpp"
 #include <type_traits>
 
+#include <iostream>
+
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
@@ -94,26 +96,26 @@ namespace mx {
 			}
 
 
-			/* max number of digits */
-			static consteval auto max_digits(void) -> unsigned {
-
-				// max value of type
-				T num = self::max();
-
-				// number of digits
-				unsigned digits = 0U;
-
-				do { // increment digits
-					++digits;
-					// divide max by base
-				} while (num /= 10U);
-
-				return digits;
+			/* digits */
+			static consteval auto digits(void) noexcept -> mx::usz {
+				return mx::bits<T>;
 			}
 
 
 	}; // class limits
 
+
+	constexpr auto clz(const unsigned v) noexcept -> int {
+		return __builtin_clz(v);
+	}
+
+	constexpr auto clz(const unsigned long v) noexcept -> int {
+		return __builtin_clzl(v);
+	}
+
+	constexpr auto clz(const unsigned long long v) noexcept -> int {
+		return __builtin_clzll(v);
+	}
 
 
 	/* count leading zeros */
@@ -121,33 +123,24 @@ namespace mx {
 	constexpr auto countl_zero(const T num) noexcept -> mx::usz {
 
 		static_assert(mx::is_integral<T>, "countl_zero only supports integral types");
-		static_assert(sizeof(T) <= 8U, "countl_zero only supports integral types up to 64 bits");
 
 		if (num == static_cast<T>(0))
-			return mx::bits<T>;
+			return mx::value_bits<T>;
 
-		if !consteval {
-
-			unsigned long index;
-
-			if constexpr (sizeof(T) > 4U)
-				index = 31U - __builtin_clzll(static_cast<mx::u64>(num));
-				//static_cast<void>(::_BitScanReverse64(&index, static_cast<mx::u64>(num)));
-			else
-				index = 31U - __builtin_clz(static_cast<unsigned long>(num));
-				//static_cast<void>(::_BitScanReverse(&index, static_cast<unsigned long>(num)));
-
-			return (mx::bits<T> - 1U) - index;
+		if constexpr (sizeof(T) <= sizeof(unsigned int)) {
+			return mx::clz(static_cast<unsigned int>(num))
+				- (mx::value_bits<unsigned int> - mx::value_bits<T>);
+		}
+		else if constexpr (sizeof(T) <= sizeof(unsigned long)) {
+			return mx::clz(static_cast<unsigned long>(num))
+				- (mx::value_bits<unsigned long> - mx::value_bits<T>);
+		}
+		else if constexpr (sizeof(T) <= sizeof(unsigned long long)) {
+			return mx::clz(static_cast<unsigned long long>(num))
+				- (mx::value_bits<unsigned long long> - mx::value_bits<T>);
 		}
 		else {
-
-			mx::usz count = 0;
-			for (mx::usz i = mx::bits<T>; i > 0U; --i) {
-				if (num & (T{1} << (i - 1U)))
-					break;
-				++count;
-			}
-			return count;
+			static_assert(false, "countl_zero only supports integral types up to 64 bits");
 		}
 	}
 

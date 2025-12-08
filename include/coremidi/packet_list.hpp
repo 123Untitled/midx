@@ -1,10 +1,8 @@
-#ifndef midilang_coremidi_eventlist_hpp
-#define midilang_coremidi_eventlist_hpp
+#ifndef coremidi_packet_list_hpp
+#define coremidi_packet_list_hpp
 
 #include "coremidi/source.hpp"
 #include "coremidi/types.hpp"
-//#include "coremidi/output.hpp"
-
 #include <vector>
 
 
@@ -13,9 +11,9 @@
 namespace cm {
 
 
-	// -- E V E N T L I S T ---------------------------------------------------
+	// -- P A C K E T  L I S T ------------------------------------------------
 
-	class eventlist final {
+	class packet_list final {
 
 
 		private:
@@ -23,14 +21,14 @@ namespace cm {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = cm::eventlist;
+			using self = cm::packet_list;
 
 
 			// -- private constants -------------------------------------------
 
 			/* buffer size */
 			enum : unsigned {
-				BUFFER_SIZE = sizeof(::MIDIEventList),
+				BUFFER_SIZE = sizeof(::MIDIPacketList),
 				// The maximum size of an event list is 65,536 bytes.
 				MAX_EVENT = 65'536
 			};
@@ -41,17 +39,20 @@ namespace cm {
 			/* buffer */
 			std::vector<UInt8> _buffer;
 
-			/* A variable-length list of MIDI event packets. */
-			/*       - protocol (MIDIProtocolID) -> The MIDI protocol variant of the events in the list. */
-			/*       - numpackets (UInt32) -> The number of MIDI event packet structures in the list. */
-			/*       - packet (MIDIEventpacket) -> An array of variable-length MIDI event packet structures. */
-			::MIDIEventList* _list;
 
-			/* A series of simultaneous MIDI events in Universal MIDI packets (UMP) format. */
-			/*       - timeStamp (UInt64) -> The event packet timestamp. */
-			/*       - wordCount (UInt32) -> The number of valid MIDI 32-bit words in this event packet. */
-			/*       - words (UInt32 []) -> A variable-length stream of native-endian 32-bit Universal MIDI packets (UMP). */
-			::MIDIEventPacket* _packet;
+			/* MIDIPacketList
+			   A list of MIDI events the system sends to or receives from an endpoint.
+					- numPackets -> The number of MIDI packets in the list.
+					- packet     -> An open-ended array of variable-length MIDI packets. */
+			::MIDIPacketList* _list;
+
+			/* MIDIPacket
+			   A collection of simultaneous MIDI events.
+					- timeStamp -> The MIDI packet timestamp.
+					- length -> The number of valid MIDI data bytes in this packet.
+					- data -> A variable-length stream of MIDI messages. */
+			::MIDIPacket* _packet;
+
 
 			cm::client _client;
 			cm::source _source;
@@ -61,16 +62,16 @@ namespace cm {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			eventlist(void);
+			packet_list(void);
 
 			/* copy constructor */
-			eventlist(const self&);
+			packet_list(const self&);
 
 			/* move constructor */
-			eventlist(self&&) noexcept = default;
+			packet_list(self&&) noexcept = default;
 
 			/* destructor */
-			~eventlist(void) noexcept = default;
+			~packet_list(void) noexcept = default;
 
 
 			// -- public assignment operators ---------------------------------
@@ -123,7 +124,8 @@ namespace cm {
 			// -- private methods ---------------------------------------------
 
 			/* add */
-			auto _add(const cm::m32&) -> void;
+			template <unsigned N>
+			auto _add(const cm::byte (&)[N]) -> void;
 
 
 			/* resize */
@@ -131,8 +133,8 @@ namespace cm {
 
 
 
-	}; // class eventlist
+	}; // class packet_list
 
-}; // namespace coremidi
+} // namespace cm
 
-#endif // midilang_coremidi_eventlist_hpp
+#endif // coremidi_packet_list_hpp

@@ -5,11 +5,10 @@
 #include "core/string/chars_segment.hpp"
 #include "core/type_traits/index_sequence.hpp"
 
-#include <concepts>
-#include "core/config/class.hpp"
+//#include "core/config/class.hpp"
 #include "core/type_traits/type_at.hpp"
+#include <concepts>
 
-#include <iostream>
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------

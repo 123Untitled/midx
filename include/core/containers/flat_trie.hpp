@@ -6,7 +6,8 @@
 #include "language/lexer/lexeme.hpp"
 #include "core/type_traits/type_transformations/conditional.hpp"
 
-#include <string_view>
+//#include "core/string/string_view.hpp"
+#include "core/string/strcmp.hpp"
 #include <iostream>
 
 // -- M X  N A M E S P A C E --------------------------------------------------
@@ -91,8 +92,13 @@ namespace mx {
 						for (mx::usz i = 1U; i < E::count; ++i) {
 							const char* key = arr[i];
 							mx::usz j = i;
-							while (j > 0U && std::string_view(key)
-										   < std::string_view(arr[j - 1U])) {
+							//while (j > 0U && mx::string_view(key)
+							//			   < mx::string_view(arr[j - 1U])) {
+							//while (j > 0U && mx::str_lexicographical(key, arr[j - 1U]) > 0) {
+
+							while (j > 0U) {
+								if (mx::str_lexicographical(key, arr[j - 1U]) < 0)
+									break;
 								arr[j] = arr[j - 1]; --j;
 							}
 							arr[j] = key;

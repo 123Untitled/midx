@@ -120,14 +120,16 @@ auto pr::parser::_parse(void) -> mx::usz {
 		do {
 			if (_it.token().id != tk::separator)
 				break;
+			std::cout << "Skipping separator token\n";
 		} while (++_it != _end);
 
-		if (_parse_identifiers() == true)
+		if (_parse_identifiers() == true) {
 			continue;
+		}
 
 		constexpr auto L = pr::level::expr;
 
-		auto expr = parse_expr<L>(pr::precedence<L>::separator);
+		auto expr = parse_expr<L>(pr::precedence<L>::separator + 1U);
 
 		if (expr != 0U) {
 			_tree->push(expr);
@@ -182,6 +184,11 @@ auto pr::parser::_parse_identifiers(void) -> bool {
 	while (it != end) {
 		if (!_idents.insert(it.view().first_chunk().lexeme, expr)) {
 			error("Duplicate identifier", it);
+		}
+		else {
+			std::cout << "Inserted identifier '"
+					  << it.view().first_chunk().lexeme
+					  << "' with node index " << expr << '\n';
 		}
 		++it;
 	}
@@ -350,8 +357,11 @@ auto pr::parser::parse_references(const mx::usz left) -> mx::usz {
 			continue;
 		}
 
-		if (found.empty != true)
+		if (found.empty != true) {
+			std::cout << "Reference found but invalid: '"
+					  << lex << "'\n";
 			error("Undefined reference", _it);
+		}
 
 	} while (++_it != _end
 		&& _it.token() == tk::reference);

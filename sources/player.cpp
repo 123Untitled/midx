@@ -6,8 +6,6 @@
 #include "application.hpp"
 
 
-#include "print.hpp"
-
 #include <sys/event.h>
 
 
@@ -19,7 +17,6 @@
 mx::player::player(const mx::monitor& monitor)
 : mx::watcher{},
   _clock{monitor.kqueue(), *this},
-  _tree{nullptr},
   _engine{},
   _hls{},
   _ticks{0U} {
@@ -69,10 +66,9 @@ auto mx::player::toggle(void) -> void {
 }
 
 /* switch tree */
-auto mx::player::switch_tree(as::tree& tree) noexcept -> void {
-	_hls.init(*tree.tokens);
-	_eval.init(tree, *tree.tokens, _hls);
-	_tree = &tree;
+auto mx::player::switch_tree(const as::tree& tree, const tk::tokens& tks) noexcept -> void {
+	 _hls.init(tks);
+	_eval.init(tree, _hls);
 }
 
 /* is playing */
@@ -104,6 +100,7 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 		auto json = _hls.generate_json();
 		app.server().broadcast(std::move(json));
 	}
+
 
 	++_ticks;
 }

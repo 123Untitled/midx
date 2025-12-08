@@ -1,7 +1,6 @@
 #ifndef core_string_char_segment_hpp
 #define core_string_char_segment_hpp
 
-#include "core/string/char_traits.hpp"
 #include "core/utility/limits.hpp"
 #include "core/math/math.hpp"
 
@@ -165,7 +164,7 @@ namespace mx {
 
 	// -- S T R I N G  S P E C I A L I Z A T I O N ----------------------------
 
-	template <mx::is_string_like T>
+	template <mx::is_string_class T>
 	class chars_segment<T> final {
 
 

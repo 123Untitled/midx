@@ -6,7 +6,7 @@
 #include "coremidi/string.hpp"
 
 #include <CoreMIDI/CoreMIDI.h>
-#include <string>
+#include "core/string/string.hpp"
 
 
 // -- C O R E M I D I  N A M E S P A C E --------------------------------------
@@ -71,17 +71,17 @@ namespace cm {
 			// -- public accessors --------------------------------------------
 
 			/* name */
-			auto name(void) const -> std::string {
+			auto name(void) const -> mx::string {
 				return self::_get_string_property(kMIDIPropertyName);
 			}
 
 			/* model */
-			auto model(void) const -> std::string {
+			auto model(void) const -> mx::string {
 				return self::_get_string_property(kMIDIPropertyModel);
 			}
 
 			/* manufacturer */
-			auto manufacturer(void) const -> std::string {
+			auto manufacturer(void) const -> mx::string {
 				return self::_get_string_property(kMIDIPropertyManufacturer);
 			}
 
@@ -131,7 +131,7 @@ namespace cm {
 
 
 			/* get string property */
-			auto _get_string_property(const ::CFStringRef& id) const -> std::string {
+			auto _get_string_property(const ::CFStringRef& id) const -> mx::string {
 
 				// cfstring declaration
 				cm::string cstr;
@@ -143,7 +143,7 @@ namespace cm {
 				if (status != noErr) {
 
 					if (status == kMIDIUnknownProperty)
-						return std::string{"unknown"};
+						return mx::string{"unknown"};
 
 					throw cm::exception{status, "MIDIObjectGetStringProperty"};
 				}
@@ -153,9 +153,9 @@ namespace cm {
 
 				// check if length is not null
 				if (len == 0)
-					return std::string{"null"};
+					return mx::string{};
 
-				std::string property;
+				mx::string property;
 
 				property.resize(static_cast<cm::u32>(len));
 

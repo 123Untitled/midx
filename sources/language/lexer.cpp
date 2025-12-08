@@ -2,6 +2,7 @@
 #include "language/diagnostic.hpp"
 #include "language/tokens/tokens.hpp"
 #include "language/lexer/char_class.hpp"
+#include "core/string/string.hpp"
 
 
 // -- L E X E R ---------------------------------------------------------------
@@ -22,7 +23,7 @@ lx::lexer::lexer(void) noexcept
 // -- public methods ----------------------------------------------------------
 
 /* lex */
-auto lx::lexer::lex(const std::string& data, tk::tokens& tokens, an::diagnostic& diag) -> void {
+auto lx::lexer::lex(const mx::string& data, tk::tokens& tokens, an::diagnostic& diag) -> void {
 
 		_it = reinterpret_cast<const mx::u8*>(data.data());
 	   _end = _it + data.size();

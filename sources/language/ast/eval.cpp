@@ -9,7 +9,7 @@
 
 /* default constructor */
 as::eval::eval(void) noexcept
-: _tree{nullptr}, _tokens{nullptr},
+: _tree{nullptr}, //_tokens{nullptr},
   _hashes{},
   _engine{nullptr},
   _hls{nullptr},
@@ -22,12 +22,10 @@ as::eval::eval(void) noexcept
 
 /* init
    initialize evaluator */
-auto as::eval::init(as::tree& tree,
-					const tk::tokens& tokens,
-					mx::highlight_tracker& hls) noexcept -> void {
-	_tree   = &tree;
-	_tokens = &tokens;
-	_hls = &hls;
+auto as::eval::init(const as::tree& tree, mx::highlight_tracker& hls) noexcept -> void {
+
+	_tree = &tree;
+	_hls  = &hls;
 
 	_cross.clear();
 	_hashes.clear();

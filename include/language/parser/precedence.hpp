@@ -41,7 +41,7 @@ namespace pr {
 	struct precedence<pr::level::expr> {
 		enum : mx::uint {
 			none      = 0,
-			separator = 5,
+			separator = 0,
 			track_separator = 7,
 			parallel  = 20,
 			crossfade = 30,
@@ -58,7 +58,7 @@ namespace pr {
 	struct precedence<pr::level::seq> {
 		enum : mx::uint {
 			none      = 0,
-			separator = 5,
+			separator = 0,
 			track_separator = 7,
 			parameter = 10,
 			parallel  = 20,

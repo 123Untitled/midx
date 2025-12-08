@@ -280,7 +280,7 @@ namespace as {
 		const as::tree& tree;
 		const tk::tokens& tokens;
 
-		std::string& hi;
+		mx::string& hi;
 		mx::midi_engine& engine;
 		inline static std::vector<frame2> stack{};
 		inline static as::hash_run hashes{};
@@ -290,7 +290,7 @@ namespace as {
 
 		mx::frac absolute;
 
-		play_ctx(const as::tree& t, const tk::tokens& tks, std::string& h, mx::midi_engine& e) noexcept
+		play_ctx(const as::tree& t, const tk::tokens& tks, mx::string& h, mx::midi_engine& e) noexcept
 		: tree{t}, tokens{tks}, hi{h}, engine{e}, fr{} {
 		}
 

@@ -2,7 +2,8 @@
 
 /* default constructor */
 cm::eventlist::eventlist(void)
-: _buffer{}, _list{nullptr}, _packet{nullptr} {
+: _buffer{}, _list{nullptr}, _packet{nullptr},
+  _client{"midx"}, _source{_client, "midx"} {
 
 	// reserve default buffer size
 	_buffer.resize(BUFFER_SIZE);
@@ -39,6 +40,16 @@ auto cm::eventlist::send(const cm::source& source) -> void {
 
 	// send midi to source device
 	const ::OSStatus err = ::MIDIReceivedEventList(source.id(), _list);
+
+	if (err != noErr)
+		throw cm::exception{err, "failed to send event list"};
+}
+
+/* send */
+auto cm::eventlist::send(void) -> void {
+
+	// send midi to source device
+	const ::OSStatus err = ::MIDIReceivedEventList(_source.id(), _list);
 
 	if (err != noErr)
 		throw cm::exception{err, "failed to send event list"};

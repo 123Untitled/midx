@@ -26,6 +26,10 @@ namespace mx {
 	template <typename T>
 	constexpr auto bits = sizeof(T) * mx::bits_per_byte;
 
+	/* value bits */
+	template <typename T>
+	constexpr auto value_bits = mx::bits<T> - (std::is_signed_v<T> ? 1U : 0U);
+
 
 	// -- I N T E G E R  S E L E C T O R --------------------------------------
 

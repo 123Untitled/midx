@@ -26,7 +26,7 @@ auto mx::client::initialize(mx::socket&& sck) -> void {
 }
 
 /* send */
-auto mx::client::send(std::string&& msg) -> void {
+auto mx::client::send(mx::string&& msg) -> void {
 
 	// enable write event
 	if (_queue.empty() == true)

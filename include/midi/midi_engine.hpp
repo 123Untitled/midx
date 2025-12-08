@@ -2,8 +2,9 @@
 #define midi_midi_engine_hpp
 
 #include "core/types.hpp"
-#include "coremidi/eventlist.hpp"
-#include "coremidi/coremidi.hpp"
+//#include "coremidi/eventlist.hpp"
+#include "coremidi/packet_list.hpp"
+//#include "coremidi/coremidi.hpp"
 
 #include "diagnostics/runtime_error.hpp"
 
@@ -39,10 +40,11 @@ namespace mx {
 			mx::u16 _epoch;
 
 			/* midi sources */
-			std::vector<cm::source> _srcs;
+			//std::vector<cm::source> _srcs;
 
 			/* event list */
-			cm::eventlist _evs;
+			//cm::eventlist _evs;
+			cm::packet_list _evs;
 
 
 		public:
@@ -56,17 +58,17 @@ namespace mx {
 			  _active{},
 			  _count{0U},
 			  _epoch{1U},
-			  _srcs{cm::sources()},
+			  //_srcs{cm::sources()},
 			  _evs{} {
 
-				  if (_srcs.empty())
-					  throw mx::runtime_error("no midi sources");
-
-				  for (const auto& src : _srcs) {
-					  std::cout << src.name() << std::endl;
-					  std::cout << src.model() << std::endl;
-					  std::cout << src.manufacturer() << std::endl;
-				  }
+				  //if (_srcs.empty())
+					 // throw mx::runtime_error("no midi sources");
+						//
+				  //for (const auto& src : _srcs) {
+					 // std::cout << src.name() << std::endl;
+					 // std::cout << src.model() << std::endl;
+					 // std::cout << src.manufacturer() << std::endl;
+				  //}
 			}
 
 			inline auto idx_to_ch(const mx::u16 index) noexcept -> mx::u8 {
@@ -84,7 +86,8 @@ namespace mx {
 				_evs.start();
 
 				// send events
-				_evs.send(_srcs[0U]);
+				//_evs.send(_srcs[0U]);
+				_evs.send();
 				_evs.clear();
 			}
 
@@ -104,7 +107,8 @@ namespace mx {
 				reset();
 
 				// send events
-				_evs.send(_srcs[0U]);
+				//_evs.send(_srcs[0U]);
+				_evs.send();
 				_evs.clear();
 			}
 
@@ -128,7 +132,8 @@ namespace mx {
 
 				// send events
 				if (not _evs.empty()) {
-					_evs.send(_srcs[0U]);
+					//_evs.send(_srcs[0U]);
+					_evs.send();
 					_evs.clear();
 				}
 

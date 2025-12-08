@@ -51,7 +51,6 @@ namespace mx {
 	/* free */
 	template <typename T>
 	auto deallocate(T* ptr) noexcept -> void {
-
 		::free(ptr);
 	}
 

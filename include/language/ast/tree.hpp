@@ -18,12 +18,6 @@
 namespace as {
 
 
-	auto highlight(std::string&,
-				   const tk::const_token_view&,
-				   const char*) -> void;
-
-
-
 	// -- T R E E -------------------------------------------------------------
 
 	class tree final {
@@ -64,32 +58,9 @@ namespace as {
 
 
 
-
-
-
-			auto play_permutation(play_ctx&) const -> void;
-			auto play_parallel(play_ctx&) const -> void;
-			auto play_crossfade(play_ctx&) const -> void;
-			auto play_track(play_ctx&) const -> void;
-			auto play_atomic(play_ctx&) const -> void;
-			auto play_tempo(play_ctx&) const -> void;
-			auto play_modulo(play_ctx&) const -> void;
-			auto play_group(play_ctx&) const -> void;
-			auto play_group2(play_ctx&) const -> void;
-			auto play_reference(play_ctx&) const -> void;
-			auto play_program(play_ctx&) const -> void;
-
-			auto play_parameter(play_ctx&) const -> void;
-
-			auto dispatch_play(play_ctx&) const -> void;
-
-
 		public:
 
 			tk::tokens* tokens;
-
-			auto play(std::string&, mx::midi_engine&,
-										  const mx::frac&) const -> void;
 
 
 			// -- public lifecycle --------------------------------------------
@@ -803,7 +774,7 @@ namespace as {
 				as::printer{tree, tokens}.print_node(root, {}, true);
 			}
 
-			auto node_name(const as::header& h) const -> std::string {
+			auto node_name(const as::header& h) const -> const char* {
 				switch (h.type) {
 					case as::type::program:      return "PROGRAM";
 					case as::type::group:        return "\x1b[90m☐\x1b[0m group";

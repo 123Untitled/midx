@@ -67,13 +67,13 @@ namespace mx {
 			// -- public accessors --------------------------------------------
 
 			/* re-parse */
-			auto reparse(std::string&&) -> void;
+			auto reparse(mx::string&&) -> void;
 
 			/* exit */
 			auto exit(void) noexcept -> void;
 
-			/* toggle play */
-			auto toggle_play(void) noexcept -> void;
+			/* toggle */
+			auto toggle(void) -> void;
 
 
 			// -- public accessors --------------------------------------------

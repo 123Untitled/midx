@@ -28,7 +28,7 @@ namespace mx {
 
 			// -- private members ---------------------------------------------
 
-			std::string _data;
+			mx::string _data;
 
 
 			/* lexer */
@@ -58,10 +58,10 @@ namespace mx {
 			// -- public methods ----------------------------------------------
 
 			/* analyze from string */
-			auto analyze(std::string&&) -> void;
+			auto analyze(mx::string&&) -> void;
 
 			/* highlights */
-			auto highlights(void) -> std::string;
+			auto highlights(void) -> mx::string;
 
 			/* has errors */
 			auto has_errors(void) const noexcept -> bool {
@@ -69,8 +69,13 @@ namespace mx {
 			}
 
 			/* tree */
-			auto tree(void) noexcept -> as::tree& {
+			auto tree(void) const noexcept -> const as::tree& {
 				return _tree;
+			}
+
+			/* tokens */
+			auto tokens(void) const noexcept -> const tk::tokens& {
+				return _tokens;
 			}
 
 	}; // class analyzer

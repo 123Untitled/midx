@@ -50,6 +50,8 @@ namespace cm {
 	using u8 = UInt8;
 	using i8 = SInt8;
 
+	using byte = ::Byte;
+
 } // namespace coremidi
 
 #endif // midilang_coremidi_types_hpp
