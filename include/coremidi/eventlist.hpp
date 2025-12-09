@@ -1,5 +1,5 @@
-#ifndef coremidi_eventlist_hpp
-#define coremidi_eventlist_hpp
+#ifndef coremidi_event_list_hpp
+#define coremidi_event_list_hpp
 
 #include "os.hpp"
 
@@ -17,9 +17,9 @@
 namespace cm {
 
 
-	// -- E V E N T L I S T ---------------------------------------------------
+	// -- E V E N T  L I S T --------------------------------------------------
 
-	class eventlist final {
+	class event_list final {
 
 
 		private:
@@ -27,7 +27,7 @@ namespace cm {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = cm::eventlist;
+			using self = cm::event_list;
 
 
 			// -- private constants -------------------------------------------
@@ -57,24 +57,22 @@ namespace cm {
 			/*       - words (UInt32 []) -> A variable-length stream of native-endian 32-bit Universal MIDI packets (UMP). */
 			::MIDIEventPacket* _packet;
 
-			cm::client _client;
-			cm::source _source;
 
 		public:
 
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			eventlist(void);
+			event_list(void);
 
 			/* copy constructor */
-			eventlist(const self&);
+			event_list(const self&);
 
 			/* move constructor */
-			eventlist(self&&) noexcept = default;
+			event_list(self&&) noexcept = default;
 
 			/* destructor */
-			~eventlist(void) noexcept = default;
+			~event_list(void) noexcept = default;
 
 
 			// -- public assignment operators ---------------------------------
@@ -89,19 +87,15 @@ namespace cm {
 			// -- public accessors --------------------------------------------
 
 			/* empty */
-			auto empty(void) const -> bool {
+			auto empty(void) const noexcept -> bool {
 				return _list->numPackets == 0U;
 			}
 
 
 			// -- public modifiers --------------------------------------------
 
-			/* clear */
-			auto clear(void) -> void;
-
 			/* send */
 			auto send(const cm::source&) -> void;
-			auto send(void) -> void;
 
 			/* note on */
 			auto note_on(const cm::u8,
@@ -129,16 +123,16 @@ namespace cm {
 			/* add */
 			auto _add(const cm::m32&) -> void;
 
-
 			/* resize */
 			auto _resize(void) -> bool;
 
+			/* clear */
+			auto _clear(void) -> void;
 
-
-	}; // class eventlist
+	}; // class event_list
 
 }; // namespace coremidi
 
 #endif // midx_macos
 
-#endif // coremidi_eventlist_hpp
+#endif // coremidi_event_list_hpp

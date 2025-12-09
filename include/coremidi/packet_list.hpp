@@ -58,9 +58,6 @@ namespace cm {
 			::MIDIPacket* _packet;
 
 
-			cm::client _client;
-			cm::source _source;
-
 		public:
 
 			// -- public lifecycle --------------------------------------------
@@ -90,19 +87,15 @@ namespace cm {
 			// -- public accessors --------------------------------------------
 
 			/* empty */
-			auto empty(void) const -> bool {
+			auto empty(void) const noexcept -> bool {
 				return _list->numPackets == 0U;
 			}
 
 
 			// -- public modifiers --------------------------------------------
 
-			/* clear */
-			auto clear(void) -> void;
-
 			/* send */
 			auto send(const cm::source&) -> void;
-			auto send(void) -> void;
 
 			/* note on */
 			auto note_on(const cm::u8,
@@ -131,11 +124,11 @@ namespace cm {
 			template <unsigned N>
 			auto _add(const cm::byte (&)[N]) -> void;
 
-
 			/* resize */
 			auto _resize(void) -> bool;
 
-
+			/* clear */
+			auto _clear(void) -> void;
 
 	}; // class packet_list
 

@@ -51,6 +51,10 @@ auto mx::application::toggle(void) -> void {
 /* run */
 auto mx::application::_run(void) -> void {
 
+	const cm::os_status status = MIDIRestart();
+	if (status != noErr) {
+		throw cm::exception{status, "MIDIRestart"};
+	}
 	while (_running == true) {
 		_monitor.wait(*this);
 	}

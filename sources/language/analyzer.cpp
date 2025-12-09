@@ -9,8 +9,8 @@
 /* default constructor */
 mx::analyzer::analyzer(void)
 : _data{},
-  _lexer{}, _parser{},
   _tokens{},
+  _lexer{}, _parser{},
   _tree{},
   _diagnostic{} {
 }

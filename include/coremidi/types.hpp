@@ -41,14 +41,18 @@ namespace cm {
 	using item_count = ::ItemCount;
 
 	/* endpoint reference */
-	using endpoint_reference = ::MIDIEndpointRef;
-
+	using endpoint = ::MIDIEndpointRef;
 
 
 	using u32 = UInt32;
 	using s32 = SInt32;
+	using i32 = SInt32;
 	using u64 = UInt64;
 	using s64 = SInt64;
+	using i64 = SInt64;
+
+	using u16 = UInt16;
+	using i16 = SInt16;
 
 	using u8 = UInt8;
 	using i8 = SInt8;

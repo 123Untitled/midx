@@ -9,9 +9,8 @@
 
 /* default constructor */
 as::eval::eval(void) noexcept
-: _tree{nullptr}, //_tokens{nullptr},
+: _tree{nullptr},
   _hashes{},
-  _engine{nullptr},
   _hls{nullptr},
   _absolute{0, 1},
   _last{0, 1} {
@@ -34,10 +33,9 @@ auto as::eval::init(const as::tree& tree, mx::highlight_tracker& hls) noexcept -
 
 /* evaluate
    evaluate the AST and produce MIDI events */
-auto as::eval::evaluate(mx::midi_engine& engine,
-					    const mx::frac& time) -> void {
+auto as::eval::evaluate(const mx::frac& time) -> as::expr_result {
 
-	_engine = &engine;
+	//_engine = &engine;
 	_absolute = time;
 
 	as::expr_result r;
@@ -45,8 +43,7 @@ auto as::eval::evaluate(mx::midi_engine& engine,
 	// evaluate root node
 	as::eval::program(time, r);
 
-	// flush midi events
-	r.flush(*_engine);
+	return r;
 }
 
 

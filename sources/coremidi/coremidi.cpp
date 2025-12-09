@@ -17,7 +17,7 @@ auto cm::sources(void) -> std::vector<cm::source> {
 	for (cm::item_count i = 0U; i < num_sources; ++i) {
 
 		// get source
-		const cm::endpoint_reference source = ::MIDIGetSource(i);
+		const cm::endpoint source = ::MIDIGetSource(i);
 
 		// create source
 		sources.emplace_back(source);
@@ -41,7 +41,7 @@ auto cm::destinations(void) -> std::vector<cm::destination> {
 	for (cm::item_count i = 0U; i < num_destinations; ++i) {
 
 		// get destination
-		const cm::endpoint_reference destination = ::MIDIGetDestination(i);
+		const cm::endpoint destination = ::MIDIGetDestination(i);
 
 		// create destination
 		destinations.emplace_back(destination);

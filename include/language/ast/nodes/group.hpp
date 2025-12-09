@@ -43,13 +43,6 @@ namespace as {
 			  range{range} {
 			}
 
-
-			// -- public methods ----------------------------------------------
-
-			/* play
-			   play group node */
-			auto play(as::play_ctx& ctx) const -> void;
-
 	}; // struct group
 
 

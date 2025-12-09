@@ -7,17 +7,12 @@
 
 #include "coremidi/object.hpp"
 #include "coremidi/client.hpp"
-#include "coremidi/types.hpp"
 
-#include <iostream>
 
 
 // -- C O R E M I D I  N A M E S P A C E --------------------------------------
 
 namespace cm {
-
-
-	using midi_endpoint_reference = ::MIDIEndpointRef;
 
 
 	// -- S O U R C E ---------------------------------------------------------
@@ -47,7 +42,7 @@ namespace cm {
 			source(void) noexcept = default;
 
 			/* id constructor */
-			source(const ::MIDIEndpointRef&);
+			source(const cm::endpoint&);
 
 			/* name constructor */
 			source(const cm::client&, const char*);

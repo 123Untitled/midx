@@ -3,7 +3,7 @@
 
 #include "time/clock.hpp"
 #include "monitoring/watcher.hpp"
-#include "midi/midi_engine.hpp"
+#include "midi/midi.hpp"
 #include "language/ast/eval.hpp"
 #include "language/highlight_tracker.hpp"
 
@@ -42,8 +42,11 @@ namespace mx {
 			/* evaluator */
 			as::eval _eval;
 
-			/* midi engine */
-			mx::midi_engine _engine;
+			/* event list */
+			cm::event_list _evs;
+
+			/* midi */
+			mx::midi _midi;
 
 			/* highlight tracker */
 			mx::highlight_tracker _hls;

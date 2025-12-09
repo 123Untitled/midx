@@ -5,8 +5,7 @@
 
 /* default constructor */
 cm::packet_list::packet_list(void)
-: _buffer{}, _list{nullptr}, _packet{nullptr},
-  _client{"midx"}, _source{_client, "midx"} {
+: _buffer{}, _list{nullptr}, _packet{nullptr} {
 
 	// reserve default buffer size
 	_buffer.resize(BUFFER_SIZE);
@@ -28,34 +27,21 @@ cm::packet_list::packet_list(const self& other)
 
 // -- public modifiers --------------------------------------------------------
 
-/* clear */
-auto cm::packet_list::clear(void) -> void {
-
-	// initialize the event packet
-	_packet = ::MIDIPacketListInit(_list);
-
-	if (_packet == nullptr)
-		throw cm::exception{0, "failed to clear event list"};
-}
 
 /* send */
 auto cm::packet_list::send(const cm::source& source) -> void {
+
+	if (empty())
+		return;
 
 	// send midi to source device
 	const ::OSStatus err = ::MIDIReceived(source.id(), _list);
 
 	if (err != noErr)
 		throw cm::exception{err, "failed to send event list"};
-}
 
-/* send */
-auto cm::packet_list::send(void) -> void {
-
-	// send midi to source device
-	const ::OSStatus err = ::MIDIReceived(_source.id(), _list);
-
-	if (err != noErr)
-		throw cm::exception{err, "failed to send event list"};
+	// initialize the event packet after sending
+	_clear();
 }
 
 
@@ -131,6 +117,7 @@ auto cm::packet_list::stop(void) -> void {
 
 
 // -- private methods ---------------------------------------------------------
+#include <CoreAudio/HostTime.h>   // ou AudioToolbox.h si tu préfères
 
 /* add */
 template <unsigned N>
@@ -140,13 +127,22 @@ auto cm::packet_list::_add(const cm::byte (&msg)[N]) -> void {
 	if (_packet == nullptr)
 		return;
 
+
 	addmsg:
+	const MIDITimeStamp ts = AudioGetCurrentHostTime();
+	//MIDITimeStamp now      = AudioGetCurrentHostTime();
+	//MIDITimeStamp oneSec   = AudioConvertNanosToHostTime(1'000'000'000ULL);
+	//MIDITimeStamp ts = now + oneSec;
+
+
 
 	// add the midi message to the packet
 	_packet = ::MIDIPacketListAdd(_list,
 								 _buffer.size(),
 								 _packet,
-								 0U, N, msg);
+								 //0U,
+								 ts,
+								 N, msg);
 
 	// check packet validity
 	if (!_packet) {
@@ -184,6 +180,16 @@ auto cm::packet_list::_resize(void) -> bool {
 	_packet = &(_list->packet[i]);
 
 	return true;
+}
+
+/* clear */
+auto cm::packet_list::_clear(void) -> void {
+
+	// initialize the event packet
+	_packet = ::MIDIPacketListInit(_list);
+
+	if (_packet == nullptr)
+		throw cm::exception{0, "failed to clear event list"};
 }
 
 #endif // midx_macos

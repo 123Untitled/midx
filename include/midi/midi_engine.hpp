@@ -2,9 +2,10 @@
 #define midi_midi_engine_hpp
 
 #include "core/types.hpp"
-//#include "coremidi/eventlist.hpp"
+#include "coremidi/eventlist.hpp"
 #include "coremidi/packet_list.hpp"
 //#include "coremidi/coremidi.hpp"
+#include "midi/midi_event.hpp"
 
 #include "diagnostics/runtime_error.hpp"
 
@@ -39,12 +40,22 @@ namespace mx {
 			mx::u16 _count;
 			mx::u16 _epoch;
 
-			/* midi sources */
-			//std::vector<cm::source> _srcs;
 
-			/* event list */
-			//cm::eventlist _evs;
-			cm::packet_list _evs;
+			// -- private static methods --------------------------------------
+
+			inline static auto idx_to_ch(const mx::u16 index) noexcept -> mx::u8 {
+				return static_cast<mx::u8>(index >> 7U);
+			}
+
+			inline static auto idx_to_no(const mx::u16 index) noexcept -> mx::u8 {
+				return static_cast<mx::u8>(index & 0x7FU);
+			}
+
+			/* to index */
+			static auto to_index(const mx::u8 ch, const mx::u8 no) noexcept -> mx::u16 {
+				return (static_cast<mx::usz>(ch) << 7U) | no;
+			}
+
 
 
 		public:
@@ -57,59 +68,20 @@ namespace mx {
 			: _states{},
 			  _active{},
 			  _count{0U},
-			  _epoch{1U},
-			  //_srcs{cm::sources()},
-			  _evs{} {
-
-				  //if (_srcs.empty())
-					 // throw mx::runtime_error("no midi sources");
-						//
-				  //for (const auto& src : _srcs) {
-					 // std::cout << src.name() << std::endl;
-					 // std::cout << src.model() << std::endl;
-					 // std::cout << src.manufacturer() << std::endl;
-				  //}
+			  _epoch{1U} {
 			}
 
-			inline auto idx_to_ch(const mx::u16 index) noexcept -> mx::u8 {
-				return static_cast<mx::u8>(index >> 7U);
-			}
-			inline auto idx_to_no(const mx::u16 index) noexcept -> mx::u8 {
-				return static_cast<mx::u8>(index & 0x7FU);
-			}
-
-
-			/* start */
-			auto start(void) -> void {
-
-				// add clock start event
-				_evs.start();
-
-				// send events
-				//_evs.send(_srcs[0U]);
-				_evs.send();
-				_evs.clear();
-			}
-
-			/* stop */
-			auto stop(void) -> void {
+			/* off all */
+			template <typename T>
+			auto off_all(T& evs) -> void {
 
 				// note off all notes
 				for (; _count > 0U; --_count) {
 					const auto i = _active[_count - 1U];
-					_evs.note_off(idx_to_ch(i),
-								  idx_to_no(i));
+					evs.note_off(idx_to_ch(i), idx_to_no(i));
 				}
 
-				// add clock stop event
-				//_evs.stop();
-
 				reset();
-
-				// send events
-				//_evs.send(_srcs[0U]);
-				_evs.send();
-				_evs.clear();
 			}
 
 			/* reset */
@@ -121,21 +93,10 @@ namespace mx {
 
 				_count = 0U;
 				_epoch = 1U;
-				//_evs.clear(); not noexcept
 			}
 
-			/* flush */
-			auto flush(void) -> void {
-
-				// add clock tick event
-				//_evs.tick();
-
-				// send events
-				if (not _evs.empty()) {
-					//_evs.send(_srcs[0U]);
-					_evs.send();
-					_evs.clear();
-				}
+			/* next epoch */
+			auto next_epoch(void) noexcept -> void {
 
 				// increment epoch, reset if overflow
 				if (_epoch == 0xFFFFU) {
@@ -148,24 +109,24 @@ namespace mx {
 			}
 
 
+
 			/* note on */
-			auto note_on(const mx::i8 ch, const mx::i8 no, const mx::i8 ve,
-							  mx::u32 ticks) -> void {
+			template <typename T>
+			auto note_on(T& evs, const mx::midi_event& ev) -> void {
 
 				// get index
-				const mx::u16 i = (static_cast<mx::u16>(ch) << 7U)
-								 | static_cast<mx::u16>(no & 0x7FU);
+				const mx::u16 i = to_index(ev.channel, ev.note);
 
 				// get state
 				auto& st = _states[i];
 
-				// ensure ticks is not zero
-				if (ticks == 0U)
+				// ensure gate is not zero
+				if (ev.gate == 0U)
 					return;
 
 				// check if already note on
 				if (st.epoch == _epoch) {
-					st.ticks = ticks;
+					st.ticks = ev.gate;
 					return;
 				}
 
@@ -180,22 +141,23 @@ namespace mx {
 					//		  << " No " << static_cast<mx::usz>(no)
 					//		  << " Ticks " << ticks << std::endl;
 					// note off before note on
-					_evs.note_off(ch, no);
+					evs.note_off(ev.channel, ev.note);
 				}
 
 				// note on event can be triggered here
-				_evs.note_on(ch, no, ve);
+				evs.note_on(ev.channel, ev.note, ev.velocity);
 				//std::cout << "\x1b[32mNote On:\x1b[0m Ch " << static_cast<mx::usz>(ch)
 				//		  << " No " << static_cast<mx::usz>(no)
 				//		  << " Ve " << static_cast<mx::usz>(ve)
 				//		  << " Ticks " << ticks << std::endl;
 
 				st.epoch = _epoch;
-				st.ticks = ticks;
+				st.ticks = ev.gate;
 			}
 
 			/* off pass */
-			auto off_pass(void) -> void {
+			template <typename T>
+			auto off_pass(T& evs) -> void {
 
 				mx::u16 i = 0U;
 				while (i < _count) {
@@ -213,7 +175,7 @@ namespace mx {
 					const mx::u8 no = idx_to_no(a);
 
 					// note off event can be triggered here
-					_evs.note_off(ch, no);
+					evs.note_off(ch, no);
 					//std::cout << "\x1b[31mNote Off:\x1b[0m Ch " << static_cast<mx::usz>(ch)
 					//		  << " No " << static_cast<mx::usz>(no) << std::endl;
 

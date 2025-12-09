@@ -5,8 +5,9 @@
 #include "midi/midi_engine.hpp"
 #include "math.hpp"
 #include "language/ast/param_accum.hpp"
-#include "midi/constant.hpp"
 
+#include "midi/constant.hpp"
+#include "midi/midi_event.hpp"
 
 // -- forward declarations ----------------------------------------------------
 
@@ -156,32 +157,33 @@ namespace as {
 		as::semi_accum  semi;
 
 
-		auto flush(mx::midi_engine& engine) -> void {
-
-			if (trig.edge == false || trig.value == 0U)
-				return;
-
-			mx::u8 vl = velo.value();
-			mx::i8 oc = octa.value();
-			// compute final offset
-			oc *= 12;
-
-			note.ensure_default();
-			chan.ensure_default();
-
-
-			for (mx::u8 i = 0U; i < chan.count; ++i) {
-				const mx::u8 ch = chan.active[i];
-
-				for (mx::u8 j = 0U; j < note.count; ++j) {
-					mx::u8 nt = note.active[j];
-					nt += oc;
-
-					engine.note_on(ch, nt, vl, 40U);
-				}
-			}
-		}
+		//auto flush(mx::midi_engine& engine) -> void {
+		//
+		//	if (trig.edge == false || trig.value == 0U)
+		//		return;
+		//
+		//	mx::u8 vl = velo.value();
+		//	mx::i8 oc = octa.value();
+		//	// compute final offset
+		//	oc *= 12;
+		//
+		//	note.ensure_default();
+		//	chan.ensure_default();
+		//
+		//
+		//	for (mx::u8 i = 0U; i < chan.count; ++i) {
+		//		const mx::u8 ch = chan.active[i];
+		//
+		//		for (mx::u8 j = 0U; j < note.count; ++j) {
+		//			mx::u8 nt = note.active[j];
+		//			nt += oc;
+		//
+		//			engine.note_on(ch, nt, vl, 40U);
+		//		}
+		//	}
+		//}
 	};
+
 
 	struct expr_result {
 
@@ -298,27 +300,45 @@ namespace as {
 				}
 			}
 
-			auto flush(mx::midi_engine& engine) -> void {
+			//auto flush(mx::midi_engine& engine) const -> void {
+			//
+			//	for (mx::u16 i = 0U; i < _count; ++i) {
+			//		const mx::u16 idx = _active[i];
+			//		auto& ev = _events[idx];
+			//
+			//		const mx::midi_event me {
+			//			// channel and note
+			//			.channel  = to_ch(idx),
+			//			.note     = to_no(idx),
+			//			// compute average gate and velocity
+			//			.velocity = static_cast<mx::u8 >(ev.velocity / ev.count),
+			//			.gate     = static_cast<mx::u32>(ev.gate     / ev.count)
+			//		};
+			//
+			//		engine.note_on(me);
+			//	}
+			//}
+
+
+			template <typename F, typename... Ts>
+			auto for_each(F&& fn, Ts&&... args) const -> void {
 
 				for (mx::u16 i = 0U; i < _count; ++i) {
+
 					const mx::u16 idx = _active[i];
-					auto& ev = _events[idx];
+					const auto& ev = _events[idx];
 
-					const mx::u8 ch = to_ch(idx);
-					const mx::u8 nt = to_no(idx);
+					const mx::midi_event me {
+						// channel and note
+						.channel  = to_ch(idx),
+						.note     = to_no(idx),
+						// compute average gate and velocity
+						.velocity = static_cast<mx::u8 >(ev.velocity / ev.count),
+						.gate     = static_cast<mx::u32>(ev.gate     / ev.count)
+					};
 
-					// compute average gate and velocity
-					const mx::u8 gt = static_cast<mx::u8>(ev.gate / ev.count);
-					const mx::u8 vl = static_cast<mx::u8>(ev.velocity / ev.count);
-
-
-					engine.note_on(ch, nt, vl, gt);
-
-					// reset event
-					ev = {};
+					fn(me, mx::forward<Ts>(args)...);
 				}
-
-				_count = 0U;
 			}
 
 			auto is_empty(void) const noexcept -> bool {
@@ -326,6 +346,8 @@ namespace as {
 			}
 	};
 
+
+		
 
 
 
@@ -343,9 +365,6 @@ namespace as {
 
 			/* hashes */
 			as::hash_run _hashes;
-
-			/* engine */
-			mx::midi_engine* _engine;
 
 			/* highlights */
 			mx::highlight_tracker* _hls;
@@ -419,7 +438,7 @@ namespace as {
 
 			/* evaluate
 			   evaluate the AST and produce MIDI events */
-			auto evaluate(mx::midi_engine&, const mx::frac&) -> void;
+			auto evaluate(const mx::frac&) -> as::expr_result;
 
 
 			/* program

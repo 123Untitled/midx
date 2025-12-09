@@ -1,7 +1,10 @@
 #include "coremidi/source.hpp"
 #include "coremidi/string.hpp"
+#include "coremidi/unique_id.hpp"
 
 #if defined(midx_macos)
+
+//#include <iostream>
 
 
 // -- S O U R C E -------------------------------------------------------------
@@ -30,6 +33,11 @@ cm::source::source(const cm::client& client, const char* name)
 	// check if there was an error
 	if (err != noErr)
 		throw cm::exception{err, "MIDISourceCreateWithProtocol"};
+
+
+	// set unique id
+	const auto uid = cm::unique_id::generate();
+	this->unique_id(uid);
 }
 
 /* move constructor */

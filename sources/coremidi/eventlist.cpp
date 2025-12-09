@@ -2,10 +2,14 @@
 
 #if defined(midx_macos)
 
+
+// -- E V E N T  L I S T ------------------------------------------------------
+
+// -- public lifecycle --------------------------------------------------------
+
 /* default constructor */
-cm::eventlist::eventlist(void)
-: _buffer{}, _list{nullptr}, _packet{nullptr},
-  _client{"midx"}, _source{_client, "midx"} {
+cm::event_list::event_list(void)
+: _buffer{}, _list{nullptr}, _packet{nullptr} {
 
 	// reserve default buffer size
 	_buffer.resize(BUFFER_SIZE);
@@ -18,7 +22,7 @@ cm::eventlist::eventlist(void)
 }
 
 /* copy constructor */
-cm::eventlist::eventlist(const self& other)
+cm::event_list::event_list(const self& other)
 : _buffer{other._buffer},
   _list{reinterpret_cast<MIDIEventList*>(_buffer.data())},
   _packet{&(_list->packet[_list->numPackets ? (_list->numPackets - 1U) : 0U])} {
@@ -27,40 +31,24 @@ cm::eventlist::eventlist(const self& other)
 
 // -- public modifiers --------------------------------------------------------
 
-/* clear */
-auto cm::eventlist::clear(void) -> void {
-
-	// initialize the event packet
-	_packet = ::MIDIEventListInit(_list, kMIDIProtocol_1_0);
-
-	if (_packet == nullptr)
-		throw cm::exception{0, "failed to clear event list"};
-}
-
 /* send */
-auto cm::eventlist::send(const cm::source& source) -> void {
+auto cm::event_list::send(const cm::source& source) -> void {
+
+	if (empty())
+		return;
 
 	// send midi to source device
 	const ::OSStatus err = ::MIDIReceivedEventList(source.id(), _list);
 
 	if (err != noErr)
 		throw cm::exception{err, "failed to send event list"};
+
+	// initialize the event packet after sending
+	_clear();
 }
-
-/* send */
-auto cm::eventlist::send(void) -> void {
-
-	// send midi to source device
-	const ::OSStatus err = ::MIDIReceivedEventList(_source.id(), _list);
-
-	if (err != noErr)
-		throw cm::exception{err, "failed to send event list"};
-}
-
-
 
 /* note on */
-auto cm::eventlist::note_on(const cm::u8 channel,
+auto cm::event_list::note_on(const cm::u8 channel,
 							const cm::u8 note,
 							const cm::u8 velocity) -> void {
 
@@ -69,7 +57,7 @@ auto cm::eventlist::note_on(const cm::u8 channel,
 }
 
 /* note off */
-auto cm::eventlist::note_off(const cm::u8 channel,
+auto cm::event_list::note_off(const cm::u8 channel,
 							 const cm::u8 note) -> void {
 
 	self::_add(::MIDI1UPNoteOff(0U, channel, note, 0U));
@@ -95,29 +83,33 @@ enum : cm::m32 {
 
 
 /* tick */
-auto cm::eventlist::tick(void) -> void {
+auto cm::event_list::tick(void) -> void {
 	self::_add(CLOCK);
 }
 
 /* start */
-auto cm::eventlist::start(void) -> void {
+auto cm::event_list::start(void) -> void {
 	self::_add(START);
 }
 
 /* stop */
-auto cm::eventlist::stop(void) -> void {
+auto cm::event_list::stop(void) -> void {
 	self::_add(STOP);
 }
 
 
 // -- private methods ---------------------------------------------------------
+#include <CoreAudio/HostTime.h>   // ou AudioToolbox.h si tu préfères
 
 /* add */
-auto cm::eventlist::_add(const cm::m32& msg) -> void {
+auto cm::event_list::_add(const cm::m32& msg) -> void {
 
 	// check packet validity
 	if (_packet == nullptr)
 		return;
+
+	// get timestamp
+	const ::MIDITimeStamp ts = AudioGetCurrentHostTime();
 
 	addmsg:
 
@@ -125,26 +117,25 @@ auto cm::eventlist::_add(const cm::m32& msg) -> void {
 	_packet = ::MIDIEventListAdd(_list,
 								 _buffer.size(),
 								 _packet,
-								 0U,
+								 //0U,
+								 ts,
 								 1U,
 								 &msg);
 
 	// check packet validity
-	if (!_packet) {
-		std::cout << "midi eventlist resize\r\n";
-		// check if the buffer can be resized
-		if (_resize() == false) {
-			std::cout << "\x1b[32m" << "buffer full" << "\x1b[0m" << std::endl;
-			exit(1);
-			return;
-		}
-		// try again
-		goto addmsg;
-	}
+	if (_packet)
+		return;
+
+	// check if the buffer can be resized
+	if (_resize() == false)
+		throw cm::exception{0, "failed to add midi message"};
+
+	// try again
+	goto addmsg;
 }
 
 /* resize */
-auto cm::eventlist::_resize(void) -> bool {
+auto cm::event_list::_resize(void) -> bool {
 
 	if (_buffer.size() == MAX_EVENT)
 		return false;
@@ -167,6 +158,16 @@ auto cm::eventlist::_resize(void) -> bool {
 	_packet = &(_list->packet[i]);
 
 	return true;
+}
+
+/* clear */
+auto cm::event_list::_clear(void) -> void {
+
+	// initialize the event packet
+	_packet = ::MIDIEventListInit(_list, kMIDIProtocol_1_0);
+
+	if (_packet == nullptr)
+		throw cm::exception{0, "failed to clear event list"};
 }
 
 #endif // midx_macos

@@ -40,7 +40,7 @@ namespace cm {
 			input(const cm::client& client, const char* name) {
 
 				// create cfstring
-				corefoundation::string cstr{name};
+				cm::string cstr{name};
 
 				// create input port
 				const ::OSStatus result = ::MIDIInputPortCreateWithProtocol(
@@ -53,7 +53,7 @@ namespace cm {
 
 				// check if port was created
 				if (result != noErr)
-					throw coremidi::exception{result, "error creating midi input port"};
+					throw cm::exception{result, "error creating midi input port"};
 			}
 
 			/* deleted copy constructor */
@@ -61,7 +61,7 @@ namespace cm {
 
 			/* move constructor */
 			input(self&& other) noexcept
-			: coremidi::object{other._ref} {
+			: cm::object{other._ref} {
 
 				// reset other
 				other._ref = 0U;
@@ -107,7 +107,7 @@ namespace cm {
 				::OSStatus status = ::MIDIPortConnectSource(_ref, ep.id(), nullptr);
 
 				if (status != noErr)
-					throw coremidi::exception{status, "error connecting midi endpoint to port"};
+					throw cm::exception{status, "error connecting midi endpoint to port"};
 			}
 
 			/* disconnect */
@@ -117,7 +117,7 @@ namespace cm {
 				::OSStatus status = ::MIDIPortDisconnectSource(_ref, ep.id());
 
 				if (status != noErr)
-					throw coremidi::exception{status, "error disconnecting midi endpoint from port"};
+					throw cm::exception{status, "error disconnecting midi endpoint from port"};
 			}
 
 
@@ -134,7 +134,7 @@ namespace cm {
 
 				// dispose port
 				static_cast<void>(
-						::MIDIPortDispose(_ref)
+					::MIDIPortDispose(_ref)
 				);
 			}
 

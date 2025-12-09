@@ -3,6 +3,8 @@
 
 #if defined(midx_macos)
 
+#include <iostream>
+
 // -- D E S T I N A T I O N ---------------------------------------------------
 
 // -- public lifecycle --------------------------------------------------------
@@ -12,6 +14,9 @@ cm::destination::destination(const ::MIDIEndpointRef& ref)
 : cm::object{ref},
   _external{true} {
 }
+
+//MIDIReceiveBlock
+//MIDIReadProc
 
 /* name constructor */
 cm::destination::destination(const cm::client& client, const char* name)

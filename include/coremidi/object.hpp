@@ -9,7 +9,6 @@
 #include "coremidi/exception.hpp"
 #include "coremidi/string.hpp"
 
-#include <CoreMIDI/CoreMIDI.h>
 #include "core/string/string.hpp"
 
 
@@ -49,7 +48,7 @@ namespace cm {
 			}
 
 			/* reference constructor */
-			object(const ::MIDIObjectRef& ref) noexcept
+			object(const cm::object_ref& ref) noexcept
 			: _ref{ref} {
 			}
 
@@ -89,6 +88,11 @@ namespace cm {
 				return self::_get_string_property(kMIDIPropertyManufacturer);
 			}
 
+			/* unique id */
+			auto unique_id(void) const -> cm::i32 {
+				return self::_get_integer_property(kMIDIPropertyUniqueID);
+			}
+
 
 			// -- public modifiers --------------------------------------------
 
@@ -107,6 +111,10 @@ namespace cm {
 				self::_set_string_property(kMIDIPropertyManufacturer, manufacturer);
 			}
 
+			/* unique id */
+			auto unique_id(const cm::i32 uid) -> void {
+				self::_set_integer_property(kMIDIPropertyUniqueID, uid);
+			}
 
 
 
@@ -123,7 +131,9 @@ namespace cm {
 			}
 
 
-			/* reference */
+			// -- public accessors --------------------------------------------
+
+			/* id */
 			auto id(void) const noexcept -> cm::object_ref {
 				return _ref;
 			}
@@ -144,13 +154,8 @@ namespace cm {
 				const cm::os_status status = ::MIDIObjectGetStringProperty(_ref, id, &cstr._string);
 
 
-				if (status != noErr) {
-
-					if (status == kMIDIUnknownProperty)
-						return mx::string{"unknown"};
-
+				if (status != noErr)
 					throw cm::exception{status, "MIDIObjectGetStringProperty"};
-				}
 
 				// get property length
 				const ::CFIndex len = cstr.length();
@@ -181,6 +186,30 @@ namespace cm {
 
 				if (status != noErr)
 					throw cm::exception{status, "MIDIObjectSetStringProperty"};
+			}
+
+			/* set integer property */
+			auto _set_integer_property(const ::CFStringRef& id, const cm::i32 value) -> void {
+
+				// set integer property
+				const cm::os_status status = ::MIDIObjectSetIntegerProperty(_ref, id, value);
+
+				if (status != noErr)
+					throw cm::exception{status, "MIDIObjectSetIntegerProperty"};
+			}
+
+			/* get integer property */
+			auto _get_integer_property(const ::CFStringRef& id) const -> cm::i32 {
+
+				cm::i32 value = 0;
+
+				// get integer property
+				const cm::os_status status = ::MIDIObjectGetIntegerProperty(_ref, id, &value);
+
+				if (status != noErr)
+					throw cm::exception{status, "MIDIObjectGetIntegerProperty"};
+
+				return value;
 			}
 
 	}; // class object

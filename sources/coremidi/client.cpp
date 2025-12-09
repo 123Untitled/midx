@@ -4,6 +4,7 @@
 #if defined(midx_macos)
 
 #include <unistd.h>
+#include "coremidi/unique_id.hpp"
 
 
 // -- public lifecycle --------------------------------------------------------
@@ -15,11 +16,15 @@ cm::client::client(const char* name) {
 	cm::string cstr{name};
 
 	// create client
-	::OSStatus status = ::MIDIClientCreate(cstr, _notification, this, &_ref);
+	const cm::os_status status = ::MIDIClientCreate(cstr, _notification, this, &_ref);
 
 	// check if there was an error
 	if (status != noErr)
 		throw cm::exception{status, "MIDIClientCreate"};
+
+	// set unique id
+	//const auto uid = cm::unique_id::generate();
+	//this->unique_id(uid);
 }
 
 /* move constructor */
@@ -68,15 +73,15 @@ auto cm::client::_dispose(void) noexcept -> void {
 
 	// dispose client
 	static_cast<void>(
-			::MIDIClientDispose(_ref)
-		);
+		::MIDIClientDispose(_ref)
+	);
 }
 
 
 // -- private static methods --------------------------------------------------
 
 /* notification */
-auto cm::client::_notification(const MIDINotification *message, void* data) noexcept -> void {
+auto cm::client::_notification(const ::MIDINotification *message, void* data) noexcept -> void {
 
 	// get client reference
 	self& client = *static_cast<self*>(data);

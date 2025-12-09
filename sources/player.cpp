@@ -17,7 +17,7 @@
 mx::player::player(const mx::monitor& monitor)
 : mx::watcher{},
   _clock{monitor.kqueue(), *this},
-  _engine{},
+  _midi{},
   _hls{},
   _ticks{0U} {
 
@@ -41,7 +41,7 @@ auto mx::player::start(void) -> void {
 	_clock.start();
 
 	// send start clock midi event
-	_engine.start();
+	_midi.start();
 }
 
 /* stop */
@@ -54,7 +54,7 @@ auto mx::player::stop(void) -> void {
 	_clock.stop();
 
 	// send stop clock midi event
-	_engine.stop();
+	_midi.stop();
 
 	// reset highlights
 	_hls.clear();
@@ -90,9 +90,20 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 
 	_hls.swap_now();
 
-	_engine.off_pass();
-	_eval.evaluate(_engine, time);
-	_engine.flush();
+	_midi.off_pass();
+
+	const auto expr = _eval.evaluate(time);
+
+
+	// fill midi events
+	expr.for_each(
+		[](const mx::midi_event& ev, mx::midi& m) static -> void {
+			m.note_on(ev);
+		}, _midi
+	);
+
+	// flush midi events
+	_midi.flush();
 
 
 	// generate json output

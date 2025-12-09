@@ -7,6 +7,8 @@
 #include "language/diagnostic.hpp"
 #include "language/ast/tree.hpp"
 
+#include "core/string/string.hpp"
+
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
@@ -28,17 +30,17 @@ namespace mx {
 
 			// -- private members ---------------------------------------------
 
+			/* data */
 			mx::string _data;
 
+			/* tokens */
+			tk::tokens _tokens;
 
 			/* lexer */
 			lx::lexer _lexer;
 
 			/* parser */
 			pr::parser _parser;
-
-			/* tokens */
-			tk::tokens _tokens;
 
 			/* tree */
 			as::tree _tree;
