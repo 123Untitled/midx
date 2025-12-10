@@ -1,4 +1,4 @@
-# Duration
+# ⏱️ Duration
 
 ## Overview
 
