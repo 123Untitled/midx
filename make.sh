@@ -53,6 +53,12 @@ declare -rg executable=$cwd_dir'/'$project
 # compile commands database
 declare -rg compile_db=$cwd_dir'/compile_commands.json'
 
+# ascii cinema recording
+declare -rg record=$cwd_dir'/'$project'.cast'
+
+# gif output
+declare -rg gif=$cwd_dir'/'$project'.gif'
+
 
 # -- D I R E C T O R I E S ----------------------------------------------------
 
@@ -407,7 +413,7 @@ function _clean() {
 	fi
 
 	# remove all build files
-	local -r deleted=($(rm -vrf $objs $deps $logs $executable $compile_db '.cache'))
+	local -r deleted=($(rm -vrf $objs $deps $logs $executable $compile_db $record $gif '.cache'))
 
 	# get count of deleted files
 	local -r count=${#deleted[@]}
@@ -444,6 +450,42 @@ function _test() {
 }
 
 
+
+# record
+function _record() {
+
+	if ! command -v 'asciinema' > '/dev/null'; then
+		echo 'required tool' $error'asciinema'$reset 'not found.'
+		exit 1
+	fi
+
+	if [[ $# -eq 0 ]]; then
+		asciinema rec --command './make.sh test' --overwrite $record
+		exit 0
+	fi
+
+	if [[ $1 == 'play' ]]; then
+		asciinema play $record
+		exit 0
+	fi
+
+	if [[ $1 == 'gif' ]]; then
+		if ! command -v 'agg' > '/dev/null'; then
+			echo 'required tool' $error'agg'$reset 'not found.'
+			exit 1
+		fi
+
+		local -r font='JetBrainsMono Nerd Font Mono'
+		local -r size='18'
+		local -r speed='1.0'
+
+		agg --font-family $font --font-size $size --speed $speed $record $gif
+		exit 0
+	fi
+
+}
+
+
 # -- M A I N ------------------------------------------------------------------
 
 
@@ -454,8 +496,12 @@ if [[ $# -eq 0 ]]; then
 	exit
 fi
 
-# handle arguments
-case $1 in
+declare -rg action=$1
+# shift parameters
+shift
+
+# handle action
+case $action in
 
 	# run
 	run | launch)
@@ -478,6 +524,11 @@ case $1 in
 	re | rebuild)
 		_clean
 		_build
+		;;
+
+	# record
+	record)
+		_record $@
 		;;
 
 	# unknown (usage)
