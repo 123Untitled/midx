@@ -318,3 +318,187 @@ MIDX (`.midx` files) is a sequencing language with:
 - **macOS only**: CoreMIDI framework is macOS-specific
 - Linux support partially stubbed out but not fully implemented (see ALSA comments in `make.sh`)
 - Uses macOS system calls for timing (`mach_absolute_time`)
+
+## Neovim Integration
+
+MIDX includes a custom Neovim plugin for live editing with real-time feedback and syntax highlighting.
+
+### Plugin Location
+
+The plugin is located at: `/Users/untitled/Desktop/code/dotfiles/config/nvim/lua/midx/`
+
+### Plugin Structure
+
+```
+lua/midx/
+  ├── init.lua      # Main entry point, filetype registration, autocommands
+  ├── core.lua      # Buffer management and update coordination
+  ├── socket.lua    # Unix socket client for IPC with MIDX server
+  └── indent.lua    # Custom indentation logic for .midx syntax
+```
+
+### Features
+
+1. **Live Editing with Hot Reload**
+   - Automatically sends buffer updates to MIDX server via Unix socket
+   - Changes are reflected in real-time without manual file saves
+   - Triggered on `TextChanged` and `TextChangedI` events
+
+2. **Real-time Syntax Highlighting**
+   - Receives highlight information from the evaluator during playback
+   - Currently playing tokens are highlighted in the editor
+   - Uses namespace `midx` for persistent highlights
+
+3. **Animation Highlighting**
+   - Visual feedback for active musical elements during evaluation
+   - Separate namespace `midx_animation` for transient highlights
+   - Cleared when toggling play/pause
+
+4. **Inline Diagnostics**
+   - Parser and lexer errors displayed inline using Neovim's diagnostic API
+   - Shows error messages with line/column information
+   - Integrated with native Neovim diagnostic UI
+
+5. **Buffer Management**
+   - Only one `.midx` buffer can be active at a time
+   - Switch between buffers using `:MidxSwitch` command
+   - Automatic attachment when opening `.midx` files
+
+6. **Auto-indentation**
+   - Intelligent indentation based on MIDX syntax structure
+   - 2 levels for sequences under identifier + parameter
+   - 1 level for parameters under identifiers
+   - Respects block boundaries (`;` semicolons)
+
+7. **Play/Pause Control**
+   - Toggle playback directly from the editor
+   - Spacebar keybinding for quick control
+   - Clears animation highlights when stopping
+
+### Architecture
+
+**`init.lua`** - Plugin Entry Point
+- Registers `.midx` filetype detection
+- Sets up autocommands for file events
+- Defines user commands and keybindings
+- Configures comment string (`~ %s`)
+
+**`core.lua`** - Buffer Management
+- Tracks the active `.midx` buffer (`active_buffer`)
+- Coordinates connection and updates
+- Functions:
+  - `attach(bufnr)`: Attaches to a `.midx` buffer and connects to server
+  - `detach()`: Detaches from the current buffer
+  - `switch()`: Switches to a different `.midx` buffer
+  - `update()`: Sends current buffer content to server
+  - `status()`: Displays connection and buffer status
+
+**`socket.lua`** - IPC Communication
+- Connects to Unix socket at `/tmp/midx.sock`
+- Auto-reconnection with 100ms retry interval
+- Handles bidirectional communication with MIDX server
+- Functions:
+  - `connect(callback)`: Establishes socket connection
+  - `send_raw(data)`: Sends raw data to server
+  - `handle_message(data)`: Processes incoming messages
+  - `handle_json(msg)`: Parses and applies JSON messages
+  - `clear_animation_highlights()`: Clears transient highlights
+
+**`indent.lua`** - Indentation Logic
+- Custom `indentexpr` for `.midx` files
+- Rules:
+  - Identifiers: No indentation (column 0)
+  - Parameters (`:nt`, `:vl`, etc.): 1 level under identifier
+  - Sequences (values/operators): 2 levels under identifier + parameter
+  - Semicolon (`;`): Resets to column 0
+  - Comments (`~`): Preserves current indentation
+
+### Communication Protocol
+
+**Outgoing Messages** (Neovim → MIDX Server):
+- `UPDATE<size>\n<content>`: Sends buffer content on changes
+  - `<size>`: Byte count of content
+  - `<content>`: Full buffer text
+- `TOGGLE\n`: Toggles play/pause state
+
+**Incoming Messages** (MIDX Server → Neovim):
+JSON objects terminated by `\r\n`, with the following types:
+
+1. **Highlight Message**:
+   ```json
+   {
+     "type": "highlight",
+     "highlights": [
+       {"l": line, "s": start_col, "e": end_col, "g": "HighlightGroup"}
+     ]
+   }
+   ```
+   - Applied to namespace `midx`
+   - Persistent highlights for syntax structure
+
+2. **Animation Message**:
+   ```json
+   {
+     "type": "animation",
+     "highlights": [
+       {"l": line, "s": start_col, "e": end_col, "g": "HighlightGroup"}
+     ]
+   }
+   ```
+   - Applied to namespace `midx_animation`
+   - Transient highlights for currently playing tokens
+
+3. **Diagnostic Message**:
+   ```json
+   {
+     "type": "diagnostic",
+     "diagnostics": [
+       {"l": line, "s": start_col, "e": end_col, "m": "error message"}
+     ]
+   }
+   ```
+   - Displayed using Neovim's diagnostic API
+   - Shows parser/lexer errors inline
+
+### User Commands
+
+- **`:MidxTogglePlay`**: Toggle play/pause (also mapped to `<space>` in normal mode)
+- **`:MidxSwitch`**: Switch active buffer to current `.midx` file
+- **`:MidxStatus`**: Display connection status and active buffer info
+
+### Keybindings
+
+- `<space>` (normal mode): Toggle play/pause
+
+### Setup
+
+The plugin is set up in Neovim configuration with:
+
+```lua
+require('midx').setup()
+```
+
+This configures:
+- Filetype detection for `.midx` files
+- Autocommands for buffer attachment and live updates
+- User commands and keybindings
+- Comment string for `.midx` syntax
+
+### Integration with MIDX Server
+
+The plugin communicates with `mx::server` (Unix socket server) running in the MIDX application:
+- Server listens on `/tmp/midx.sock`
+- Protocol defined in `include/monitoring/protocol.hpp`
+- Server implementation in `sources/monitoring/server.cpp`
+- Highlight data generated by `mx::highlight_tracker` during AST evaluation
+- Updates trigger re-parsing via the analyzer and player systems
+
+### Workflow
+
+1. Start MIDX application: `./make.sh run` (starts server on `/tmp/midx.sock`)
+2. Open a `.midx` file in Neovim
+3. Plugin automatically connects and sends buffer content
+4. Edit the file - changes are sent in real-time
+5. Press `<space>` to toggle playback
+6. Active tokens are highlighted during evaluation
+7. Parser errors appear as inline diagnostics
