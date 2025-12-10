@@ -14,13 +14,17 @@ declare -rg   reset='\x1b[0m'
 
 # -- L O G O ------------------------------------------------------------------
 
-echo $warning \
-	'   ▁▁▁▁▁▁▁▁  ▁▁▁▁▁▁▁▁  ▁▁▁▁ ▁▁▁  ▁▁▁▁▁▁▁▁ \n' \
-	'  ╱        ╲╱        ╲╱    ╱   ╲╱        ╲\n' \
-	' ╱         ╱         ╱         ╱         ╱\n' \
-	'╱         ╱         ╱        ▁╱       ▁▁╱ \n' \
-	'╲▁▁╱▁▁╱▁▁╱╲▁▁▁╱▁▁▁▁╱╲▁▁▁▁╱▁▁▁╱╲▁▁▁▁▁▁▁▁╱  \n' \
-	$reset
+echo $warning'\n' \
+'                ░██       ░██           \n' \
+'                          ░██           \n' \
+'░█████████████  ░██ ░████████ ░██    ░██\n' \
+'░██   ░██   ░██ ░██░██    ░██  ░██  ░██ \n' \
+'░██   ░██   ░██ ░██░██    ░██   ░█████  \n' \
+'░██   ░██   ░██ ░██░██   ░███  ░██  ░██ \n' \
+'░██   ░██   ░██ ░██ ░█████░██ ░██    ░██\n' \
+$reset
+
+
 
 
 # -- O P E R A T I N G  S Y S T E M -------------------------------------------
@@ -292,7 +296,7 @@ function _wait_processes {
 			wait
 			# cat all log files
 			#cat $logs
-			cat $src_dir'/'**'/'*.'log'
+			cat $src_dir'/'**'/'*'.log'
 			exit 1
 		fi
 	done
@@ -478,7 +482,7 @@ case $1 in
 
 	# unknown (usage)
 	*)
-		echo 'usage:' ${script:t} '[run|launch|rm|clean|fclean|re|rebuild|submodules]'
+		echo 'usage:' ${script:t} '[run|launch|test|rm|clean|fclean|re|rebuild]'
 		;;
 esac
 
