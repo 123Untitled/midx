@@ -57,6 +57,16 @@ namespace mx {
 			}
 
 
+			/* reset */
+			auto _reset(void) noexcept -> void {
+
+				// reset states
+				for (mx::u16 i = 0U; i < max_notes; ++i)
+					_states[i].ticks = _states[i].epoch = 0U;
+
+				_count = 0U;
+				_epoch = 1U;
+			}
 
 		public:
 
@@ -81,19 +91,9 @@ namespace mx {
 					evs.note_off(idx_to_ch(i), idx_to_no(i));
 				}
 
-				reset();
+				_reset();
 			}
 
-			/* reset */
-			auto reset(void) noexcept -> void {
-
-				// reset states
-				for (mx::u16 i = 0U; i < max_notes; ++i)
-					_states[i].ticks = _states[i].epoch = 0U;
-
-				_count = 0U;
-				_epoch = 1U;
-			}
 
 			/* next epoch */
 			auto next_epoch(void) noexcept -> void {
@@ -107,7 +107,6 @@ namespace mx {
 				}
 				++_epoch;
 			}
-
 
 
 			/* note on */

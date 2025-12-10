@@ -56,17 +56,15 @@ auto pr::parser::parse(tk::tokens&   tokens,
 	_back = false;
 
 	// parse scope
-	if (_it == _end) {
-		std::cout << "No tokens to parse\n";
-		error("No tokens to parse");
-		return;
-	}
+	//if (_it == _end) {
+	//	std::cout << "No tokens to parse\n";
+	//	error("No tokens to parse");
+	//	return;
+	//}
 
 	auto root = self::_parse();
-	std::cout << "Parsing completed, root node index: " << root << '\n';
 
 	as::printer::run(*_tree, root, tokens);
-	//_tree->debug();
 }
 
 auto dbg_token(const char* msg, const tk::token& t) -> void {
@@ -87,7 +85,6 @@ auto pr::parser::error(const char* msg) const -> void {
 	if (tv.num_chunks() == 0U)
 		throw std::runtime_error{"Token has no chunks"};
 
-	//_diag->push(msg, tv.first_chunk().range);
 	_diag->push(msg, tk::range{});
 }
 
@@ -527,20 +524,15 @@ auto pr::parser::parse_parameter(mx::usz left) -> mx::usz {
 
 	do {
 
-		tk::iterator it;
-
-		// skip consecutive parameters
-		do { it = _it; } while
-			(++_it != _end && _it.token() == tk::parameter);
-
-
 		// here check parameter name
-		_last_param = pa::to_id(*it);
+		_last_param = pa::to_id(*_it);
 
 		if (_last_param == pa::invalid) {
-			error("Invalid parameter name", it);
+			error("Invalid parameter name", _it);
 			continue;
 		}
+
+		++_it; // consume parameter token
 
 		constexpr auto L = pr::level::seq;
 
@@ -567,7 +559,6 @@ auto pr::parser::parse_parameter(mx::usz left) -> mx::usz {
 			// create new parameter
 			params[_last_param] = _tree->make_parameter(_tree->make_range(seq), dur);
 			has_params = true;
-			//continue;
 		}
 
 		if (_back == true) {
@@ -588,21 +579,28 @@ auto pr::parser::parse_parameter(mx::usz left) -> mx::usz {
 	const auto track = as::make_node<as::track>(params);
 
 	// compute polyrythmic cycle duration
-
 	mx::frac dur;
+	mx::usz p = 0U;
+	for (; p < pa::max_params; ++p) {
+		if (!params[p])
+			continue;
+		const auto& h = _tree->header(params[p]);
+		dur = h.dur;
+		break;
+	}
+	for (; p < pa::max_params; ++p) {
 
-	for (int p = 0; p < pa::max_params; ++p) {
+	//for (mx::usz p = 0U; p < pa::max_params; ++p) {
 
-		const auto pnode = params[p];
-		if (!pnode)
+		if (!params[p])
 			continue;
 
-		const auto& h = _tree->header(pnode);
+		const auto& h = _tree->header(params[p]);
 
-		if (dur.num == 0U)
-			dur = h.dur;
-		else
-			dur = mx::lcm_frac(dur, h.dur);
+		//if (dur.num == 0U)
+		//	dur = h.dur;
+		//else
+		dur = mx::lcm_frac(dur, h.dur);
 	}
 
 	dur.reduce();

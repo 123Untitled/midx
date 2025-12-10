@@ -11,7 +11,7 @@
 mx::server::server(const mx::monitor& monitor)
 : mx::watcher{}, _socket{AF_UNIX, SOCK_STREAM}, _client{monitor} {
 
-	const char* path = "/tmp/midx.sock";
+	const char path[] = "/tmp/midx.sock";
 	::unlink(path);
 
 	const mx::address addr{path};
@@ -32,8 +32,10 @@ mx::server::server(const mx::monitor& monitor)
 /* broadcast */
 auto mx::server::broadcast(mx::string&& msg) -> void {
 
-	if (_client.is_connected() == false)
+	if (_client.is_connected() == false) {
+		mx::string_pool::store(std::move(msg));
 		return;
+	}
 
 	_client.send(std::move(msg));
 }
@@ -52,6 +54,16 @@ auto mx::server::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 
 	// initialize client
 	_client.initialize(static_cast<mx::socket&&>(nsck));
+
+	// send initial playing state to new client
+	const bool playing = app.player().is_playing();
+
+	mx::string msg = mx::string_pool::query();
+	msg.append("{\"type\":\"state\",\"playing\":",
+			   (playing ? "true" : "false"),
+			   "}\r\n"
+	);
+	_client.send(std::move(msg));
 }
 
 /* ident */

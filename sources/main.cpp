@@ -1,19 +1,13 @@
 #include <iostream>
 #include "application.hpp"
 
-#include "midi/midi.hpp"
 
+
+#include <unistd.h>
+#include <sys/stat.h>
 
 
 auto main(int ac, char** av) -> int {
-
-
-	//mx::midi md;
-	//
-	//while (true) {
-	//	::sleep(1);
-	//}
-	//return 0;
 
 
 	try {

@@ -10,6 +10,9 @@
 #include "core/string/strcmp.hpp"
 #include <iostream>
 
+#include "core/utility/limits.hpp"
+
+
 // -- M X  N A M E S P A C E --------------------------------------------------
 
 namespace mx {
@@ -122,12 +125,12 @@ namespace mx {
 			static constexpr mx::usz ALPHABET_SIZE = 26U;
 			static constexpr mx::usz NODE_COUNT    = self::count_nodes();
 			static constexpr mx::usz ARRAY_SIZE    = self::NODE_COUNT
-													* self::ALPHABET_SIZE;
+												   * self::ALPHABET_SIZE;
 
 			using node_type =
-				mx::conditional<(self::NODE_COUNT <= static_cast<mx::u8 >(-1)), mx::u8,
-				mx::conditional<(self::NODE_COUNT <= static_cast<mx::u16>(-1)), mx::u16,
-				mx::conditional<(self::NODE_COUNT <= static_cast<mx::u32>(-1)), mx::u32,
+				mx::conditional<self::NODE_COUNT <= mx::limits<mx::u8 >::max(), mx::u8,
+				mx::conditional<self::NODE_COUNT <= mx::limits<mx::u16>::max(), mx::u16,
+				mx::conditional<self::NODE_COUNT <= mx::limits<mx::u32>::max(), mx::u32,
 				mx::u64>>>;
 
 			static constexpr node_type EMPTY_SLOT = 0U;

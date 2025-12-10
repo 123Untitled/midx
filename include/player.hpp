@@ -42,9 +42,6 @@ namespace mx {
 			/* evaluator */
 			as::eval _eval;
 
-			/* event list */
-			cm::event_list _evs;
-
 			/* midi */
 			mx::midi _midi;
 

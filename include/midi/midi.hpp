@@ -82,11 +82,6 @@ namespace mx {
 				_evl.send(_src);
 			}
 
-			/* reset */
-			auto reset(void) noexcept -> void {
-				_engine.reset();
-			}
-
 			/* flush */
 			auto flush(void) -> void {
 

@@ -45,7 +45,8 @@ namespace mx {
 			}
 
 			/* local constructor */
-			constexpr explicit address(const char* path) noexcept
+			template <unsigned N>
+			constexpr explicit address(const char (&path)[N]) noexcept
 			: _addr{}, _size{sizeof(::sockaddr_un)} {
 
 				// interpret as local
@@ -56,7 +57,7 @@ namespace mx {
 
 				for (unsigned i = 0U; i < sizeof(addr.sun_path); ++i) {
 					addr.sun_path[i] = path[i];
-					if (path[i] == '\0')
+					if (i == N - 1U || path[i] == '\0')
 						break;
 				}
 			}

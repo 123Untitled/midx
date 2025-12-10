@@ -28,10 +28,8 @@ auto mx::application::reparse(mx::string&& data) -> void {
 	analyzer.analyze(mx::move(data));
 	_server.broadcast(analyzer.highlights());
 
-	if (analyzer.has_errors() == true) {
-		std::cout << "\x1b[31mErrors detected, playback aborted.\x1b[0m" << std::endl;
+	if (analyzer.has_errors() == true)
 		return;
-	}
 
 	// switch tree
 	_player.switch_tree(analyzer.tree(), analyzer.tokens());
@@ -46,6 +44,17 @@ auto mx::application::exit(void) noexcept -> void {
 /* toggle play */
 auto mx::application::toggle(void) -> void {
 	_player.toggle();
+
+	// broadcast playing state to client
+	const bool playing = _player.is_playing();
+
+	mx::string msg = mx::string_pool::query();
+
+	msg.append("{\"type\":\"state\",\"playing\":",
+			   (playing ? "true" : "false"),
+			   "}\r\n"
+	);
+	_server.broadcast(std::move(msg));
 }
 
 /* run */

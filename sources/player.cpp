@@ -17,6 +17,7 @@
 mx::player::player(const mx::monitor& monitor)
 : mx::watcher{},
   _clock{monitor.kqueue(), *this},
+  _eval{},
   _midi{},
   _hls{},
   _ticks{0U} {
