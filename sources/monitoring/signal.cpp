@@ -56,41 +56,91 @@ mx::signal::~signal(void) noexcept {
 }
 
 
-static auto signal_str(const int sig) -> const char* {
-	switch (sig) {
-		case SIGHUP:    return "terminal line hangup";
-		case SIGINT:    return "interrupt program";
-		case SIGQUIT:   return "quit program";
-		case SIGILL:    return "illegal instruction";
-		case SIGTRAP:   return "trace trap";
-		case SIGABRT:   return "abort program (formerly SIGIOT)";
-		case SIGEMT:    return "emulate instruction executed";
-		case SIGFPE:    return "floating-point exception";
-		case SIGKILL:   return "kill program";
-		case SIGBUS:    return "bus error";
-		case SIGSEGV:   return "segmentation violation";
-		case SIGSYS:    return "non-existent system call invoked";
-		case SIGPIPE:   return "write on a pipe with no reader";
-		case SIGALRM:   return "real-time timer expired";
-		case SIGTERM:   return "software termination signal";
-		case SIGURG:    return "urgent condition present on socket";
-		case SIGSTOP:   return "stop (cannot be caught or ignored)";
-		case SIGTSTP:   return "stop signal generated from keyboard";
-		case SIGCONT:   return "continue after stop";
-		case SIGCHLD:   return "child status has changed";
-		case SIGTTIN:   return "background read attempted from control terminal";
-		case SIGTTOU:   return "background write attempted to control terminal";
-		case SIGIO:     return "I/O is possible on a descriptor (see fcntl(2))";
-		case SIGXCPU:   return "cpu time limit exceeded (see setrlimit(2))";
-		case SIGXFSZ:   return "file size limit exceeded (see setrlimit(2))";
-		case SIGVTALRM: return "virtual time alarm (see setitimer(2))";
-		case SIGPROF:   return "profiling timer alarm (see setitimer(2))";
-		case SIGWINCH:  return "Window size change";
-		case SIGINFO:   return "status request from keyboard";
-		case SIGUSR1:   return "User defined signal 1";
-		case SIGUSR2:   return "User defined signal 2";
+enum : int {
+	sighup,  sigint,    sigquit, sigill,
+	sigtrap, sigabrt,   sigemt,  sigfpe,
+	sigkill, sigbus,    sigsegv, sigsys,
+	sigpipe, sigalrm,   sigterm, sigurg,
+	sigstop, sigtstp,   sigcont, sigchld,
+	sigttin, sigttou,   sigio,   sigxcpu,
+	sigxfsz, sigvtalrm, sigprof, sigwinch,
+	siginfo, sigusr1,   sigusr2,
+	unknown,
+	num_signals
+};
 
-		default:      return "UNKNOWN";
+constexpr mx::string_view descs[num_signals] {
+	mx::string_view{"terminal line hangup"},
+	mx::string_view{"interrupt program"},
+	mx::string_view{"quit program"},
+	mx::string_view{"illegal instruction"},
+	mx::string_view{"trace trap"},
+	mx::string_view{"abort program (formerly SIGIOT)"},
+	mx::string_view{"emulate instruction executed"},
+	mx::string_view{"floating-point exception"},
+	mx::string_view{"kill program"},
+	mx::string_view{"bus error"},
+	mx::string_view{"segmentation violation"},
+	mx::string_view{"non-existent system call invoked"},
+	mx::string_view{"write on a pipe with no reader"},
+	mx::string_view{"real-time timer expired"},
+	mx::string_view{"software termination signal"},
+	mx::string_view{"urgent condition present on socket"},
+	mx::string_view{"stop (cannot be caught or ignored)"},
+	mx::string_view{"stop signal generated from keyboard"},
+	mx::string_view{"continue after stop"},
+	mx::string_view{"child status has changed"},
+	mx::string_view{"background read attempted from control terminal"},
+	mx::string_view{"background write attempted to control terminal"},
+	mx::string_view{"I/O is possible on a descriptor (see fcntl(2))"},
+	mx::string_view{"cpu time limit exceeded (see setrlimit(2))"},
+	mx::string_view{"file size limit exceeded (see setrlimit(2))"},
+	mx::string_view{"virtual time alarm (see setitimer(2))"},
+	mx::string_view{"profiling timer alarm (see setitimer(2))"},
+	mx::string_view{"Window size change"},
+	mx::string_view{"status request from keyboard"},
+	mx::string_view{"User defined signal 1"},
+	mx::string_view{"User defined signal 2"},
+	mx::string_view{"unknown signal"}
+};
+
+
+
+static auto signal_str(const int sig) -> const mx::string_view& {
+	switch (sig) {
+		case SIGHUP:    return descs[sighup];
+		case SIGINT:    return descs[sigint];
+		case SIGQUIT:   return descs[sigquit];
+		case SIGILL:    return descs[sigill];
+		case SIGTRAP:   return descs[sigtrap];
+		case SIGABRT:   return descs[sigabrt];
+		case SIGEMT:    return descs[sigemt];
+		case SIGFPE:    return descs[sigfpe];
+		case SIGKILL:   return descs[sigkill];
+		case SIGBUS:    return descs[sigbus];
+		case SIGSEGV:   return descs[sigsegv];
+		case SIGSYS:    return descs[sigsys];
+		case SIGPIPE:   return descs[sigpipe];
+		case SIGALRM:   return descs[sigalrm];
+		case SIGTERM:   return descs[sigterm];
+		case SIGURG:    return descs[sigurg];
+		case SIGSTOP:   return descs[sigstop];
+		case SIGTSTP:   return descs[sigtstp];
+		case SIGCONT:   return descs[sigcont];
+		case SIGCHLD:   return descs[sigchld];
+		case SIGTTIN:   return descs[sigttin];
+		case SIGTTOU:   return descs[sigttou];
+		case SIGIO:     return descs[sigio];
+		case SIGXCPU:   return descs[sigxcpu];
+		case SIGXFSZ:   return descs[sigxfsz];
+		case SIGVTALRM: return descs[sigvtalrm];
+		case SIGPROF:   return descs[sigprof];
+		case SIGWINCH:  return descs[sigwinch];
+		case SIGINFO:   return descs[siginfo];
+		case SIGUSR1:   return descs[sigusr1];
+		case SIGUSR2:   return descs[sigusr2];
+
+		default:      return descs[unknown];
 	}
 }
 
@@ -106,7 +156,6 @@ auto mx::signal::ident(void) const noexcept -> int {
 /* on event */
 auto mx::signal::on_event(mx::application& app, const struct ::kevent& ev) -> void {
 
-	std::cout << "event filter: " << ev.filter << std::endl;
 	if ((ev.filter != EVFILT_READ))
 		return;
 
@@ -118,8 +167,8 @@ auto mx::signal::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 		throw mx::system_error{"read"};
 
 	::write(STDOUT_FILENO, "signal: ", 8U);
-	const char* desc = signal_str(sig);
-	::write(STDOUT_FILENO, desc, std::char_traits<char>::length(desc));
+	const auto& desc = signal_str(sig);
+	::write(STDOUT_FILENO, desc.data(), desc.size());
 	::write(STDOUT_FILENO, "\n", 1U);
 
 	switch (sig) {
