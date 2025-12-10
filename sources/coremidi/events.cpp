@@ -1,4 +1,4 @@
-#include "coremidi/eventlist.hpp"
+#include "coremidi/events.hpp"
 
 #if defined(midx_macos)
 

@@ -2,12 +2,11 @@
 #define midi_midi_engine_hpp
 
 #include "core/types.hpp"
-#include "coremidi/eventlist.hpp"
-#include "coremidi/packet_list.hpp"
+//#include "coremidi/events.hpp"
 //#include "coremidi/coremidi.hpp"
 #include "midi/midi_event.hpp"
 
-#include "diagnostics/runtime_error.hpp"
+//#include "diagnostics/runtime_error.hpp"
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------

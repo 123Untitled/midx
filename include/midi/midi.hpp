@@ -5,10 +5,10 @@
 
 #if defined(midx_macos)
 
-#include "coremidi/packet_list.hpp"
 #include "coremidi/client.hpp"
 #include "coremidi/source.hpp"
 #include "coremidi/destination.hpp"
+#include "coremidi/events.hpp"
 
 #include "midi/midi_watcher.hpp"
 #include "midi/midi_engine.hpp"

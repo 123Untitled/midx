@@ -2,12 +2,13 @@
 #define language_ast_eval_hpp
 
 #include "language/ast/hash_run.hpp"
-#include "midi/midi_engine.hpp"
 #include "math.hpp"
 #include "language/ast/param_accum.hpp"
 
 #include "midi/constant.hpp"
 #include "midi/midi_event.hpp"
+#include <unistd.h>
+#include "core/utility/type_operations.hpp"
 
 // -- forward declarations ----------------------------------------------------
 
