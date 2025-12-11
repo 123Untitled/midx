@@ -12,7 +12,8 @@ mx::application::application(void)
   _monitor{},
   _signal{_monitor},
   _server{_monitor},
-  _protocol{},
+  _protocol1{},
+  _protocol_parser{},
   _analyzers{},
   _active{0U},
   _player{_monitor} {
@@ -39,6 +40,16 @@ auto mx::application::reparse(mx::string&& data) -> void {
 /* exit */
 auto mx::application::exit(void) noexcept -> void {
 	_running = false;
+}
+
+/* play */
+auto mx::application::play(void) -> void {
+	_player.play();
+}
+
+/* stop */
+auto mx::application::stop(void) -> void {
+	_player.stop();
 }
 
 /* toggle play */

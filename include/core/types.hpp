@@ -2,6 +2,7 @@
 #define core_types_hpp
 
 #include "core/type_traits/integers.hpp"
+#include <cstddef>
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
@@ -43,6 +44,12 @@ namespace mx {
 
 	/* 64-bit types */
 	using f64 = double;
+
+
+	// -- max align type ------------------------------------------------------
+
+	using max_align = std::max_align_t;
+
 
 } // namespace mx
 

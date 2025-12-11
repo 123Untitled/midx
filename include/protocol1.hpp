@@ -21,7 +21,7 @@ namespace mx {
 
 	// -- P R O T O C O L -----------------------------------------------------
 
-	class protocol final {
+	class protocol1 final {
 
 
 		private:
@@ -29,7 +29,7 @@ namespace mx {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = mx::protocol;
+			using self = mx::protocol1;
 
 
 			enum state : unsigned {
@@ -39,7 +39,7 @@ namespace mx {
 				COMPLETE
 			};
 
-			using state_func = auto (mx::protocol::*)(void) -> void;
+			using state_func = auto (mx::protocol1::*)(void) -> void;
 
 
 			// -- private members ---------------------------------------------
@@ -72,10 +72,10 @@ namespace mx {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			protocol(void) noexcept
+			protocol1(void) noexcept
 			: _it{nullptr}, _end{nullptr},
 			  _app{nullptr},
-			  _state{&mx::protocol::_read_status},
+			  _state{&mx::protocol1::_read_status},
 			  _size{0U},
 			  _data{} {
 			}

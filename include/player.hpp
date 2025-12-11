@@ -65,8 +65,8 @@ namespace mx {
 
 			// -- public methods ----------------------------------------------
 
-			/* start */
-			auto start(void) -> void;
+			/* play */
+			auto play(void) -> void;
 
 			/* stop */
 			auto stop(void) -> void;

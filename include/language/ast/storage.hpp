@@ -88,6 +88,43 @@ namespace as {
 
 	}; // class storage
 
+	//class storage final {
+	//
+	//	private:
+	//		// -- private members ---------------------------------------------
+	//		std::vector<mx::u8> _data;
+	//
+	//	public:
+	//
+	//		storage(void) noexcept = default;
+	//
+	//
+	//		template <typename T>
+	//		auto push(const T& value) -> mx::usz {
+	//
+	//			const auto offset = mx::align_up<T>(_data.size());
+	//
+	//			// resize storage
+	//			_data.resize(offset + sizeof(T));
+	//
+	//			// pointer
+	//			void* ptr = _data.data() + offset;
+	//
+	//			// construct in place
+	//			::new (ptr) T{value};
+	//
+	//			return offset;
+	//		}
+	//
+	//		template <typename T>
+	//		auto at(const mx::usz index) const -> const T& {
+	//			if (index + sizeof(T) > _data.size()) {
+	//				throw std::runtime_error{"Storage index out of bounds"};
+	//			}
+	//			return *reinterpret_cast<const T*>(&_data[index]);
+	//		}
+	//};
+
 } // namespace as
 
 #endif // language_ast_storage_hpp

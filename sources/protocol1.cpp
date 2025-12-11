@@ -1,9 +1,9 @@
-#include "protocol.hpp"
+#include "protocol1.hpp"
 #include "application.hpp"
 
 
 
-auto mx::protocol::_read_status(void) -> void {
+auto mx::protocol1::_read_status(void) -> void {
 
 	const mx::u8* checkpoint = _it;
 
@@ -24,21 +24,21 @@ auto mx::protocol::_read_status(void) -> void {
 		++_it;
 
 	if (mx::str_equal(_data, "UPDATE")) {
-		_state = &mx::protocol::_read_size;
+		_state = &mx::protocol1::_read_size;
 		_size = 0U;
 		_data.clear();
 	}
 
 	else if (mx::str_equal(_data, "TOGGLE")) {
-		_state = &mx::protocol::_read_status;
+		_state = &mx::protocol1::_read_status;
 		_app->toggle();
 		_data.clear();
 	}
 	else
-		_state = &mx::protocol::_read_status;
+		_state = &mx::protocol1::_read_status;
 }
 
-auto mx::protocol::_read_size(void) -> void {
+auto mx::protocol1::_read_size(void) -> void {
 
 	constexpr mx::usz max = UINT64_MAX / 10U;
 
@@ -67,11 +67,11 @@ auto mx::protocol::_read_size(void) -> void {
 	if (*_it != '\n')
 		throw mx::runtime_error{"protocol size termination error"};
 
-	_state = &mx::protocol::_read_data;
+	_state = &mx::protocol1::_read_data;
 	++_it;
 }
 
-auto mx::protocol::_read_data(void) -> void {
+auto mx::protocol1::_read_data(void) -> void {
 
 	const auto left = static_cast<mx::usz>(_end - _it);
 
@@ -90,7 +90,7 @@ auto mx::protocol::_read_data(void) -> void {
 
 	if (_size == 0U) {
 		_app->reparse(std::move(_data));
-		_state = &mx::protocol::_read_status;
+		_state = &mx::protocol1::_read_status;
 		_data = mx::string_pool::query();
 		return;
 	}

@@ -30,7 +30,7 @@ mx::player::player(const mx::monitor& monitor)
 // -- public methods ----------------------------------------------------------
 
 /* start */
-auto mx::player::start(void) -> void {
+auto mx::player::play(void) -> void {
 
 	if (_clock.is_running() == true)
 		return;
@@ -63,7 +63,7 @@ auto mx::player::stop(void) -> void {
 
 /* toggle */
 auto mx::player::toggle(void) -> void {
-	is_playing() == true ? stop() : start();
+	is_playing() == true ? stop() : play();
 }
 
 /* switch tree */

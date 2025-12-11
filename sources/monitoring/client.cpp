@@ -97,6 +97,7 @@ auto mx::client::_disconnect(void) -> void {
 
 /* read */
 auto mx::client::_read(mx::application& app) -> void {
+	std::cout << "Client read event\n";
 
 	// read socket
 	if (_reader.recv(_socket) == false)
@@ -109,7 +110,8 @@ auto mx::client::_read(mx::application& app) -> void {
 	}
 
 	// feed data to application
-	app.protocol().feed(_reader, app);
+	//app.protocol1().feed(_reader, app);
+	app.protocol_parser().feed(_reader, app);
 }
 
 /* write */
