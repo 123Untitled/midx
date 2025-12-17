@@ -9,6 +9,8 @@
 #include "monitoring/signal.hpp"
 #include "protocol/parser.hpp"
 
+#include "events/input.hpp"
+
 
 // -- M L  N A M E S P A C E --------------------------------------------------
 
@@ -35,6 +37,8 @@ namespace mx {
 			bool _running;
 
 			mx::monitor _monitor;
+
+			mx::input _input;
 
 			mx::signal _signal;
 

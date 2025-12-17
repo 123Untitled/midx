@@ -1,7 +1,7 @@
-#ifndef ml_debug_chars_hpp
-#define ml_debug_chars_hpp
+#ifndef debug_chars_hpp
+#define debug_chars_hpp
 
-#include "types.hpp"
+#include "core/types.hpp"
 #include <iostream>
 
 
@@ -48,6 +48,4 @@ namespace mx {
 	}
 }
 
-
-
-#endif //ml_debug_chars_hpp
+#endif // debug_chars_hpp
