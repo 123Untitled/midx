@@ -688,13 +688,13 @@ namespace as {
 
 			auto debug(void) const -> void {
 				std::cout << "AST Tree Debug:\n";
-				std::cout << " Nodes size:  " << _nodes.size() << " bytes\n";
-				std::cout << " Remap size:  " << _remap.size() << " entries\n";
-				std::cout << " Stack size:  " << _stack.size() << " entries\n";
-				std::cout << " Marks size:  " << _marks.size() << " entries\n";
-				std::cout << " Refs size:   " << _refs.size()  << " entries\n";
-				std::cout << " Values size: " << _values.size() << " entries\n";
-				std::cout << "End of AST Tree Debug\n\n";
+				std::cout << " Nodes size:  " << _nodes.size() << " bytes\r\n";
+				std::cout << " Remap size:  " << _remap.size() << " entries\r\n";
+				std::cout << " Stack size:  " << _stack.size() << " entries\r\n";
+				std::cout << " Marks size:  " << _marks.size() << " entries\r\n";
+				std::cout << " Refs size:   " << _refs.size()  << " entries\r\n";
+				std::cout << " Values size: " << _values.size() << " entries\r\n";
+				std::cout << "End of AST Tree Debug\r\n\n";
 			}
 
 
@@ -829,11 +829,11 @@ namespace as {
 						const auto v = _tree.value_at(n.value_start + i);
 						std::cout << static_cast<mx::i32>(v) << (i + 1 < count ? " " : "");
 					}
-					std::cout << "\x1b[90m]\x1b[0m\n";
+					std::cout << "\x1b[90m]\x1b[0m\r\n";
 
 					return;
 				}
-				std::cout << "\n";
+				std::cout << "\r\n";
 
 
 				// For each child, update prefix and recurse

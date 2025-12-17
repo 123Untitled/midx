@@ -68,7 +68,7 @@ auto pr::parser::parse(tk::tokens&   tokens,
 }
 
 auto dbg_token(const char* msg, const tk::token& t) -> void {
-	std::cout << msg << ": " << t << ' ' << &t << '\n';
+	std::cout << msg << ": " << t << ' ' << &t << "\r\n";
 }
 
 
@@ -111,13 +111,13 @@ auto pr::parser::_parse(void) -> mx::usz {
 	_tree->mark();
 
 	while (_it != _end) {
-		std::cout << "\n-- PARSE LOOP --\nCurrent token: " << *_it << '\n';
+		std::cout << "\n-- PARSE LOOP --\nCurrent token: " << *_it << "\r\n";
 
 		// skip separators
 		do {
 			if (_it.token().id != tk::separator)
 				break;
-			std::cout << "Skipping separator token\n";
+			std::cout << "Skipping separator token\r\n";
 		} while (++_it != _end);
 
 		if (_parse_identifiers() == true) {
@@ -185,7 +185,7 @@ auto pr::parser::_parse_identifiers(void) -> bool {
 		else {
 			std::cout << "Inserted identifier '"
 					  << it.view().first_chunk().lexeme
-					  << "' with node index " << expr << '\n';
+					  << "' with node index " << expr << "\r\n";
 		}
 		++it;
 	}
@@ -229,7 +229,7 @@ auto pr::parser::parse_expr(const mx::uint min_pre) -> mx::usz {
 
 auto debug(const char* msg, const tk::iterator& it) -> void {
 	//return;
-	std::cout << msg << ": " << *it << "\n";
+	std::cout << msg << ": " << *it << "\r\n";
 }
 
 
@@ -356,7 +356,7 @@ auto pr::parser::parse_references(const mx::usz left) -> mx::usz {
 
 		if (found.empty != true) {
 			std::cout << "Reference found but invalid: '"
-					  << lex << "'\n";
+					  << lex << "'\r\n";
 			error("Undefined reference", _it);
 		}
 
@@ -453,7 +453,7 @@ auto pr::parser::parse_permutation(const mx::usz left) -> mx::usz {
 	if constexpr (L == pr::level::seq) {
 		if (lookahead(_it) == true) {
 			_back = true;
-			std::cout << "NUD group: lookahead found parameter or block ref, returning left\n";
+			std::cout << "NUD group: lookahead found parameter or block ref, returning left\r\n";
 			return left;
 		}
 	}
@@ -669,7 +669,7 @@ auto pr::parser::parse_tempo(mx::usz left) -> mx::usz {
 	} while (++_it != _end && (_it.token() == tk::tempo_fast
 						    || _it.token() == tk::tempo_slow));
 
-	std::cout << "\x1b[31mTEMPO\x1b[0m: " << _tempo << std::endl;
+	std::cout << "\x1b[31mTEMPO\x1b[0m: " << _tempo << "\r\n";
 
 	mx::usz right;
 	if (_it != _end && _it.token() == tk::modulo) {
@@ -923,7 +923,7 @@ auto pr::parser::parse_parallel(const mx::usz left) -> mx::usz {
 	if constexpr (L == pr::level::seq) {
 		if (lookahead_op(_it) == true) {
 			_back = true;
-			std::cout << "LED parallel: lookahead found parameter or block ref, returning left\n";
+			std::cout << "LED parallel: lookahead found parameter or block ref, returning left\r\n";
 			return left;
 		}
 	}
@@ -956,7 +956,7 @@ auto pr::parser::parse_crossfade(const mx::usz left) -> mx::usz {
 	if constexpr (L == pr::level::seq) {
 		if (lookahead_op(_it) == true) {
 			_back = true;
-			std::cout << "LED crossfade: lookahead found parameter or block ref, returning left\n";
+			std::cout << "LED crossfade: lookahead found parameter or block ref, returning left\r\n";
 			return left;
 		}
 	}
@@ -1047,7 +1047,7 @@ auto pr::parser::lookahead_op(tk::iterator it) const /*noexcept*/ -> bool {
 				return false;
 
 			default:
-				std::cout << "lookahead_op: skipping token " << tk << '\n';
+				std::cout << "lookahead_op: skipping token " << tk << "\r\n";
 				//throw std::runtime_error{"Unexpected token in lookahead_op"};
 		}
 		++it;

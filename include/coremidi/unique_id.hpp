@@ -27,7 +27,7 @@ namespace cm {
 
 			static auto _is_existing(const cm::i32 uid) -> bool {
 
-				std::cout << "------" << std::endl;
+				std::cout << "------\r\n";
 				const auto num_src = ::MIDIGetNumberOfSources();
 
 				if (!num_src)
@@ -45,7 +45,7 @@ namespace cm {
 					if (status != noErr)
 						throw cm::exception{status, "MIDIObjectGetIntegerProperty failed"};
 
-					std::cout << "SRC ID: " << id << "\n";
+					std::cout << "SRC ID: " << id << "\r\n";
 			        if (id == uid)
 			            return true;
 			    }
@@ -67,7 +67,7 @@ namespace cm {
 					if (status != noErr)
 						throw cm::exception{status, "MIDIObjectGetIntegerProperty failed"};
 
-					std::cout << "DST ID: " << id << "\n";
+					std::cout << "DST ID: " << id << "\r\n";
 					if (id == uid)
 			            return true;
 			    }

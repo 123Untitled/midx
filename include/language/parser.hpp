@@ -106,7 +106,7 @@ namespace pr {
 						break;
 				}
 				((std::cout << ' ' << args), ...);
-				std::cout << '\n';
+				std::cout << "\r\n";
 			}
 
 
