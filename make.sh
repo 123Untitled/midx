@@ -98,7 +98,10 @@ if [[ $os =~ 'Linux' ]]; then
 
 # macos dependencies
 elif [[ $os =~ 'Darwin' ]]; then
-	declare -rg os_dependencies=('-framework' 'CoreMIDI' '-framework' 'CoreAudio' '-framework' 'CoreFoundation')
+	declare -rg os_dependencies=('-framework' 'CoreMIDI' \
+								 '-framework' 'AudioUnit' \
+								 '-framework' 'CoreAudio' \
+								 '-framework' 'CoreFoundation')
 	declare -rg max_jobs=$(sysctl -n hw.ncpu)
 fi
 
@@ -460,7 +463,8 @@ function _record() {
 	fi
 
 	if [[ $# -eq 0 ]]; then
-		asciinema rec --command './make.sh test' --overwrite $record
+		asciinema rec --overwrite $record
+		#asciinema rec --command './make.sh test' --overwrite $record
 		exit 0
 	fi
 
