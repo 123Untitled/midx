@@ -10,6 +10,7 @@
 mx::application::application(void)
 : _running{true},
   _monitor{},
+  _input{_monitor},
   _signal{_monitor},
   _server{_monitor},
   _protocol1{},
