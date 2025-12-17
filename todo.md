@@ -33,10 +33,12 @@
 
 ## Neovim Integration
 
+- [ ] Bug when opening multiple vim instances with MIDX files
 - [ ] Disable `<>` in match parent (`()[]{}` only)
 - [ ] `leader+space` → play/stop toggle
 - [ ] MIDI note live selector/listener
 - [ ] Generate different colors when multiple highlights on same step
+
 
 ## Bugs to Fix
 
@@ -78,3 +80,7 @@ struct {
     uint step_to_next;
 };
 ```
+
+# Optimization
+
+- [ ] fill one midi packet all evaluations (new clock implementation)
