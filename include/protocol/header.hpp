@@ -2,11 +2,46 @@
 #define protocol_header_hpp
 
 #include "protocol/method.hpp"
+#include "core/endian.hpp"
+
+
+
+namespace mx {
+
+
+	template <typename T>
+	constexpr auto bswap(const T value) noexcept -> T {
+
+		// assertions
+		static_assert(mx::is_integral<T>, "bswap requires an integral type");
+		static_assert(sizeof(T) <= 8U, "bswap supports only 1, 2, 4, or 8 byte integral types");
+
+		// 8-bit swap (no-op)
+		if constexpr (sizeof(T) == 1U)
+			return value;
+
+		// 16-bit swap
+		if constexpr (sizeof(T) == 2U)
+			return static_cast<T>(__builtin_bswap16(static_cast<mx::u16>(value)));
+
+		// 32-bit swap
+		if constexpr (sizeof(T) == 4U)
+			return static_cast<T>(__builtin_bswap32(static_cast<mx::u32>(value)));
+
+		// 64-bit swap
+		if constexpr (sizeof(T) == 8U)
+			return static_cast<T>(__builtin_bswap64(static_cast<mx::u64>(value)));
+	}
+
+} // namespace mx
+
 
 
 // -- P C  N A M E S P A C E --------------------------------------------------
 
 namespace pc {
+
+
 
 
 	// -- H E A D E R ---------------------------------------------------------
@@ -39,8 +74,8 @@ namespace pc {
 				   const mx::u32 length) noexcept
 			: _magic{'M', 'I', 'D', 'X'},
 			  _reserved{0U},
-			  _method{static_cast<pc::method>(_to_le_u32(static_cast<mx::u32>(method)))},
-			  _length{_to_le_u32(length)} {
+			  _method{_bswap(method)},
+			  _length{_bswap(length)} {
 			}
 
 
@@ -58,12 +93,12 @@ namespace pc {
 
 		private:
 
-			static auto _to_le_u32(const mx::u32 value) noexcept -> mx::u32 {
-				#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-					return __builtin_bswap32(value);
-				#else
+			template <typename T>
+			static auto _bswap(const T value) noexcept -> T {
+				if constexpr (mx::endian::native == mx::endian::big)
+					return mx::bswap(value);
+				else
 					return value;
-				#endif
 			}
 
 
@@ -71,29 +106,15 @@ namespace pc {
 
 
 			auto method(void) const noexcept -> pc::method {
-				return static_cast<pc::method>(_to_le_u32(static_cast<mx::u32>(_method)));
+				return _bswap(_method);
 			}
 
 			auto length(void) const noexcept -> mx::u32 {
-				return _to_le_u32(_length);
+				return _bswap(_length);
 			}
 
 
-
 	} __attribute__((packed)); // struct header
-
-
-
-	//constexpr bool is_little = [](void) constexpr static noexcept -> bool {
-	//	union data {
-	//		unsigned value;
-	//		unsigned char bytes[sizeof(unsigned)];
-	//	};
-	//	constexpr data test {1U};
-	//
-	//	return test.bytes[0U] == 1U;
-	//}();
-
 
 
 } // namespace pc
