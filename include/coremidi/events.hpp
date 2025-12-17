@@ -16,6 +16,12 @@
 
 namespace cm {
 
+	// -- forward declarations ------------------------------------------------
+
+	class source;
+	class output;
+	class destination;
+
 
 	// -- E V E N T  L I S T --------------------------------------------------
 
@@ -97,23 +103,39 @@ namespace cm {
 			/* send */
 			auto send(const cm::source&) -> void;
 
+			/* send */
+			auto send(const cm::output&, const cm::destination&) -> void;
+
 			/* note on */
-			auto note_on(const cm::u8,
-						 const cm::u8,
-						 const cm::u8) -> void;
+			//auto note_on(const cm::u8,
+			//			 const cm::u8,
+			//			 const cm::u8) -> void;
 
 			/* note off */
 			auto note_off(const cm::u8,
-						  const cm::u8) -> void;
+						  const cm::u8,
+						  const mx::u64) -> void;
+
+			auto note_on(const cm::u8,
+						 const cm::u8,
+						 const cm::u8,
+						 const mx::u64) -> void;
+
+			/* note off */
+			//auto note_off(const cm::u8,
+			//			  const cm::u8) -> void;
 
 			/* tick */
-			auto tick(void) -> void;
+			//auto tick(void) -> void;
+			//
+			///* start */
+			//auto start(void) -> void;
+			//
+			///* stop */
+			//auto stop(void) -> void;
 
-			/* start */
-			auto start(void) -> void;
-
-			/* stop */
-			auto stop(void) -> void;
+			/* clear */
+			auto clear(void) -> void;
 
 
 		private:
@@ -121,13 +143,11 @@ namespace cm {
 			// -- private methods ---------------------------------------------
 
 			/* add */
-			auto _add(const cm::m32&) -> void;
+			auto _add(const cm::m32, mx::u64) -> void;
 
 			/* resize */
 			auto _resize(void) -> bool;
 
-			/* clear */
-			auto _clear(void) -> void;
 
 	}; // class event_list
 

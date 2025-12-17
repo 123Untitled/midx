@@ -2,6 +2,8 @@
 
 #if defined(midx_macos)
 
+#include "coremidi/output.hpp"
+
 
 // -- E V E N T  L I S T ------------------------------------------------------
 
@@ -42,25 +44,50 @@ auto cm::event_list::send(const cm::source& source) -> void {
 
 	if (err != noErr)
 		throw cm::exception{err, "failed to send event list"};
-
-	// initialize the event packet after sending
-	_clear();
 }
 
+/* send */
+auto cm::event_list::send(const cm::output& out, const cm::destination& dst) -> void {
+
+	if (empty())
+		return;
+
+	// send midi to output port
+	const ::OSStatus err = ::MIDISendEventList(out.id(), dst.id(), _list);
+
+	if (err != noErr)
+		throw cm::exception{err, "failed to send event list"};
+}
+
+
 /* note on */
+//auto cm::event_list::note_on(const cm::u8 channel,
+//							const cm::u8 note,
+//							const cm::u8 velocity) -> void {
+//
+//	self::_add(::MIDI1UPNoteOn(0U, channel, note, velocity));
+//}
+
 auto cm::event_list::note_on(const cm::u8 channel,
 							const cm::u8 note,
-							const cm::u8 velocity) -> void {
+							const cm::u8 velocity,
+							const mx::u64 ts) -> void {
 
-	self::_add(::MIDI1UPNoteOn(0U, channel, note, velocity));
-
+	self::_add(::MIDI1UPNoteOn(0U, channel, note, velocity), ts);
 }
 
 /* note off */
-auto cm::event_list::note_off(const cm::u8 channel,
-							 const cm::u8 note) -> void {
+//auto cm::event_list::note_off(const cm::u8 channel,
+//							 const cm::u8 note) -> void {
+//
+//	self::_add(::MIDI1UPNoteOff(0U, channel, note, 0U));
+//}
 
-	self::_add(::MIDI1UPNoteOff(0U, channel, note, 0U));
+auto cm::event_list::note_off(const cm::u8 channel,
+							 const cm::u8 note,
+							 const mx::u64 ts) -> void {
+
+	self::_add(::MIDI1UPNoteOff(0U, channel, note, 0U), ts);
 }
 
 //UInt32 msg = MIDICLOCKTICK;
@@ -83,33 +110,43 @@ enum : cm::m32 {
 
 
 /* tick */
-auto cm::event_list::tick(void) -> void {
-	self::_add(CLOCK);
-}
+//auto cm::event_list::tick(void) -> void {
+//	self::_add(CLOCK);
+//}
+//
+///* start */
+//auto cm::event_list::start(void) -> void {
+//	self::_add(START);
+//}
+//
+///* stop */
+//auto cm::event_list::stop(void) -> void {
+//	self::_add(STOP);
+//}
 
-/* start */
-auto cm::event_list::start(void) -> void {
-	self::_add(START);
-}
+/* clear */
+auto cm::event_list::clear(void) -> void {
 
-/* stop */
-auto cm::event_list::stop(void) -> void {
-	self::_add(STOP);
+	// initialize the event packet
+	_packet = ::MIDIEventListInit(_list, kMIDIProtocol_1_0);
+
+	if (_packet == nullptr)
+		throw cm::exception{0, "failed to clear event list"};
 }
 
 
 // -- private methods ---------------------------------------------------------
-#include <CoreAudio/HostTime.h>   // ou AudioToolbox.h si tu préfères
 
 /* add */
-auto cm::event_list::_add(const cm::m32& msg) -> void {
+auto cm::event_list::_add(const cm::m32 msg, mx::u64 ts) -> void {
 
 	// check packet validity
 	if (_packet == nullptr)
 		return;
 
 	// get timestamp
-	const ::MIDITimeStamp ts = AudioGetCurrentHostTime();
+	//if (ts == 0U)
+	//	ts = AudioGetCurrentHostTime();
 
 	addmsg:
 
@@ -160,14 +197,5 @@ auto cm::event_list::_resize(void) -> bool {
 	return true;
 }
 
-/* clear */
-auto cm::event_list::_clear(void) -> void {
-
-	// initialize the event packet
-	_packet = ::MIDIEventListInit(_list, kMIDIProtocol_1_0);
-
-	if (_packet == nullptr)
-		throw cm::exception{0, "failed to clear event list"};
-}
 
 #endif // midx_macos

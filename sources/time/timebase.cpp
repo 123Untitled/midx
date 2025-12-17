@@ -1,7 +1,6 @@
 #include "time/timebase.hpp"
 #include "diagnostics/system_error.hpp"
 
-#include <mach/mach_time.h>
 
 
 // -- T I M E B A S E ---------------------------------------------------------
@@ -9,29 +8,27 @@
 // -- private lifecycle -------------------------------------------------------
 
 /* default constructor */
-mx::timebase::timebase(void) {
-
-	// timebase info
-	::mach_timebase_info_data_t timebase;
+mx::timebase::timebase(void)
+/* uninitialized */ {
 
 	// get timebase info
-	if (::mach_timebase_info(&timebase) != KERN_SUCCESS)
+	if (::mach_timebase_info(&_timebase) != KERN_SUCCESS)
 		throw mx::system_error{"mach_timebase_info"}; // maybe errno not set
 
 	// nano per millisecond
 	constexpr unsigned nano_per_ms = 1'000'000;
 
 	// absolute clock to nanoseconds
-	_absolute_to_nano = static_cast<double>(timebase.numer)
-					  / static_cast<double>(timebase.denom);
+	_absolute_to_nano = static_cast<double>(_timebase.numer)
+					  / static_cast<double>(_timebase.denom);
 
 	// milliseconds to absolute clock
-	_ms_to_absolute = (static_cast<double>(timebase.denom)
-					 / static_cast<double>(timebase.numer)) * nano_per_ms;
+	_ms_to_absolute = (static_cast<double>(_timebase.denom)
+					 / static_cast<double>(_timebase.numer)) * nano_per_ms;
 
 	// nanoseconds to absolute clock
-	_nano_to_absolute = static_cast<double>(timebase.denom)
-					  / static_cast<double>(timebase.numer);
+	_nano_to_absolute = static_cast<double>(_timebase.denom)
+					  / static_cast<double>(_timebase.numer);
 }
 
 

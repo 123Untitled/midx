@@ -7,6 +7,7 @@
 #include "language/ast/eval.hpp"
 #include "language/highlight_tracker.hpp"
 
+#include "new_clock.hpp"
 
 namespace as { class tree; }
 
@@ -36,8 +37,10 @@ namespace mx {
 
 			// -- private members ---------------------------------------------
 
+			ca::audio _clock;
+
 			/* clock */
-			mx::clock _clock;
+			//mx::clock _clock;
 
 			/* evaluator */
 			as::eval _eval;
@@ -51,6 +54,8 @@ namespace mx {
 			/* ticks */
 			mx::usz _ticks;
 
+
+			auto _evaluate(mx::application&, const mx::u64) -> void;
 
 		public:
 

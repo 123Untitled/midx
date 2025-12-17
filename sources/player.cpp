@@ -16,14 +16,16 @@
 /* default constructor */
 mx::player::player(const mx::monitor& monitor)
 : mx::watcher{},
-  _clock{monitor.kqueue(), *this},
+  _clock{},
+  //_clock{monitor.kqueue(), *this},
   _eval{},
   _midi{},
   _hls{},
   _ticks{0U} {
 
 	// add user event to monitor
-	monitor.add_user(*this);
+	//monitor.add_user(*this);
+	monitor.add_read(*this);
 }
 
 
@@ -78,29 +80,23 @@ auto mx::player::is_playing(void) const noexcept -> bool {
 }
 
 
-// -- public overrides --------------------------------------------------------
-
-/* on event */
-auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> void {
-
-	if (_eval.is_evaluable() == false)
-		return;
+auto mx::player::_evaluate(mx::application& app, const mx::u64 timestamp) -> void {
 
 	// make fractional time
 	const auto time = mx::make_reduced_frac(_ticks, MIDI_PPQN);
 
 	_hls.swap_now();
 
-	_midi.off_pass();
+	_midi.off_pass(timestamp);
 
 	const auto expr = _eval.evaluate(time);
 
 
 	// fill midi events
 	expr.for_each(
-		[](const mx::midi_event& ev, mx::midi& m) static -> void {
-			m.note_on(ev);
-		}, _midi
+		[](const mx::midi_event& ev, mx::midi& m, const mx::u64 ts) static -> void {
+			m.note_on(ev, ts);
+		}, _midi, timestamp
 	);
 
 	// flush midi events
@@ -113,12 +109,33 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 		app.server().broadcast(std::move(json));
 	}
 
-
 	++_ticks;
+}
+
+// -- public overrides --------------------------------------------------------
+
+/* on event */
+auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> void {
+
+	_clock.consume();
+
+	if (_eval.is_evaluable() == false)
+		return;
+
+	auto& queue = _clock.queue();
+
+	mx::uint i = 0U;
+	for (mx::u64 ts = 0U; queue.pop(ts) == true;) {
+		self::_evaluate(app, ts);
+		++i;
+	}
+	std::cout << "Processed " << i << " tick(s)\r\n";
+
 }
 
 /* ident */
 auto mx::player::ident(void) const noexcept -> int {
 	// random ident
-	return 42;
+	//return 42;
+	return _clock.ident();
 }

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sys/event.h>
 
+
 // -- C L O C K ---------------------------------------------------------------
 
 // -- public lifecycle --------------------------------------------------------
@@ -110,7 +111,7 @@ auto mx::clock::_loop(void) noexcept -> void {
 	if (mx::realtime(_nano_clock))
 		return;
 
-	self::bpm(130U);
+	self::bpm(125U);
 	self::_init_clock();
 
 	// tick notification

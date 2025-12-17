@@ -8,6 +8,7 @@
 
 //#include "diagnostics/runtime_error.hpp"
 
+#include <CoreAudio/HostTime.h>   // ou AudioToolbox.h si tu préfères
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
@@ -84,10 +85,12 @@ namespace mx {
 			template <typename T>
 			auto off_all(T& evs) -> void {
 
+				auto ts = AudioGetCurrentHostTime();
+
 				// note off all notes
 				for (; _count > 0U; --_count) {
 					const auto i = _active[_count - 1U];
-					evs.note_off(idx_to_ch(i), idx_to_no(i));
+					evs.note_off(idx_to_ch(i), idx_to_no(i), ts);
 				}
 
 				_reset();
@@ -110,7 +113,7 @@ namespace mx {
 
 			/* note on */
 			template <typename T>
-			auto note_on(T& evs, const mx::midi_event& ev) -> void {
+			auto note_on(T& evs, const mx::midi_event& ev, const mx::u64 ts) -> void {
 
 				// get index
 				const mx::u16 i = to_index(ev.channel, ev.note);
@@ -139,11 +142,11 @@ namespace mx {
 					//		  << " No " << static_cast<mx::usz>(no)
 					//		  << " Ticks " << ticks << std::endl;
 					// note off before note on
-					evs.note_off(ev.channel, ev.note);
+					evs.note_off(ev.channel, ev.note, ts);
 				}
 
 				// note on event can be triggered here
-				evs.note_on(ev.channel, ev.note, ev.velocity);
+				evs.note_on(ev.channel, ev.note, ev.velocity, ts);
 				//std::cout << "\x1b[32mNote On:\x1b[0m Ch " << static_cast<mx::usz>(ch)
 				//		  << " No " << static_cast<mx::usz>(no)
 				//		  << " Ve " << static_cast<mx::usz>(ve)
@@ -155,7 +158,7 @@ namespace mx {
 
 			/* off pass */
 			template <typename T>
-			auto off_pass(T& evs) -> void {
+			auto off_pass(T& evs, const mx::u64 ts) -> void {
 
 				mx::u16 i = 0U;
 				while (i < _count) {
@@ -173,7 +176,7 @@ namespace mx {
 					const mx::u8 no = idx_to_no(a);
 
 					// note off event can be triggered here
-					evs.note_off(ch, no);
+					evs.note_off(ch, no, ts);
 					//std::cout << "\x1b[31mNote Off:\x1b[0m Ch " << static_cast<mx::usz>(ch)
 					//		  << " No " << static_cast<mx::usz>(no) << std::endl;
 

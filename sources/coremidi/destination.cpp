@@ -103,13 +103,13 @@ auto cm::destination::_read_midi(const ::MIDIEventList& evtlist) -> void {
 	//static_cast<void>(evtlist);
 	//if (evtlist == nullptr) { return; }
 
-	std::cout << "numPackets: " << evtlist.numPackets << std::endl;
+	std::cout << "numPackets: " << evtlist.numPackets << "\r\n";
 
 	for (std::size_t i = 0; i < evtlist.numPackets; ++i) {
 
 		const MIDIEventPacket& packet = evtlist.packet[i];
 
-		std::cout << "wordCount: " << packet.wordCount << std::endl;
+		std::cout << "wordCount: " << packet.wordCount << "\r\n";
 
 		for (std::size_t j = 0; j < packet.wordCount; ++j) {
 
@@ -119,11 +119,11 @@ auto cm::destination::_read_midi(const ::MIDIEventList& evtlist) -> void {
 			const UInt8 data1 = (word >> 8) & 0xFF;
 			const UInt8 data2 = (word >> 16) & 0xFF;
 
-			std::cout << "status: " << static_cast<int>(status) << std::endl;
+			std::cout << "status: " << static_cast<int>(status) << "\r\n";
 
-			std::cout << "data1: " << static_cast<int>(data1) << std::endl;
+			std::cout << "data1: " << static_cast<int>(data1) << "\r\n";
 
-			std::cout << "data2: " << static_cast<int>(data2) << std::endl;
+			std::cout << "data2: " << static_cast<int>(data2) << "\r\n";
 
 		}
 	}

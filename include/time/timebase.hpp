@@ -1,5 +1,7 @@
-#ifndef midilang_time_timebase_hpp
-#define midilang_time_timebase_hpp
+#ifndef timebase_hpp
+#define timebase_hpp
+
+#include <mach/mach_time.h>
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -21,6 +23,9 @@ namespace mx {
 
 
 			// -- private members ---------------------------------------------
+
+			/* timebase info */
+			::mach_timebase_info_data_t _timebase;
 
 			/* milliseconds to absolute clock */
 			double _ms_to_absolute;
@@ -75,8 +80,22 @@ namespace mx {
 			/* nano to absolute */
 			static auto nano_to_absolute(void) noexcept -> double;
 
+
+			/* host time per sample */
+			static auto host_time_per_sample(const double sample_rate) noexcept -> double {
+				const auto& tb = self::_shared();
+				return (1e9 * tb._timebase.denom / tb._timebase.numer) / sample_rate;
+			}
+
+
+			/* info */
+			static auto info(void) noexcept -> const ::mach_timebase_info_data_t& {
+				const auto& tb = self::_shared();
+				return tb._timebase;
+			}
+
 	}; // class timebase
 
 } // namespace mx
 
-#endif // midilang_time_timebase_hpp
+#endif // timebase_hpp
