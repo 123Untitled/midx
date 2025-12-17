@@ -76,7 +76,8 @@ auto mx::monitor::wait(mx::application& app) -> void {
 	// wait events
 	const auto ret = ::kevent(_kqueue, nullptr, 0,
 							  _events, BUFFER_SIZE,
-							  &timeout);
+							  nullptr);
+							  //&timeout);
 
 	// check errors
 	if (ret < 0) {
