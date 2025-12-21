@@ -2,7 +2,7 @@
 #define protocol_hpp
 
 #include "diagnostics/runtime_error.hpp"
-#include "types.hpp"
+#include "core/types.hpp"
 #include <string>
 #include <iostream>
 #include "reader.hpp"

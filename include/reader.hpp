@@ -1,7 +1,7 @@
 #ifndef midilang_reader_hpp
 #define midilang_reader_hpp
 
-#include "types.hpp"
+#include "core/types.hpp"
 #include "diagnostics/system_error.hpp"
 #include <unistd.h>
 #include <sys/socket.h>

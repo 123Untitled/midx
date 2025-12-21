@@ -1,7 +1,7 @@
 #ifndef midilang_time_bpm_hpp
 #define midilang_time_bpm_hpp
 
-#include "types.hpp"
+#include "core/types.hpp"
 #include "midi/constant.hpp"
 #include <stdint.h>
 
