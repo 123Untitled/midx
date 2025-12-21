@@ -85,9 +85,9 @@ auto mx::tty::_setup_raw(struct ::termios& term) noexcept -> void {
 // -- public static methods ---------------------------------------------------
 
 /* raw */
-auto mx::tty::blocking_raw(void) -> void {
-	_raw.c_cc[VMIN] = 1U;
-	_raw.c_cc[VTIME] = 0U;
+auto mx::tty::blocking_raw(const unsigned char timeout) -> void {
+	_raw.c_cc[VMIN] = timeout > 0U ? 0U : 1U;
+	_raw.c_cc[VTIME] = timeout; // deciseconds
 	self::_set(_raw);
 }
 
