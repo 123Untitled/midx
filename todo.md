@@ -23,6 +23,8 @@
 - [ ] Add monophonic parameter
   - Force only one note at a time
 
+- [ ] Implement parameter reference
+
 ## Operators
 
 ### Logical Superposition Operators
