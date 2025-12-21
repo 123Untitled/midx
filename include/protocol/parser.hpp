@@ -102,7 +102,7 @@ namespace pc {
 
 			/* to copy */
 			auto _to_copy(void) const noexcept -> mx::usz {
-				const mx::usz left = _end - _it;
+				const mx::usz left = static_cast<mx::usz>(_end - _it);
 				return _needed < left ? _needed : left;
 			}
 

@@ -594,7 +594,7 @@ namespace as {
 			}
 
 			/* accumulate */
-			auto accumulate(const mx::u8 v, const bool e) noexcept -> void {
+			auto accumulate(const type v, const bool e) noexcept -> void {
 				total += v;
 				++count;
 				edge = static_cast<mx::u8>(edge || e);

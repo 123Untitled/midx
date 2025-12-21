@@ -263,6 +263,12 @@ namespace mx {
 	}; // class chars_encoder
 
 
+	// -- deduction guides ----------------------------------------------------
+
+	template <typename... Ts>
+	chars_encoder(Ts&&...) -> chars_encoder<mx::remove_cvr<Ts>...>;
+
+
 	/* empty specialization
 	 * This specialization is used when no arguments are provided to the
 	 * chars_encoder. It provides a default empty implementation.

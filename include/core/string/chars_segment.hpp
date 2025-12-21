@@ -420,7 +420,7 @@ namespace mx {
 					*(--offset) = digits_table[v     ];
 				}
 				else
-					*(--offset) = value + 0x30U;
+					*(--offset) = static_cast<char>(value + 0x30U);
 			}
 
 

@@ -8,7 +8,9 @@
 
 //#include "diagnostics/runtime_error.hpp"
 
-#include <CoreAudio/HostTime.h>   // ou AudioToolbox.h si tu préfères
+//#include <CoreAudio/HostTime.h>   // ou AudioToolbox.h si tu préfères
+#include <mach/mach_time.h>
+
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
@@ -53,7 +55,7 @@ namespace mx {
 
 			/* to index */
 			static auto to_index(const mx::u8 ch, const mx::u8 no) noexcept -> mx::u16 {
-				return (static_cast<mx::usz>(ch) << 7U) | no;
+				return static_cast<mx::u16>((ch << 7U) | no);
 			}
 
 
@@ -85,7 +87,8 @@ namespace mx {
 			template <typename T>
 			auto off_all(T& evs) -> void {
 
-				auto ts = AudioGetCurrentHostTime();
+				//auto ts = AudioGetCurrentHostTime();
+				auto ts = ::mach_absolute_time();
 
 				// note off all notes
 				for (; _count > 0U; --_count) {
@@ -127,7 +130,7 @@ namespace mx {
 
 				// check if already note on
 				if (st.epoch == _epoch) {
-					st.ticks = ev.gate;
+					st.ticks = (mx::u16)ev.gate; // CAST WILL BE FIXED !
 					return;
 				}
 
@@ -153,7 +156,7 @@ namespace mx {
 				//		  << " Ticks " << ticks << std::endl;
 
 				st.epoch = _epoch;
-				st.ticks = ev.gate;
+				st.ticks = (mx::u16)ev.gate; // CAST WILL BE FIXED !
 			}
 
 			/* off pass */

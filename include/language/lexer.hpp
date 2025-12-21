@@ -48,10 +48,10 @@ namespace lx {
 			const mx::u8* _end;
 
 			/* line */
-			mx::uint _line;
+			mx::usz _line;
 
 			/* column */
-			mx::uint _column;
+			mx::usz _column;
 
 			/* tokens */
 			tk::tokens* _tokens;

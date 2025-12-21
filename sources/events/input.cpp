@@ -14,7 +14,9 @@
 
 /* monitor constructor */
 mx::input::input(const mx::monitor& monitor)
-: _tty{}, _bp{}, _mouse{}, _buffer{} {
+: _tty{}, _bp{}, _mouse{},
+	//_as{},
+	_buffer{} {
 
 	// subscribe to read events
 	monitor.add_read(*this);
@@ -44,7 +46,7 @@ auto mx::input::on_event(mx::application& app, const struct ::kevent&) -> void {
 		throw mx::system_error{"read"};
 	}
 
-	_buffer.resize((_buffer.size() - size) + bytes);
+	_buffer.resize((_buffer.size() - size) + (mx::usz)bytes);
 
 
 

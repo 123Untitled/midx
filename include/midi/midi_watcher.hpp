@@ -215,8 +215,9 @@ namespace mx {
 			}
 
 			auto _emit_spp(void) -> void {
+
 				const mx::u16 spp = static_cast<mx::u16>(_data[0U])
-								 | (static_cast<mx::u16>(_data[1U]) << 7U);
+								  | static_cast<mx::u16>(_data[1U] << 7U);
 
 				this->on_spp(spp);
 			}
@@ -271,6 +272,7 @@ namespace mx {
 			}
 
 		public:
+
 
 			virtual ~midi_watcher(void) noexcept = default;
 

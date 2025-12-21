@@ -32,17 +32,17 @@ namespace mx {
 			}
 
 			random(void) noexcept {
-				::srand(::getpid());
+				::srand(static_cast<unsigned>(::getpid()));
 			}
 
-			auto _rand(void) const noexcept -> int {
-				return ::rand();
+			auto _rand(void) const noexcept -> unsigned {
+				return static_cast<unsigned>(::rand());
 			}
 		public:
 
 			// -- public static methods ---------------------------------------
 
-			static auto gen(void) noexcept -> int {
+			static auto gen(void) noexcept -> unsigned {
 				return _shared()._rand();
 			}
 
@@ -212,11 +212,13 @@ namespace as {
 
 			static auto to_idx(const mx::u8 ch,
 							   const mx::u8 no) noexcept -> mx::u16 {
-				return (static_cast<mx::usz>(ch) << 7U) | no;
+				return static_cast<mx::u16>((ch << 7U) | no);
 			}
+
 			static auto to_ch(const mx::u16 index) noexcept -> mx::u8 {
 				return static_cast<mx::u8>(index >> 7U);
 			}
+
 			static auto to_no(const mx::u16 index) noexcept -> mx::u8 {
 				return static_cast<mx::u8>(index & 0x7FU);
 			}

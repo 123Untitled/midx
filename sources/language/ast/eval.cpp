@@ -373,7 +373,7 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 
 		const auto time = a.header.mod(f.time);
 
-		auto step = 0U;
+		mx::usz step = 0U;
 		bool edge = true;
 
 			// step = ? time.num / time.den : 0U;
@@ -392,7 +392,11 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 		}
 
 		// get value at step
-		const typename T::type value = _tree->value_at/*<T::type>*/(a.value_start + step);
+		const typename T::type value = 
+			static_cast<typename T::type>( // TODO: FIX CAST !!!
+
+					_tree->value_at/*<T::type>*/(a.value_start + step)
+			);
 
 		r.accumulate(value, edge);
 

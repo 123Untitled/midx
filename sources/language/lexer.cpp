@@ -69,7 +69,7 @@ auto lx::lexer::byte_chunk(void) noexcept -> tk::chunk {
 
 /* new chunk */
 auto lx::lexer::new_chunk(const mx::u8* mark) noexcept -> tk::chunk {
-	const mx::usz size = (_it - mark);
+	const mx::usz size = static_cast<mx::usz>(_it - mark);
 	const mx::usz col_end = _column + size;
 	tk::chunk c{
 		lx::lexeme{mark, size},

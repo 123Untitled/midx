@@ -105,16 +105,19 @@ namespace mx {
 	}; // class limits
 
 
-	constexpr auto clz(const unsigned v) noexcept -> int {
-		return __builtin_clz(v);
+	constexpr auto clz(const unsigned v) noexcept -> mx::usz {
+		// assume v != 0 and return a non-negative count
+		return static_cast<mx::usz>(__builtin_clz(v));
 	}
 
-	constexpr auto clz(const unsigned long v) noexcept -> int {
-		return __builtin_clzl(v);
+	constexpr auto clz(const unsigned long v) noexcept -> mx::usz {
+		// assume v != 0 and return a non-negative count
+		return static_cast<mx::usz>(__builtin_clzl(v));
 	}
 
-	constexpr auto clz(const unsigned long long v) noexcept -> int {
-		return __builtin_clzll(v);
+	constexpr auto clz(const unsigned long long v) noexcept -> mx::usz {
+		// assume v != 0 and return a non-negative count
+		return static_cast<mx::usz>(__builtin_clzll(v));
 	}
 
 
@@ -128,16 +131,22 @@ namespace mx {
 			return mx::value_bits<T>;
 
 		if constexpr (sizeof(T) <= sizeof(unsigned int)) {
+
 			return mx::clz(static_cast<unsigned int>(num))
 				- (mx::value_bits<unsigned int> - mx::value_bits<T>);
+
 		}
 		else if constexpr (sizeof(T) <= sizeof(unsigned long)) {
+
 			return mx::clz(static_cast<unsigned long>(num))
 				- (mx::value_bits<unsigned long> - mx::value_bits<T>);
+
 		}
 		else if constexpr (sizeof(T) <= sizeof(unsigned long long)) {
+
 			return mx::clz(static_cast<unsigned long long>(num))
 				- (mx::value_bits<unsigned long long> - mx::value_bits<T>);
+
 		}
 		else {
 			static_assert(false, "countl_zero only supports integral types up to 64 bits");
