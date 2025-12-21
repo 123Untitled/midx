@@ -2,6 +2,7 @@
 #define timebase_hpp
 
 #include <mach/mach_time.h>
+#include "core/types.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -27,14 +28,35 @@ namespace mx {
 			/* timebase info */
 			::mach_timebase_info_data_t _timebase;
 
-			/* milliseconds to absolute clock */
-			double _ms_to_absolute;
+			/* ticks to nanoseconds */
+			double _ticks_to_ns;
 
-			/* absolute clock to nanoseconds */
-			double _absolute_to_nano;
+			/* ticks to milliseconds */
+			double _ticks_to_ms;
 
-			/* nanoseconds to absolute clock */
-			double _nano_to_absolute;
+			/* ticks to microseconds */
+			double _ticks_to_us;
+
+			/* nanoseconds to ticks */
+			double _ns_to_ticks;
+
+			/* milliseconds to ticks */
+			double _ms_to_ticks;
+
+			/* microseconds to ticks */
+			double _us_to_ticks;
+
+
+			enum : mx::u64 {
+				/* nanoseconds per microsecond */
+				ns_per_us = 1'000ull,
+				/* microseconds per second */
+				us_per_s  = 1'000'000ull,
+				/* nanoseconds per second */
+				ns_per_s  = 1'000'000'000ull,
+				/* nanoseconds per millisecond */
+				ns_per_ms = 1'000'000ull
+			};
 
 
 			// -- private lifecycle -------------------------------------------
@@ -64,34 +86,46 @@ namespace mx {
 			// -- private static methods --------------------------------------
 
 			/* shared */
-			static auto _shared(void) -> self&;
+			static auto _shared(void) -> const self&;
 
 
 		public:
 
 			// -- public static methods ---------------------------------------
 
-			/* ms to absolute */
-			static auto ms_to_absolute(void) noexcept -> double;
 
-			/* absolute to nano */
-			static auto absolute_to_nano(void) noexcept -> double;
+			/* num */
+			static auto num(void) -> mx::u64;
 
-			/* nano to absolute */
-			static auto nano_to_absolute(void) noexcept -> double;
+			/* den */
+			static auto den(void) -> mx::u64;
+
+			/* ticks to ns */
+			static auto ticks_to_ns(void) -> double;
+
+			/* ticks to ms */
+			static auto ticks_to_ms(void) -> double;
+
+			/* ticks to us */
+			static auto ticks_to_us(void) -> double;
+
+			/* ns to ticks */
+			static auto ns_to_ticks(void) -> double;
+
+			/* ms to ticks */
+			static auto ms_to_ticks(void) -> double;
 
 
-			/* host time per sample */
-			static auto host_time_per_sample(const double sample_rate) noexcept -> double {
-				const auto& tb = self::_shared();
-				return (1e9 * tb._timebase.denom / tb._timebase.numer) / sample_rate;
+			/* us to ticks */
+			template <typename T = double>
+			static auto us_to_ticks(const mx::u64 us) -> T {
+				return static_cast<T>(static_cast<double>(us) * self::_shared()._us_to_ticks);
 			}
 
-
-			/* info */
-			static auto info(void) noexcept -> const ::mach_timebase_info_data_t& {
-				const auto& tb = self::_shared();
-				return tb._timebase;
+			/* ms to ticks */
+			template <typename T = double>
+			static auto ms_to_ticks(const mx::u64 ms) -> T {
+				return static_cast<T>(static_cast<double>(ms) * self::_shared()._ms_to_ticks);
 			}
 
 	}; // class timebase
