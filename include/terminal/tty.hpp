@@ -70,7 +70,7 @@ namespace mx {
 			// -- public methods ----------------------------------------------
 
 			/* raw */
-			auto blocking_raw(void) -> void;
+			auto blocking_raw(const unsigned char = 0U) -> void;
 
 			/* non-blocking */
 			auto non_blocking_raw(void) -> void;
