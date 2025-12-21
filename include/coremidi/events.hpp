@@ -143,7 +143,7 @@ namespace cm {
 			// -- private methods ---------------------------------------------
 
 			/* add */
-			auto _add(const cm::m32, mx::u64) -> void;
+			auto _add(const cm::m64, mx::u64) -> void;
 
 			/* resize */
 			auto _resize(void) -> bool;

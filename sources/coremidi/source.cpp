@@ -27,7 +27,7 @@ cm::source::source(const cm::client& client, const char* name)
 	// create a new source
 	const ::OSStatus err = ::MIDISourceCreateWithProtocol(client.id(),
 														  cstr,
-														  kMIDIProtocol_1_0,
+														  kMIDIProtocol_2_0,
 														  &_ref);
 
 	// check if there was an error

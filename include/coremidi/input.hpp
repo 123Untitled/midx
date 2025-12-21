@@ -46,7 +46,7 @@ namespace cm {
 				const ::OSStatus result = ::MIDIInputPortCreateWithProtocol(
 											client.id(),
 											cstr,
-											kMIDIProtocol_1_0,
+											kMIDIProtocol_2_0,
 											&_ref,
 											^(const MIDIEventList*, void*) {
 											});

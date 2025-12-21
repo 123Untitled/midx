@@ -20,7 +20,7 @@ cm::event_list::event_list(void)
 	_list = reinterpret_cast<::MIDIEventList*>(_buffer.data());
 
 	// initialize the event packet
-	_packet = ::MIDIEventListInit(_list, kMIDIProtocol_1_0);
+	_packet = ::MIDIEventListInit(_list, kMIDIProtocol_2_0);
 }
 
 /* copy constructor */
@@ -73,7 +73,10 @@ auto cm::event_list::note_on(const cm::u8 channel,
 							const cm::u8 velocity,
 							const mx::u64 ts) -> void {
 
-	self::_add(::MIDI1UPNoteOn(0U, channel, note, velocity), ts);
+	//self::_add(::MIDI1UPNoteOn(0U, channel, note, velocity), ts);
+	self::_add(::MIDI2NoteOn(0U, channel, note, 0U, 0U, velocity), ts);
+	//static MIDIMessage_64 MIDI2NoteOn(UInt8 group, UInt8 channel, UInt8 noteNumber, UInt8 attributeType, UInt16 attributeData, UInt16 velocity);
+	//MIDIMessageTypeForUPWord
 }
 
 /* note off */
@@ -87,7 +90,8 @@ auto cm::event_list::note_off(const cm::u8 channel,
 							 const cm::u8 note,
 							 const mx::u64 ts) -> void {
 
-	self::_add(::MIDI1UPNoteOff(0U, channel, note, 0U), ts);
+	//self::_add(::MIDI1UPNoteOff(0U, channel, note, 0U), ts);
+	self::_add(::MIDI2NoteOff(0U, channel, note, 0U, 0U, 0U), ts);
 }
 
 //UInt32 msg = MIDICLOCKTICK;
@@ -128,7 +132,7 @@ enum : cm::m32 {
 auto cm::event_list::clear(void) -> void {
 
 	// initialize the event packet
-	_packet = ::MIDIEventListInit(_list, kMIDIProtocol_1_0);
+	_packet = ::MIDIEventListInit(_list, kMIDIProtocol_2_0);
 
 	if (_packet == nullptr)
 		throw cm::exception{0, "failed to clear event list"};
@@ -138,7 +142,7 @@ auto cm::event_list::clear(void) -> void {
 // -- private methods ---------------------------------------------------------
 
 /* add */
-auto cm::event_list::_add(const cm::m32 msg, mx::u64 ts) -> void {
+auto cm::event_list::_add(const cm::m64 msg, mx::u64 ts) -> void {
 
 	// check packet validity
 	if (_packet == nullptr)
@@ -156,8 +160,9 @@ auto cm::event_list::_add(const cm::m32 msg, mx::u64 ts) -> void {
 								 _packet,
 								 //0U,
 								 ts,
-								 1U,
-								 &msg);
+								 2U,
+								 reinterpret_cast<const cm::u32*>(&msg));
+								 
 
 	// check packet validity
 	if (_packet)
