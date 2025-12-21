@@ -1,6 +1,7 @@
-#ifndef midilang_system_error_hpp
-#define midilang_system_error_hpp
+#ifndef system_error_hpp
+#define system_error_hpp
 
+#include "core/string/inplace_string.hpp"
 #include <exception>
 #include <string.h>
 #include <errno.h>
@@ -26,8 +27,8 @@ namespace mx {
 
 			// -- private members ---------------------------------------------
 
-			/* what */
-			char _what[1024U];
+			/* message */
+			mx::inplace_string<1024U> _msg;
 
 
 		public:
@@ -38,49 +39,18 @@ namespace mx {
 			system_error(void) = delete;
 
 			/* where constructor */
-			system_error(const char* where)
-			/* uninitialized */ {
+			template <unsigned N>
+			system_error(const char (&where)[N]) noexcept
+			: _msg{} {
 
-				char* ptr = _what;
-				char* end = (_what + sizeof(_what)) - 1U; // reserve space for null terminator
+				const char* what;
 
-				if (where != nullptr) {
-					const ::size_t wlen = ::strlen(where);
+				if (errno == 0)
+					what = "No error";
+				else
+					what = ::strerror(errno);
 
-					// check space
-					if ((ptr + (wlen + 2U)) < end) {
-						::memcpy(ptr, where, wlen);
-						ptr += wlen;
-						ptr[0U] = ':';
-						ptr[1U] = ' ';
-						ptr += 2U;
-					}
-					else {
-						// truncate
-						::memcpy(ptr, where, end - ptr);
-						ptr = end;
-					}
-				}
-
-				const char* msg = ::strerror(errno);
-
-				if (msg != nullptr) {
-					const ::size_t mlen = ::strlen(msg);
-
-					// check space
-					if ((ptr + mlen) < end) {
-						::memcpy(ptr, msg, mlen);
-						ptr += mlen;
-					}
-					else {
-						// truncate
-						::memcpy(ptr, msg, end - ptr);
-						ptr = end;
-					}
-				}
-
-				// null terminate
-				ptr[0U] = '\0';
+				_msg.assign(where, ": ", what != nullptr ? what : "Unknown error");
 			}
 
 			/* deleted copy constructor */
@@ -106,11 +76,11 @@ namespace mx {
 
 			/* what */
 			auto what(void) const noexcept -> const char* override {
-				return _what;
+				return _msg.data();
 			}
 
 	}; // class system_error
 
 } // namespace mx
 
-#endif // midilang_system_error_hpp
+#endif // system_error_hpp
