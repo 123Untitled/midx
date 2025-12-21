@@ -77,8 +77,8 @@ namespace mx {
 	template <>
 	struct overflow<pa::velo> {
 		non_instantiable_class(overflow);
-		constexpr static mx::i8 max = 127;
-		constexpr static mx::i8 min = 0;
+		constexpr static mx::u16 max = 127; //0xffff;
+		constexpr static mx::u16 min = 0U;
 		constexpr static bool   neg = false;
 	}; // struct overflow
 
@@ -166,7 +166,7 @@ namespace mx {
 			}
 
 			num *= BASE::base;
-			const mx::i8 digit = BASE::to_digit(*it);
+			const mx::u8 digit = BASE::to_digit(*it);
 
 			// check subtraction overflow
 			if constexpr (NEG == true) {
