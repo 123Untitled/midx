@@ -79,6 +79,7 @@ auto mx::player::is_playing(void) const noexcept -> bool {
 	return _clock.is_running();
 }
 
+#include "time/host_time.hpp"
 
 auto mx::player::_evaluate(mx::application& app, const mx::u64 timestamp) -> void {
 
@@ -90,6 +91,23 @@ auto mx::player::_evaluate(mx::application& app, const mx::u64 timestamp) -> voi
 	_midi.off_pass(timestamp);
 
 	const auto expr = _eval.evaluate(time);
+
+
+	const mx::host_time cpu_now = mx::host_time::now();
+	const mx::host_time audio_ts{timestamp};
+
+	if (cpu_now < audio_ts) {
+		//std::cout << "\x1b[32mAudio timestamp is in the future!\x1b[0m diff (ms): "
+		//		  << (audio_ts - cpu_now).to_ms() << "\r\n";
+	}
+	else if (cpu_now > audio_ts) {
+		std::cout << "\x1b[33mAudio timestamp is in the past!\x1b[0m diff (ms): "
+				  << (cpu_now - audio_ts).to_ms()
+				  << "\r\n";
+	}
+	else {
+		std::cout << "\x1b[34mAudio timestamp is NOW!\x1b[0m\r\n";
+	}
 
 
 	// fill midi events
@@ -117,7 +135,7 @@ auto mx::player::_evaluate(mx::application& app, const mx::u64 timestamp) -> voi
 /* on event */
 auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> void {
 
-	_clock.consume();
+	const auto count = _clock.consume();
 
 	if (_eval.is_evaluable() == false)
 		return;
@@ -127,10 +145,14 @@ auto mx::player::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 	mx::uint i = 0U;
 	for (mx::u64 ts = 0U; queue.pop(ts) == true;) {
 		self::_evaluate(app, ts);
+		//std::cout << "ts: " << ts << "\r\n";
 		++i;
 	}
-	std::cout << "Processed " << i << " tick(s)\r\n";
 
+	if (i != count) {
+		; // processed more events than expected (not an error)
+	}
+	//std::cout << "Processed " << i << " tick(s)\r\n";
 }
 
 /* ident */
