@@ -33,9 +33,10 @@ auto mx::application::reparse(mx::string&& data) -> void {
 	if (analyzer.has_errors() == true)
 		return;
 
+
 	// switch tree
 	_player.switch_tree(analyzer.tree(), analyzer.tokens());
-	_active = (_active == 0U) ? 1U : 0U;
+	_active = 1U - _active;
 }
 
 /* exit */
@@ -72,10 +73,6 @@ auto mx::application::toggle(void) -> void {
 /* run */
 auto mx::application::_run(void) -> void {
 
-	const cm::os_status status = MIDIRestart();
-	if (status != noErr) {
-		throw cm::exception{status, "MIDIRestart"};
-	}
 	while (_running == true) {
 		_monitor.wait(*this);
 	}
