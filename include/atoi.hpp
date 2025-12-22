@@ -381,7 +381,7 @@ namespace mx {
 		}
 
 		if (it == end || *it != '.')
-			return mx::frac{num, 1U};
+			return mx::frac{num};
 
 
 		// check fractional part
