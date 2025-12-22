@@ -9,7 +9,12 @@ A domain-specific language for live MIDI sequencing and music composition.
 
 - macOS (CoreMIDI framework required)
 - clang++ with C++23 support
-- MIDI interface (virtual or physical)
+
+## 🔌 Platform Support
+
+- **macOS**: Full support with CoreMIDI
+- **Linux**: Partial support (ALSA integration in progress)
+
 
 ## 📖 Language Syntax
 
@@ -45,7 +50,6 @@ MIDI parameters define the properties of a track:
 
 ### Exemple
 ```
-
 m
 	:tr \2 ((%8 (^4 1 0 0 (%3 ^2 1 0) 1 0 0)) | ^4 1 0 0 1 0)
 	:nt \4 60 63 56 53 | (\1.5 67 70 72) %4 68 67
@@ -64,12 +68,6 @@ b
 ;
 
 &m | &b
-
 ```
 
 
-
-## 🔌 Platform Support
-
-- **macOS**: Full support with CoreMIDI
-- **Linux**: Partial support (ALSA integration in progress)
