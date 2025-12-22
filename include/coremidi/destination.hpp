@@ -7,7 +7,6 @@
 
 #include "coremidi/object.hpp"
 #include "coremidi/client.hpp"
-#include "coremidi/unique_id.hpp"
 
 #include "midi/midi_watcher.hpp"
 
@@ -51,31 +50,31 @@ namespace cm {
 			destination(const ::MIDIEndpointRef&);
 
 			/* name constructor */
-			destination(const cm::client&, const char*);
+			destination(const cm::client&, const char*, mx::midi_watcher&);
 
 
 
-			destination(const cm::client& client, const char* name, mx::midi_watcher& w)
-			: _external{false} {
-
-				// create cfstring
-				cm::string cstr{name};
-
-				// create a new destination
-				const ::OSStatus err = ::MIDIDestinationCreate(client.id(),
-															   cstr,
-															   &self::_read_proc,
-															   reinterpret_cast<void*>(&w),
-															   &_ref);
-
-				// check if there was an error
-				if (err != noErr)
-					throw cm::exception{err, "MIDIDestinationCreateWithProtocol"};
-
-				// set unique id
-				const auto uid = cm::unique_id::generate();
-				this->unique_id(uid);
-			}
+			//destination(const cm::client& client, const char* name, mx::midi_watcher& w)
+			//: _external{false} {
+			//
+			//	// create cfstring
+			//	cm::string cstr{name};
+			//
+			//	// create a new destination
+			//	const ::OSStatus err = ::MIDIDestinationCreate(client.id(),
+			//												   cstr,
+			//												   &self::_read_proc,
+			//												   reinterpret_cast<void*>(&w),
+			//												   &_ref);
+			//
+			//	// check if there was an error
+			//	if (err != noErr)
+			//		throw cm::exception{err, "MIDIDestinationCreateWithProtocol"};
+			//
+			//	// set unique id
+			//	const auto uid = cm::unique_id::generate();
+			//	this->unique_id(uid);
+			//}
 
 			/* deleted copy constructor */
 			destination(const self&) = delete;
@@ -107,27 +106,27 @@ namespace cm {
 			// -- private static methods --------------------------------------
 
 			/* read midi */
-			static auto _read_midi(const ::MIDIEventList&) -> void;
+			//static auto _read_proc(const ::MIDIEventList&) -> void;
 
 
-			static auto _read_proc(const ::MIDIPacketList* pl, void* refcon, void*) -> void {
-
-				auto* obj = reinterpret_cast<mx::midi_watcher*>(refcon);
-
-				// get first packet
-				const ::MIDIPacket* packet = pl->packet;
-
-				// loop over packets
-				for (cm::u32 p = 0U; p < pl->numPackets; ++p) {
-
-					// loop over bytes in packet
-					for (cm::u16 b = 0U; b < packet->length; ++b)
-						obj->feed(packet->data[b]);
-
-					// move to the next packet
-					packet = ::MIDIPacketNext(packet);
-				}
-			}
+			//static auto _read_proc(const ::MIDIPacketList* pl, void* refcon, void*) -> void {
+			//
+			//	auto* obj = reinterpret_cast<mx::midi_watcher*>(refcon);
+			//
+			//	// get first packet
+			//	const ::MIDIPacket* packet = pl->packet;
+			//
+			//	// loop over packets
+			//	for (cm::u32 p = 0U; p < pl->numPackets; ++p) {
+			//
+			//		// loop over bytes in packet
+			//		for (cm::u16 b = 0U; b < packet->length; ++b)
+			//			obj->feed(packet->data[b]);
+			//
+			//		// move to the next packet
+			//		packet = ::MIDIPacketNext(packet);
+			//	}
+			//}
 
 	}; // class destination
 
