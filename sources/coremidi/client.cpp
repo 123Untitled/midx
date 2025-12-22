@@ -4,7 +4,6 @@
 #if defined(midx_macos)
 
 #include <unistd.h>
-#include "coremidi/unique_id.hpp"
 
 
 // -- public lifecycle --------------------------------------------------------
@@ -21,10 +20,6 @@ cm::client::client(const char* name) {
 	// check if there was an error
 	if (status != noErr)
 		throw cm::exception{status, "MIDIClientCreate"};
-
-	// set unique id
-	//const auto uid = cm::unique_id::generate();
-	//this->unique_id(uid);
 }
 
 /* move constructor */
@@ -81,7 +76,7 @@ auto cm::client::_dispose(void) noexcept -> void {
 // -- private static methods --------------------------------------------------
 
 /* notification */
-auto cm::client::_notification(const ::MIDINotification *message, void* data) noexcept -> void {
+auto cm::client::_notification(const ::MIDINotification* message, void* data) noexcept -> void {
 
 	// get client reference
 	self& client = *static_cast<self*>(data);
@@ -90,41 +85,41 @@ auto cm::client::_notification(const ::MIDINotification *message, void* data) no
 
 		// Some aspect of the current MIDI setup changed.
 		case kMIDIMsgSetupChanged:
-			::write(STDIN_FILENO, "setup changed", 13);
+			::write(STDOUT_FILENO, "setup changed", 13);
 			break;
 
 		// The system added a device, entity, or endpoint.
 		case kMIDIMsgObjectAdded:
-			::write(STDIN_FILENO, "object added", 12);
+			::write(STDOUT_FILENO, "object added", 12);
 			break;
 
 		// The system removed a device, entity, or endpoint.
 		case kMIDIMsgObjectRemoved:
-			::write(STDIN_FILENO, "object removed", 14);
+			::write(STDOUT_FILENO, "object removed", 14);
 			break;
 
 		// An object’s property value changed.
 		case kMIDIMsgPropertyChanged:
-			::write(STDIN_FILENO, "property changed", 16);
+			::write(STDOUT_FILENO, "property changed", 16);
 			break;
 
 		// The system created or disposed of a persistent MIDI Thru connection.
 		case kMIDIMsgThruConnectionsChanged:
-			::write(STDIN_FILENO, "thru connection changed", 23);
+			::write(STDOUT_FILENO, "thru connection changed", 23);
 			break;
 
 		// The system changed a serial port owner.
 		case kMIDIMsgSerialPortOwnerChanged:
-			::write(STDIN_FILENO, "serial port owner changed", 25);
+			::write(STDOUT_FILENO, "serial port owner changed", 25);
 			break;
 
 		// An I/O error occurred.
 		case kMIDIMsgIOError:
-			::write(STDIN_FILENO, "io error", 8);
+			::write(STDOUT_FILENO, "io error", 8);
 			break;
 
 		default:
-			::write(STDIN_FILENO, "unknown notification", 20);
+			::write(STDOUT_FILENO, "unknown notification", 20);
 	}
 }
 
