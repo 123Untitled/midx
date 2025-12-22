@@ -92,13 +92,6 @@ auto tk::iterator::token(void) const noexcept -> tk::token& {
 	return _tokens->_tokens[_tokens->_filtered[_index]];
 }
 
-/* token at */
-auto tk::iterator::token_at(const mx::isz i) const noexcept -> tk::token& {
-	return _tokens->_tokens[_tokens->_filtered[
-		_index + i
-	]];
-}
-
 /* view */
 auto tk::iterator::view(void) const noexcept -> tk::token_view {
 	return **this;
@@ -191,13 +184,6 @@ auto tk::const_iterator::end(void) const noexcept -> self {
 /* token */
 auto tk::const_iterator::token(void) const noexcept -> const tk::token& {
 	return _tokens->_tokens[_tokens->_filtered[_index]];
-}
-
-/* token at */
-auto tk::const_iterator::token_at(const mx::isz i) const noexcept -> const tk::token& {
-	return _tokens->_tokens[_tokens->_filtered[
-		_index + i
-	]];
 }
 
 /* view */

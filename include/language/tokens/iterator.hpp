@@ -78,12 +78,6 @@ namespace tk {
 			/* post-decrement operator */
 			auto operator--(int) noexcept -> self;
 
-			auto operator-(const mx::isz offset) const noexcept -> self {
-				self it = *this;
-				it._index -= offset;
-				return it;
-			}
-
 
 			/* equality operator */
 			auto operator==(const self&) const noexcept -> bool;
@@ -199,9 +193,6 @@ namespace tk {
 
 			/* token */
 			auto token(void) const noexcept -> const tk::token&;
-
-			/* token at */
-			auto token_at(const mx::isz) const noexcept -> const tk::token&;
 
 			/* view */
 			auto view(void) const noexcept -> tk::const_token_view;
