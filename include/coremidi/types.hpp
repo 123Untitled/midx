@@ -12,6 +12,8 @@ namespace cm {
 
 	using object_ref = ::MIDIObjectRef;
 
+	using object_type = ::MIDIObjectType;
+
 	using os_status = ::OSStatus;
 
 
