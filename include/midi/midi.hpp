@@ -18,6 +18,7 @@
 
 
 
+
 // -- M X  N A M E S P A C E --------------------------------------------------
 
 namespace mx {
@@ -121,6 +122,14 @@ namespace mx {
 				if (_cur_dst)
 					_evl.send(_out, *_cur_dst);
 				_evl.clear();
+			}
+
+			/* cancel */
+			auto cancel(void) -> void {
+				const cm::os_status err = ::MIDIFlushOutput(_cur_src->id());
+				if (err != noErr) {
+					throw cm::exception{err, "MIDIFlushOutput"};
+				}
 			}
 
 			/* flush */
