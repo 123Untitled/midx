@@ -9,10 +9,7 @@
 
 /* default constructor */
 as::eval::eval(void) noexcept
-: _tree{nullptr},
-  _hashes{},
-  _hls{nullptr},
-  _absolute{0, 1},
+: _tree{nullptr}, _hls{nullptr},
   _last{nullptr} {
 }
 
@@ -27,16 +24,13 @@ auto as::eval::init(const as::tree& tree, mx::highlight_tracker& hls) noexcept -
 	_hls  = &hls;
 
 	_cross.clear();
-	_hashes.clear();
+	//_hashes.clear();
 }
 
 
 /* evaluate
    evaluate the AST and produce MIDI events */
 auto as::eval::evaluate(const mx::frac& time) -> as::expr_result {
-
-	//_engine = &engine;
-	_absolute = time;
 
 	as::expr_result r;
 
@@ -544,9 +538,9 @@ auto as::eval::references(const as::frame& f, T& r) -> void {
 
 	const auto& ref = _tree->node<as::references>(f.node);
 
-		  auto it  = ref.ref_start;
 		  auto tk  = ref.tok_start;
-	const auto end = ref.ref_start + ref.count;
+		  auto it  = ref.ref_start;
+	const auto end = it + (ref.count * sizeof(mx::usz));
 
 	auto time = ref.header.mod(f.time);
 
@@ -557,7 +551,7 @@ auto as::eval::references(const as::frame& f, T& r) -> void {
 		auto last = ref.header.mod(f.last);
 
 		// loop over referenced nodes
-		for (; it < end; ++it, ++tk) {
+		for (; it < end; it += sizeof(mx::usz), ++tk) {
 			const auto node = _tree->ref_at(it);
 			const auto& dur = _tree->header(node).dur;
 
@@ -577,14 +571,16 @@ auto as::eval::references(const as::frame& f, T& r) -> void {
 			time -= dur;
 
 			if (last < dur) {
-				++it; ++tk; goto diverged;
+				//++it;
+				it += sizeof(mx::usz);
+				++tk; goto diverged;
 			}
 			last -= dur;
 		}
 	}
 
 	diverged:
-	for (; it < end; ++it, ++tk) {
+	for (; it < end; it += sizeof(mx::usz), ++tk) {
 		const auto node = _tree->ref_at(it);
 		const auto& dur = _tree->header(node).dur;
 

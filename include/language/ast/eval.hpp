@@ -1,14 +1,14 @@
 #ifndef language_ast_eval_hpp
 #define language_ast_eval_hpp
 
-#include "language/ast/hash_run.hpp"
 #include "math.hpp"
-#include "language/ast/param_accum.hpp"
-
-#include "midi/constant.hpp"
 #include "midi/midi_event.hpp"
-#include <unistd.h>
+#include "language/ast/param_accum.hpp"
 #include "core/utility/type_operations.hpp"
+
+#include <unistd.h>
+#include <unordered_map>
+
 
 // -- forward declarations ----------------------------------------------------
 
@@ -167,33 +167,6 @@ namespace as {
 
 		as::octa_accum  octa;
 		as::semi_accum  semi;
-
-
-		//auto flush(mx::midi_engine& engine) -> void {
-		//
-		//	if (trig.edge == false || trig.value == 0U)
-		//		return;
-		//
-		//	mx::u8 vl = velo.value();
-		//	mx::i8 oc = octa.value();
-		//	// compute final offset
-		//	oc *= 12;
-		//
-		//	note.ensure_default();
-		//	chan.ensure_default();
-		//
-		//
-		//	for (mx::u8 i = 0U; i < chan.count; ++i) {
-		//		const mx::u8 ch = chan.active[i];
-		//
-		//		for (mx::u8 j = 0U; j < note.count; ++j) {
-		//			mx::u8 nt = note.active[j];
-		//			nt += oc;
-		//
-		//			engine.note_on(ch, nt, vl, 40U);
-		//		}
-		//	}
-		//}
 	};
 
 
@@ -314,25 +287,6 @@ namespace as {
 				}
 			}
 
-			//auto flush(mx::midi_engine& engine) const -> void {
-			//
-			//	for (mx::u16 i = 0U; i < _count; ++i) {
-			//		const mx::u16 idx = _active[i];
-			//		auto& ev = _events[idx];
-			//
-			//		const mx::midi_event me {
-			//			// channel and note
-			//			.channel  = to_ch(idx),
-			//			.note     = to_no(idx),
-			//			// compute average gate and velocity
-			//			.velocity = static_cast<mx::u8 >(ev.velocity / ev.count),
-			//			.gate     = static_cast<mx::u32>(ev.gate     / ev.count)
-			//		};
-			//
-			//		engine.note_on(me);
-			//	}
-			//}
-
 
 			template <typename F, typename... Ts>
 			auto for_each(F&& fn, Ts&&... args) const -> void {
@@ -377,14 +331,8 @@ namespace as {
 			/* tree reference */
 			const as::tree* _tree;
 
-			/* hashes */
-			as::hash_run _hashes;
-
 			/* highlights */
 			mx::highlight_tracker* _hls;
-
-			/* absolute time */
-			mx::frac _absolute;
 
 			/* last time */
 			mx::frac _last;
@@ -422,16 +370,6 @@ namespace as {
 			};
 
 			std::unordered_map<mx::usz, cross_state> _cross;
-
-
-			auto has_edge(const mx::frac& time,
-						  const mx::usz   hash) -> bool {
-				bool edge = true;
-				if (const auto it = _hashes.find(hash); it != _hashes.end())
-					edge = time < it->second;
-				_hashes[hash] = time;
-				return edge;
-			}
 
 
 		public:
