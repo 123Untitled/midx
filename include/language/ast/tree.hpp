@@ -698,7 +698,7 @@ namespace as {
 			}
 
 
-	}; // class arena
+	}; // class tree
 
 
 	inline as::tree* tree_locator = nullptr;
