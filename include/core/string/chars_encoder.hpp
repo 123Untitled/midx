@@ -100,7 +100,7 @@ namespace mx {
 
 			/* type at */
 			template <unsigned I>
-			using type_at = ms::type_at<I, Tp...>;
+			using type_at = mx::type_at<I, Tp...>;
 
 			/* segment type */
 			template <typename T>
