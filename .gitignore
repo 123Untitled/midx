@@ -27,3 +27,6 @@
 
 # ignore cast files
 /**/*.cast
+
+# ignore ignored directory
+/ignored
