@@ -116,7 +116,18 @@ namespace as {
 			: node{0U},
 			  hash{0U},
 			  time{time},
-			  last{time - mx::frac{1U, MIDI_PPQN}} {
+			  last{
+				  nullptr
+				  //time - mx::frac{1U, MIDI_PPQN}
+			  } {
+			}
+
+			frame(const mx::frac& time,
+				  const mx::frac& last) noexcept
+			: node{0U},
+			  hash{0U},
+			  time{time},
+			  last{last} {
 			}
 
 			frame(const mx::usz   node,
@@ -430,6 +441,9 @@ namespace as {
 			/* default constructor */
 			eval(void) noexcept;
 
+			auto reset_time(void) noexcept -> void {
+				_last = mx::frac{nullptr};
+			}
 
 
 			// -- public methods ----------------------------------------------

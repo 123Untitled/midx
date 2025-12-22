@@ -557,7 +557,7 @@ namespace as {
 			using self = as::gate_accum;
 
 			/* value type */
-			using type = mx::usz;
+			using type = mx::u8;
 
 
 			// -- public constants --------------------------------------------
@@ -578,7 +578,7 @@ namespace as {
 			static constexpr type min = 0U;
 
 			/* max */
-			static constexpr type max = 65535U;
+			static constexpr type max = 127U;
 
 
 			mx::usz total;

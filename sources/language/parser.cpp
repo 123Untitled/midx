@@ -22,9 +22,7 @@ pr::parser::parser(void)
  _end{},
  _depth{0U},
  _back{false},
- _last_param{pa::invalid},
- _tempo{}
-{
+ _last_param{pa::invalid} {
 }
 
 
@@ -42,7 +40,6 @@ auto pr::parser::parse(tk::tokens&   tokens,
 	as::tree_locator = &tree;
 
 	_tree->clear();
-	_tree->tokens = &tokens;
 	_idents.clear();
 
 	// initialize iterators
@@ -51,20 +48,11 @@ auto pr::parser::parse(tk::tokens&   tokens,
 	_end = fi.end();
 
 	_depth = 0U;
-	//_factor = 1.0;
-	_tempo.reset();
 	_back = false;
 
-	// parse scope
-	//if (_it == _end) {
-	//	std::cout << "No tokens to parse\n";
-	//	error("No tokens to parse");
-	//	return;
-	//}
+	self::_parse();
 
-	auto root = self::_parse();
-
-	as::printer::run(*_tree, root, tokens);
+	as::printer::run(*_tree, tokens);
 }
 
 auto dbg_token(const char* msg, const tk::token& t) -> void {
@@ -105,7 +93,7 @@ struct depth_guard {
 
 
 /* parse (private) */
-auto pr::parser::_parse(void) -> mx::usz {
+auto pr::parser::_parse(void) -> void {
 
 	auto p = as::make_node<as::program>().index;
 	_tree->mark();
@@ -159,8 +147,6 @@ auto pr::parser::_parse(void) -> mx::usz {
 		dur = dur < h.dur ? h.dur : dur;
 	}
 	program.header.dur = dur;
-
-	return p;
 }
 
 
@@ -311,7 +297,7 @@ auto pr::parser::parse_atomics(mx::usz left) -> mx::usz {
 
 	// make new group
 	const auto range = _tree->make_range(left, values);
-	const auto dur = mx::frac{count, 1U} + lh.dur;
+	const auto dur = mx::frac{count} + lh.dur;
 
 	return _tree->make_group(range, dur);
 }
@@ -350,7 +336,7 @@ auto pr::parser::parse_references(const mx::usz left) -> mx::usz {
 
 			// get header to accumulate duration
 			const auto& h = _tree->header(found.index);
-			dur   += h.dur; // HERE CHECK OVERFLOW ??
+			dur += h.dur; // HERE CHECK OVERFLOW ??
 			continue;
 		}
 
@@ -631,14 +617,11 @@ auto pr::parser::parse_parameter(mx::usz left) -> mx::usz {
 template <pr::level L>
 auto pr::parser::parse_tempo(mx::usz left) -> mx::usz {
 
-	// save tempo
-	auto old = _tempo;
-
 	const auto frac_start = _tree->frac_start();
 	const auto tok_start  = _it.index();
 	mx::usz count = 0U;
-	mx::frac dur;
 
+	mx::frac f;
 
 	do { // accumulate consecutive tempo changes
 
@@ -647,13 +630,13 @@ auto pr::parser::parse_tempo(mx::usz left) -> mx::usz {
 
 			case tk::tempo_fast: {
 				const auto& ck = tv.last_chunk();
-				_tempo = mx::to_fraction(ck, *_diag).fix();
+				f = mx::to_fraction(ck, *_diag).fix();
 				break;
 			}
 
 			case tk::tempo_slow: {
 				const auto& ck = tv.last_chunk();
-				_tempo = mx::to_fraction(ck, *_diag).fix().invert();
+				f = mx::to_fraction(ck, *_diag).fix().invert();
 				break;
 			}
 
@@ -662,14 +645,13 @@ auto pr::parser::parse_tempo(mx::usz left) -> mx::usz {
 				continue;
 		}
 
-		_tempo.reduce();
-		_tree->push_frac(_tempo);
+		f.reduce();
+		_tree->push_frac(f);
 		++count;
 
 	} while (++_it != _end && (_it.token() == tk::tempo_fast
 						    || _it.token() == tk::tempo_slow));
 
-	std::cout << "\x1b[31mTEMPO\x1b[0m: " << _tempo << "\r\n";
 
 	mx::usz right;
 	if (_it != _end && _it.token() == tk::modulo) {
@@ -679,12 +661,10 @@ auto pr::parser::parse_tempo(mx::usz left) -> mx::usz {
 		right = parse_expr<L>(pr::precedence<L>::tempo);
 	}
 
-	// recurse right expression
-	//const auto right = parse_expr<L>(pr::precedence<L>::tempo - 1U);
+	// REVERSE ORDER, PARSE RIGHT FIRST
+	// AND PUSH FRAC AFTER
+	// TO OPTIMIZE
 
-
-	// restore old tempo
-	_tempo = old;
 
 	if (!right || count == 0U) {
 		// remove pushed fracs
@@ -695,10 +675,11 @@ auto pr::parser::parse_tempo(mx::usz left) -> mx::usz {
 	// get right header
 	const auto& rh = _tree->header(right);
 
+	mx::frac dur;
 	// Multiple tempos play sequentially: ^2 ^4 plays child at tempo x2, then at tempo x4
 	// Total duration = sum of (child_dur / each_tempo)
 	for (mx::usz i = 0U; i < count; ++i) {
-		const auto& tempo_frac = _tree->frac_at(frac_start + i);
+		const auto& tempo_frac = _tree->frac_at(frac_start + (i * sizeof(mx::frac)));
 		dur += rh.dur / tempo_frac;
 	}
 	dur.reduce();

@@ -13,7 +13,7 @@ as::eval::eval(void) noexcept
   _hashes{},
   _hls{nullptr},
   _absolute{0, 1},
-  _last{0, 1} {
+  _last{nullptr} {
 }
 
 
@@ -56,7 +56,7 @@ auto as::eval::program(const mx::frac& time, T& r) -> void {
 
 		  auto it   = p.range.start;
 	const auto end  = p.range.end();
-		  auto fr   = as::frame{time};
+		  auto fr   = as::frame{time, _last};
 
 	// loop over child nodes
 	for (; it < end; ++it) {
@@ -64,6 +64,8 @@ auto as::eval::program(const mx::frac& time, T& r) -> void {
 		fr.hash = as::hash{}.re_hash(fr.node);
 		as::eval::dispatch(fr, r);
 	}
+
+	_last = time;
 }
 
 
@@ -136,15 +138,17 @@ auto as::eval::group(const as::frame& f, T& r) -> void {
 template <typename T>
 auto as::eval::tempo(const as::frame& f, T& r) -> void {
 
-	const auto& t = _tree->node<as::tempo>(f.node);
+	const auto& arena = _tree->arena();
+	const auto& t = arena.at<as::tempo>(f.node);
+	//const auto& t = _tree->node<as::tempo>(f.node);
 
 	auto time = t.header.mod(f.time);
 
 	const auto& dur = _tree->header(t.child).dur;
 
-		  auto  it = t.frac_start;
 		  auto  tk = t.token_start;
-	const auto end = t.frac_start + t.count;
+		  auto  it = t.frac_start;
+	const auto end = it + (t.count * sizeof(mx::frac));
 
 
 	if (f.last.den == 0U)
@@ -153,7 +157,7 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 	{
 		auto last = t.header.mod(f.last);
 
-		for (; it < end; ++it, ++tk) {
+		for (; it < end; it += sizeof(mx::frac), ++tk) {
 
 			const auto&    tempo = _tree->frac_at(it);
 			const auto local_dur = dur / tempo;
@@ -177,7 +181,10 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 			time -= local_dur;
 
 			if (last < local_dur) {
-				++it; ++tk; goto diverged;
+				//++it;
+				it += sizeof(mx::frac);
+				++tk; goto diverged;
+				// CREATE TEMPLATED VERSIOIN FOR DIVERGENCE ??
 			}
 			last -= local_dur;
 		}
@@ -185,7 +192,7 @@ auto as::eval::tempo(const as::frame& f, T& r) -> void {
 
 	diverged:
 
-	for (; it < end; ++it, ++tk) {
+	for (; it < end; it += sizeof(mx::frac), ++tk) {
 
 		const auto&    tempo = _tree->frac_at(it);
 		const auto local_dur = dur / tempo;
@@ -215,7 +222,7 @@ auto as::eval::modulo(const as::frame& f, T& r) -> void {
 
 		  auto  it = m.frac_start;
 		  auto  tk = m.token_start;
-	const auto end = m.frac_start + m.count;
+	const auto end = m.frac_start + (m.count * sizeof(mx::frac));
 
 	auto time = m.header.mod(f.time);
 
@@ -226,7 +233,7 @@ auto as::eval::modulo(const as::frame& f, T& r) -> void {
 		auto last = m.header.mod(f.last);
 
 		// loop over modulus
-		for (; it < end; ++it, ++tk) {
+		for (; it < end; it += sizeof(mx::frac), ++tk) {
 
 			const auto& mod = _tree->frac_at(it);
 
@@ -247,7 +254,9 @@ auto as::eval::modulo(const as::frame& f, T& r) -> void {
 			time -= mod;
 
 			if (last < mod) {
-				++it; ++tk; goto diverged;
+				//++it;
+				it += sizeof(mx::frac);
+				++tk; goto diverged;
 			}
 
 			last -= mod;
@@ -256,7 +265,7 @@ auto as::eval::modulo(const as::frame& f, T& r) -> void {
 
 	diverged:
 
-	for (; it < end; ++it, ++tk) {
+	for (; it < end; it += sizeof(mx::frac), ++tk) {
 
 		const auto& mod = _tree->frac_at(it);
 
@@ -369,7 +378,9 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 	// only for parameter accumulators
 	if constexpr (as::is_param_accum<T>) {
 
-		const auto& a = _tree->node<as::atomics>(f.node);
+		const auto& arena = _tree->arena();
+
+		const auto& a = arena.at<as::atomics>(f.node);
 
 		const auto time = a.header.mod(f.time);
 
@@ -384,19 +395,20 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 		}
 		else {
 
+			step = time.num / time.den;
 			if (f.last.den != 0U) {
 				const auto last = a.header.mod(f.last);
-				step = time.num / time.den;
+				//step = time.num / time.den;
 				edge = step != (last.num / last.den);
 			}
 		}
 
-		// get value at step
-		const typename T::type value = 
-			static_cast<typename T::type>( // TODO: FIX CAST !!!
+		std::cout << (edge ? "\x1b[32mE\x1b[0m" : ".") << std::flush;
 
-					_tree->value_at/*<T::type>*/(a.value_start + step)
-			);
+		using type = typename T::type;
+
+		// get value at step
+		const type value = arena.at<type>(a.value_start + (step * sizeof(type)));
 
 		r.accumulate(value, edge);
 

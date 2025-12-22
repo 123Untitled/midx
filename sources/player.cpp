@@ -39,12 +39,14 @@ auto mx::player::play(void) -> void {
 
 	// reset ticks
 	_ticks = 0U;
+	_eval.reset_time();
 
 	// start clock
 	_clock.start();
 
 	// send start clock midi event
 	_midi.start();
+
 }
 
 /* stop */

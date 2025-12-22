@@ -37,6 +37,15 @@ namespace mx {
 			arena(void) noexcept = default;
 
 
+			// -- public accessors --------------------------------------------
+
+			/* size
+			   get current size of arena in bytes */
+			auto size(void) const noexcept -> mx::usz {
+				return _data.size();
+			}
+
+
 			// -- public methods ----------------------------------------------
 
 			/* reset
@@ -49,6 +58,12 @@ namespace mx {
 			   reserve space for at least size bytes */
 			auto reserve(const mx::usz size) -> void {
 				_data.reserve(size);
+			}
+
+			/* resize
+			   resize the arena to size bytes */
+			auto resize(const mx::usz size) -> void {
+				_data.resize(size);
 			}
 
 
@@ -70,6 +85,7 @@ namespace mx {
 				return offset;
 			}
 
+
 			template <typename T>
 			auto at(const mx::usz index) /* noexcept */ -> T& {
 
@@ -86,6 +102,11 @@ namespace mx {
 					throw std::runtime_error{"arena index out of bounds"};
 
 				return *reinterpret_cast<const T*>(&_data[index]);
+			}
+
+			template <typename T>
+			auto offset_for(void) const noexcept -> mx::usz {
+				return mx::align_up<T>(_data.size());
 			}
 
 	}; // class arena

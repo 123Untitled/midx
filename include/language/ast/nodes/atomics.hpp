@@ -47,7 +47,7 @@ namespace as {
 					const mx::usz tstart,
 					const mx::usz vstart,
 					const mx::usz count) noexcept
-			: header{as::type::atomics, mx::frac{count, 1U}},
+			: header{as::type::atomics, mx::frac{count}},
 			  token_start{tstart},
 			  value_start{vstart},
 			  param{param} {

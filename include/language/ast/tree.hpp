@@ -5,6 +5,8 @@
 #include "language/ast/nodes.hpp"
 #include "core/memory/align_up.hpp"
 
+#include "core/containers/arena.hpp"
+
 #include "language/tokens/tokens.hpp"
 
 
@@ -28,14 +30,11 @@ namespace as {
 
 			// -- private members ---------------------------------------------
 
-			std::vector<mx::u8>  _nodes;
+			mx::arena  _arena;
+
 			std::vector<mx::usz> _remap;
 			std::vector<mx::usz> _stack;
 			std::vector<mx::usz> _marks;
-			std::vector<mx::usz> _refs;
-			std::vector<mx::i8>  _values;
-
-			std::vector<mx::frac> _fracs;
 
 
 			// -- private methods ---------------------------------------------
@@ -55,98 +54,74 @@ namespace as {
 
 		public:
 
-			tk::tokens* tokens;
-
-
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
 			tree(void) noexcept
-			: _nodes{}, _remap{},
-			  _stack{}, _marks{},
-			  _refs{}, _values{} {
+			: _arena{}, _remap{}, _stack{}, _marks{} {
 			}
 
 			/* destructor */
 			~tree(void) noexcept = default;
 
 
+
+			// -- public accessors --------------------------------------------
+
+			/* arena
+			   access the internal arena */
+			auto arena(void) noexcept -> mx::arena& {
+				return _arena;
+			}
+
+			/* const arena
+			   access the internal arena (const) */
+			auto arena(void) const noexcept -> const mx::arena& {
+				return _arena;
+			}
+
 			/* make node
 			   create a new node in the arena
 			   and return its index */
-			//template <typename... Ts>
-			//auto make_node(Ts&&... args) -> mx::usz {
-			//	const mx::usz index = _nodes.size();
-			//	static_cast<void>(
-			//			_nodes.emplace_back(std::forward<Ts>(args)...));
-			//	return index;
-			//}
-
 			template <typename T, typename... Ts>
 			auto make_node(const Ts&... args) -> mx::usz {
-
-				const mx::usz offset = mx::align_up<T>(_nodes.size());
-				constexpr auto  size = sizeof(T);
-
-				// allocate space
-				_nodes.resize(offset + size);
-
-				// construct in place
-				::new (&_nodes[offset]) T{args...};
-
-				return offset;
+				return _arena.template push<T>(args...);
 			}
 
 			/* frac start
 			   get the start index for frac storage */
 			auto frac_start(void) const noexcept -> mx::usz {
-				return _fracs.size();
+				return _arena.offset_for<mx::frac>();
 			}
 
 			/* push frac
 			   push a frac onto the frac storage */
 			auto push_frac(const mx::frac& f) -> void {
-				_fracs.push_back(f);
+				_arena.push<mx::frac>(f);
 			}
 
 			/* frac at
 			   access frac by direct index */
 			auto frac_at(const mx::usz index) const /*noexcept*/ -> const mx::frac& {
-				if (index >= _fracs.size()) {
-					std::cout << "Frac index out of bounds: " << index
-							  << " >= " << _fracs.size() << '\n';
-					throw std::runtime_error{"Arena frac index out of bounds"};
-				}
-				return _fracs[index];
+				return _arena.at<mx::frac>(index);
 			}
 
 			/* resize fracs
 			   resize the frac storage to a given size */
 			auto resize_fracs(const mx::usz size) -> void {
-				_fracs.resize(size);
+				_arena.resize(size);
 			}
 
 			/* value start
 			   get the start index for value storage */
 			auto value_start(void) const noexcept -> mx::usz {
-				return _values.size();
+				return _arena.offset_for<mx::i8>();
 			}
 
 			/* push value
 			   push a value onto the value storage */
 			auto push_value(const mx::i8 value) -> void {
-				_values.push_back(value);
-			}
-
-			/* value
-			   access value by direct index */
-			auto value_at(const mx::usz index) const /*noexcept*/ -> mx::i8 {
-				if (index >= _values.size()) {
-					std::cout << "Value index out of bounds: " << index
-							  << " >= " << _values.size() << '\n';
-					throw std::runtime_error{"Arena value index out of bounds"};
-				}
-				return _values[index];
+				_arena.push<mx::i8>(value);
 			}
 
 
@@ -154,39 +129,44 @@ namespace as {
 			/* ref start
 			   get the start index for reference storage */
 			auto ref_start(void) const noexcept -> mx::usz {
-				return _refs.size();
+				return _arena.offset_for<mx::usz>();
+				//return _refs.size();
 			}
 
 			/* push ref
 			   push a reference onto the reference storage */
 			auto push_ref(const mx::usz ref) -> void {
-				_refs.push_back(ref);
+				_arena.push<mx::usz>(ref);
+				//_refs.push_back(ref);
 			}
 
 			/* ref at
 			   access ref by direct index */
 			auto ref_at(const mx::usz index) const /*noexcept*/ -> mx::usz {
-				if (index >= _refs.size()) {
-					std::cout << "Ref index out of bounds: " << index
-							  << " >= " << _refs.size() << '\n';
-					throw std::runtime_error{"Arena ref index out of bounds"};
-				}
-				return _refs[index];
+				//if (index >= _refs.size()) {
+				//	std::cout << "Ref index out of bounds: " << index
+				//			  << " >= " << _refs.size() << '\n';
+				//	throw std::runtime_error{"Arena ref index out of bounds"};
+				//}
+				//return _refs[index];
+				return _arena.at<mx::usz>(index);
 			}
 
 
 			/* header
 			   access header by direct index */
 			auto header(const mx::usz index) const /*noexcept*/ -> const as::header& {
-				if (index + sizeof(as::header) > _nodes.size())
-					throw std::runtime_error{"Arena header index out of bounds"};
-				return *reinterpret_cast<const as::header*>(&_nodes[index]);
+				//if (index + sizeof(as::header) > _nodes.size())
+				//	throw std::runtime_error{"Arena header index out of bounds"};
+				//return *reinterpret_cast<const as::header*>(&_nodes[index]);
+				return _arena.at<as::header>(index);
 			}
 
 			auto header(const mx::usz index) /*noexcept*/ -> as::header& {
-				if (index + sizeof(as::header) > _nodes.size())
-					throw std::runtime_error{"Arena header index out of bounds"};
-				return *reinterpret_cast<as::header*>(&_nodes[index]);
+				//if (index + sizeof(as::header) > _nodes.size())
+				//	throw std::runtime_error{"Arena header index out of bounds"};
+				//return *reinterpret_cast<as::header*>(&_nodes[index]);
+				return _arena.at<as::header>(index);
 			}
 
 			/* remap header
@@ -198,16 +178,23 @@ namespace as {
 			/* range of */
 			auto range_of(const mx::usz index) /*noexcept*/ -> as::remap_range& {
 
-				if (index + sizeof(as::header) > _nodes.size())
-					throw std::runtime_error{"Arena header index out of bounds"};
+				//if (index + sizeof(as::header) > _nodes.size())
+				//	throw std::runtime_error{"Arena header index out of bounds"};
+				//
+				//as::header* h = reinterpret_cast<as::header*>(&_nodes[index]);
+				//
+				//if ((h->type != as::type::group)
+				// && (h->type != as::type::parallel))
+				//	throw std::runtime_error{"Arena range_of: node is not range type"};
+				//
+				//return *reinterpret_cast<as::remap_range*>(h + 1U);
 
-				as::header* h = reinterpret_cast<as::header*>(&_nodes[index]);
-
-				if ((h->type != as::type::group)
-				 && (h->type != as::type::parallel))
+				as::header& h = header(index);
+				if ((h.type != as::type::group)
+				 && (h.type != as::type::parallel))
 					throw std::runtime_error{"Arena range_of: node is not range type"};
 
-				return *reinterpret_cast<as::remap_range*>(h + 1U);
+				return *reinterpret_cast<as::remap_range*>(&h + 1U);
 			}
 
 
@@ -233,9 +220,10 @@ namespace as {
 			/* clear
 			   reset the arena to an empty state */
 			auto clear(void) noexcept -> void {
-				_nodes.clear();  _remap.clear();
-				_stack.clear();  _marks.clear();
-				 _refs.clear(); _values.clear();
+				_arena.reset();
+				_remap.clear();
+				_stack.clear();
+				_marks.clear();
 			}
 
 
@@ -280,16 +268,20 @@ namespace as {
 			   access node by remapped index */
 			template <typename T>
 			auto remap(const mx::usz index) /*noexcept*/ -> T& {
+				//const auto idx = remap_index(index);
+				//return *reinterpret_cast<T*>(&_nodes[idx]);
 				const auto idx = remap_index(index);
-				return *reinterpret_cast<T*>(&_nodes[idx]);
+				return _arena.at<T>(idx);
 			}
 
 			/* remap
 			   access const node by remapped index */
 			template <typename T>
 			auto remap(const mx::usz index) const /*noexcept*/ -> const T& {
+				//const auto idx = remap_index(index);
+				//return *reinterpret_cast<const T*>(&_nodes[idx]);
 				const auto idx = remap_index(index);
-				return *reinterpret_cast<const T*>(&_nodes[idx]);
+				return _arena.at<T>(idx);
 			}
 
 			/* remap index
@@ -302,9 +294,11 @@ namespace as {
 					throw std::runtime_error{"Arena remapped index out of bounds"};
 				}
 
-				if (_remap[index] >= _nodes.size()) {
+				//if (_remap[index] >= _nodes.size()) {
+				if (_remap[index] >= _arena.size()) {
 					std::cout << "Remapped node index out of bounds: "
-							  << _remap[index] << " >= " << _nodes.size() << '\n';
+							  //<< _remap[index] << " >= " << _nodes.size() << '\n';
+							  << _remap[index] << " >= " << _arena.size() << '\n';
 					throw std::runtime_error{"Arena remapped node index out of bounds"};
 				}
 
@@ -316,18 +310,22 @@ namespace as {
 			   access node by direct index */
 			template <typename T>
 			auto node(const mx::usz index) /*noexcept*/-> T& {
-				if (index >= _nodes.size())
+				if (index >= _arena.size())
+				//if (index >= _nodes.size())
 					throw std::runtime_error{"Arena node index out of bounds"};
-				return *reinterpret_cast<T*>(&_nodes[index]);
+				//return *reinterpret_cast<T*>(&_nodes[index]);
+				return _arena.at<T>(index);
 			}
 
 			/* node
 			   access const node by direct index */
 			template <typename T>
 			auto node(const mx::usz index) const /*noexcept*/ -> const T& {
-				if (index >= _nodes.size())
+				//if (index >= _nodes.size())
+				if (index >= _arena.size())
 					throw std::runtime_error{"Arena node index out of bounds"};
-				return *reinterpret_cast<const T*>(&_nodes[index]);
+				//return *reinterpret_cast<const T*>(&_nodes[index]);
+				return _arena.at<T>(index);
 			}
 
 
@@ -688,12 +686,13 @@ namespace as {
 
 			auto debug(void) const -> void {
 				std::cout << "AST Tree Debug:\n";
-				std::cout << " Nodes size:  " << _nodes.size() << " bytes\r\n";
+				std::cout << " Nodes size:  " << _arena.size() << " bytes\r\n";
+				//std::cout << " Nodes size:  " << _nodes.size() << " bytes\r\n";
 				std::cout << " Remap size:  " << _remap.size() << " entries\r\n";
 				std::cout << " Stack size:  " << _stack.size() << " entries\r\n";
 				std::cout << " Marks size:  " << _marks.size() << " entries\r\n";
-				std::cout << " Refs size:   " << _refs.size()  << " entries\r\n";
-				std::cout << " Values size: " << _values.size() << " entries\r\n";
+				//std::cout << " Refs size:   " << _refs.size()  << " entries\r\n";
+				//std::cout << " Values size: " << _values.size() << " entries\r\n";
 				std::cout << "End of AST Tree Debug\r\n\n";
 			}
 
@@ -711,20 +710,26 @@ namespace as {
 	template <typename T, typename... Ts>
 	auto make_node(const Ts&... args) -> as::tree::make_result<T> {
 
-		const auto offset = mx::align_up<T>(tree_locator->_nodes.size());
+		//const auto offset = mx::align_up<T>(tree_locator->_nodes.size());
+		//
+		//// allocate space
+		//tree_locator->_nodes.resize(offset + sizeof(T));
+		//
+		//// pointer
+		//void* ptr = tree_locator->_nodes.data() + offset;
+		//
+		//// construct in place
+		//::new (ptr) T{args...};
+		//
+		//return as::tree::make_result<T>{
+		//	offset,
+		//	*reinterpret_cast<T*>(ptr)
+		//};
 
-		// allocate space
-		tree_locator->_nodes.resize(offset + sizeof(T));
-
-		// pointer
-		void* ptr = tree_locator->_nodes.data() + offset;
-
-		// construct in place
-		::new (ptr) T{args...};
-
+		const auto index = tree_locator->make_node<T>(args...);
 		return as::tree::make_result<T>{
-			offset,
-			*reinterpret_cast<T*>(ptr)
+			index,
+			tree_locator->node<T>(index)
 		};
 	}
 
@@ -764,9 +769,9 @@ namespace as {
 
 		public:
 
-			static auto run(const as::tree& tree, const mx::usz root, const tk::tokens& tokens) -> void {
-				std::cout << "\nAST Printer:\n";
-				as::printer{tree, tokens}.print_node(root, {}, true);
+			static auto run(const as::tree& tree, const tk::tokens& tokens) -> void {
+				std::cout << "\nAST Printer:\r\n";
+				as::printer{tree, tokens}.print_node(0U, {}, true);
 			}
 
 			auto node_name(const as::header& h) const -> const char* {
@@ -825,8 +830,14 @@ namespace as {
 					std::cout << " \x1b[90m[\x1b[32m";
 					const auto& n = _tree.node<as::atomics>(index);
 					const auto count = n.header.dur.num;
+					const auto& arena = _tree.arena();
+
 					for (mx::usz i = 0; i < count; ++i) {
-						const auto v = _tree.value_at(n.value_start + i);
+						/* REQUIRES: real type stored in arena 
+						   *
+						   * !!!!
+						   */
+						const auto v = arena.at<mx::u8>(n.value_start + (i /* * sizeof(mx::u8) */));
 						std::cout << static_cast<mx::i32>(v) << (i + 1 < count ? " " : "");
 					}
 					std::cout << "\x1b[90m]\x1b[0m\r\n";

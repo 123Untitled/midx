@@ -63,8 +63,6 @@ namespace pr {
 			/* identifiers */
 			sx::identifier_map _idents;
 
-			mx::frac _tempo;
-			//double _factor;
 
 		public:
 
@@ -110,7 +108,7 @@ namespace pr {
 			}
 
 
-			auto _parse(void) -> mx::usz;
+			auto _parse(void) -> void;
 			auto _parse_identifiers(void) -> bool;
 
 
