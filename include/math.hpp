@@ -12,6 +12,7 @@ namespace mx {
 }
 inline auto operator<<(std::ostream& os, const mx::frac& f) -> std::ostream&;
 
+
 // -- M X  N A M E S P A C E --------------------------------------------------
 
 namespace mx {
@@ -28,6 +29,53 @@ namespace mx {
 		return a;
 	}
 
+	/* gcd binary
+	   compute the greatest common divisor of two numbers using the binary algorithm */
+	constexpr auto gcd_binary(mx::usz a, mx::usz b) noexcept -> mx::usz {
+		if (a == 0U)
+			return b;
+		if (b == 0U)
+			return a;
+
+		mx::usz shift;
+		for (shift = 0U; ((a | b) & 1U) == 0U; ++shift) {
+			a >>= 1U;
+			b >>= 1U;
+		}
+		while ((a & 1U) == 0U)
+			a >>= 1U;
+		do {
+			while ((b & 1U) == 0U)
+				b >>= 1U;
+			if (a > b) {
+				const mx::usz t = b;
+				b = a;
+				a = t;
+			}
+			b = b - a;
+		} while (b != 0U);
+		return a << shift;
+	}
+
+
+	// slow gcd for test purposes
+	constexpr auto gcd_test(mx::usz a, mx::usz b) noexcept -> mx::usz {
+
+		while (a != b) {
+
+			if (b > a) {
+				b = b - a;
+				continue;
+			}
+			// a > b
+			const auto t = a - b;
+			a = b;
+			b = t;
+		}
+		return a;
+	}
+
+
 
 	/* lcm
 	   compute the least common multiple of two numbers */
@@ -41,8 +89,7 @@ namespace mx {
 	inline auto safe_mul(mx::usz a, mx::usz b) noexcept -> mx::usz {
 		mx::usz res;
 		while (__builtin_mul_overflow(a, b, &res))
-			a /= 2, b /= 2;
-			//a >>= 1, b >>= 1;
+			a /= 2U, b /= 2U;
 		return res;
 	}
 
@@ -84,9 +131,8 @@ namespace mx {
 			}
 
 			/* full constructor */
-			constexpr frac(value_type n, value_type d) noexcept
+			constexpr frac(const value_type n, const value_type d) noexcept
 			: num{n}, den{d} {
-
 				reduce();
 			}
 
@@ -115,9 +161,10 @@ namespace mx {
 				num /= g;
 				den /= g;
 
+				return *this;
+
 				// racine carre de mx::usz max
 				auto sq = ::pow(2U, 32U);
-
 
 				// OPTIMISATION POSSIBLE
 				while (num > sq || den > sq) {
@@ -168,11 +215,12 @@ namespace mx {
 
 			/* value
 			   return the floating point value of the fraction */
-			constexpr auto value(void) const noexcept -> double {
+			template <typename T = double>
+			constexpr auto value(void) const noexcept -> T {
 
 				// division by zero is not possible here
-				return static_cast<double>(num)
-					 / static_cast<double>(den);
+				return static_cast<T>(num)
+					 / static_cast<T>(den);
 			}
 
 
@@ -209,6 +257,11 @@ namespace mx {
 			/* divide operator with integer */
 			constexpr auto operator/(const value_type other) const -> frac {
 				return self{num, safe_mul(den, other)};
+			}
+
+			/* multiply operator with integer */
+			constexpr auto operator*(const value_type other) const noexcept -> frac {
+				return self{safe_mul(num, other), den};
 			}
 
 
