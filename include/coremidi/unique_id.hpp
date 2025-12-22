@@ -83,8 +83,18 @@ namespace cm {
 
 				static cm::i32 uid = 123;
 
-				while (_is_existing(uid))
+				while (_is_existing(uid)) {
+					::MIDIObjectRef obj;
+					::MIDIObjectType type;
+
+					const cm::os_status err = ::MIDIObjectFindByUniqueID(uid, &obj, &type);
+
+					// check error
+					if (err != noErr)
+						throw cm::exception{err, "MIDIObjectFindByUniqueID"};
+
 					++uid;
+				}
 
 				return uid;
 			}
