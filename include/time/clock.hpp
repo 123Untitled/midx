@@ -1,71 +1,23 @@
-#ifndef midilang_time_clock_hpp
-#define midilang_time_clock_hpp
-
-#include <pthread.h>
+#ifndef clock_hpp
+#define clock_hpp
 
 #include "core/types.hpp"
-#include "time/bpm.hpp"
-#include "monitoring/watcher.hpp"
+#include "system/unix_pipe.hpp"
+#include "math.hpp"
+#include "midi/constant.hpp"
+#include "time/host_time.hpp"
 
-#include <time.h>
+#include <atomic>
+
+#include "time/timebase.hpp"
+#include "time/realtime.hpp"
+
+#include "core/containers/lock_free.hpp"
 
 
-// -- M L  N A M E S P A C E --------------------------------------------------
+// -- M X  N A M E S P A C E --------------------------------------------------
 
 namespace mx {
-
-
-	// -- C L O C K A B L E ---------------------------------------------------
-
-	class clockable {
-
-
-		private:
-
-			// -- private types -----------------------------------------------
-
-			/* self type */
-			using self = mx::clockable;
-
-
-		public:
-
-			// -- public lifecycle --------------------------------------------
-
-			/* default constructor */
-			clockable(void) noexcept = default;
-
-			/* copy constructor */
-			clockable(const self&) noexcept = default;
-
-			/* move constructor */
-			clockable(self&&) noexcept = default;
-
-			/* destructor */
-			virtual ~clockable(void) noexcept = default;
-
-
-			// -- public assignment operators ---------------------------------
-
-			/* copy assignment operator */
-			auto operator=(const self&) noexcept -> self& = default;
-
-			/* move assignment operator */
-			auto operator=(self&&) noexcept -> self& = default;
-
-
-			// -- public interface --------------------------------------------
-
-			/* start */
-			virtual auto clock_start(void) -> void = 0;
-
-			/* stop */
-			virtual auto clock_stop(void) -> void = 0;
-
-			/* tick */
-			virtual auto clock_tick(const mx::u64&) -> void = 0;
-
-	}; // class clockable
 
 
 	// -- C L O C K -----------------------------------------------------------
@@ -83,45 +35,66 @@ namespace mx {
 
 			// -- private members ---------------------------------------------
 
+			/* realtime */
+			mx::realtime _realtime;
+
 			/* thread */
 			::pthread_t _thread;
 
-			/* event fd */
-			int _efd;
-
-			mx::watcher* _watcher;
-
 			/* running */
-			bool _running;
+			std::atomic<bool> _running;
+
 
 			/* bpm */
-			mx::bpm _bpm;
+			mx::frac _bpm;
 
-			/* nano clock */
-			mx::i64 _nano_clock;
+			/* host per tick */
+			mx::frac _host_per_tick;
 
-			/* nano target */
-			mx::i64 _nano_target;
-
-			/* count */
-			mx::u64 _count;
+			/* next tick */
+			mx::frac _next;
 
 
-			/* timeline */
-			double _timeline;
+			/* lock free queue */
+			mx::lock_free<mx::u64, 1024U> _queue;
 
-			/* request */
-			struct ::timespec  _request;
+			/* pipe */
+			mx::unix_pipe _pipe;
 
-			mx::i64 _start;
-			mx::i64 _last_start;
-			mx::i64 _end;
 
-			mx::i64 _elapsed;
-			mx::i64 _acc_ref;
-			mx::i64 _acc_stamp;
-			mx::i64 _acc_diff;
-			mx::i64 _loop_diff;
+
+			// -- private static methods --------------------------------------
+
+			/* entrypoint */
+			static auto _entrypoint(void* ptr) noexcept -> void*;
+
+
+
+			// -- private methods ---------------------------------------------
+
+			/* run */
+			auto _run(void) noexcept -> void;
+
+
+			static auto _compute_bpm_to_frac(const double bpm) noexcept -> mx::frac {
+				// will be implemented as interger and fractional part later...
+				constexpr mx::u64 scale = 1'000'000'000ULL;
+				return mx::frac{
+					static_cast<mx::u64>((bpm * scale) + 0.5),
+						scale
+				};
+			}
+
+
+			static auto _compute_host_per_tick(const mx::frac& bpm) -> mx::frac {
+				const auto num = mx::timebase::num();
+				const auto den = mx::timebase::den();
+				return mx::frac{
+					60'000'000'000ULL * den,
+					(bpm.num * num * MIDI_PPQN) / bpm.den
+				};
+			}
+
 
 
 		public:
@@ -129,37 +102,10 @@ namespace mx {
 			// -- public lifecycle --------------------------------------------
 
 			/* default constructor */
-			clock(const int efd, mx::watcher&) noexcept;
-
-			/* copy constructor */
-			clock(const self&) noexcept = default;
-
-			/* move constructor */
-			clock(self&&) noexcept = default;
+			clock(void);
 
 			/* destructor */
-			~clock(void) noexcept = default;
-
-
-			// -- public assignment operators ---------------------------------
-
-			/* copy assignment operator */
-			auto operator=(const self&) noexcept -> self& = default;
-
-			/* move assignment operator */
-			auto operator=(self&&) noexcept -> self& = default;
-
-
-			// -- public methods ----------------------------------------------
-
-			/* start */
-			auto start(void) -> void;
-
-			/* stop */
-			auto stop(void) noexcept -> void;
-
-			/* bpm */
-			auto bpm(const unsigned&) noexcept -> void;
+			~clock(void) noexcept;
 
 
 			// -- public accessors --------------------------------------------
@@ -167,47 +113,64 @@ namespace mx {
 			/* is running */
 			auto is_running(void) const noexcept -> bool;
 
-			/* bpm */
-			auto bpm(void) const noexcept -> const mx::bpm&;
 
-			/* count */
-			auto count(void) const noexcept -> mx::u64;
+			// -- public methods ----------------------------------------------
 
-			/* timeline */
-			auto timeline(void) const noexcept -> double;
+			/* start */
+			auto start(void) -> void {
+
+				if (is_running() == true)
+					return;
+
+				_running.store(true, std::memory_order_release);
+
+				// create thread
+				if (::pthread_create(&_thread, nullptr, _entrypoint, this) != 0) {
+					_running = false;
+					throw mx::system_error{"pthread_create"};
+				}
+			}
+
+			/* stop */
+			auto stop(void) noexcept -> void {
+
+				if (is_running() == false)
+					return;
+
+				_running.store(false, std::memory_order_release);
+
+				static_cast<void>(::pthread_join(_thread, nullptr));
+			}
 
 
-		private:
-
-			// -- private static methods --------------------------------------
-
-			/* entrypoint */
-			static auto _entrypoint(void*) noexcept -> void*;
+			/* toggle */
+			auto toggle(void) -> void {
+				is_running() == true ? stop() : start();
+			}
 
 
-			// -- private methods ---------------------------------------------
 
 
-			/* loop */
-			auto _loop(void) noexcept -> void;
+			auto ident(void) const noexcept -> int {
+				return _pipe.rd();
+			}
 
-			/* init clock */
-			auto _init_clock(void) noexcept -> void;
 
-			/* begin */
-			auto _begin(void) noexcept -> void;
+			auto queue(void) noexcept -> mx::lock_free<mx::u64, 1024U>& {
+				return _queue;
+			}
 
-			/* compute timeline */
-			auto _compute_timeline(void) noexcept -> void;
+			auto consume(void) const -> mx::usz {
+				mx::usz count = 0U;
+				const auto readed = ::read(_pipe.rd(), &count, sizeof(count));
+				if (readed < 0)
+					throw mx::system_error{"read"};
+				return count;
+			}
 
-			/* compute diff */
-			auto _compute_diff(void) noexcept -> void;
-
-			/* sleep */
-			auto _sleep(void) noexcept -> void;
 
 	}; // class clock
 
 } // namespace mx
 
-#endif // midilang_time_clock_hpp
+#endif // clock_hpp
