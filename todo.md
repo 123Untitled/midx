@@ -1,6 +1,5 @@
-# MIDX TODO
+# 🪛 TODO
 
-## Language Features
 
 ### Scale System
 - [ ] Implement `.scale` lookup table for scale transformations
@@ -12,7 +11,6 @@
 ### Note Names
 - [ ] Accept `Cb`, `Fb`, `B#`, `E#` as valid note names
 
-
 ### Parameters
 
 - [ ] Add random step parameter `:rd`
@@ -22,10 +20,9 @@
 
 - [ ] Add monophonic parameter
   - Force only one note at a time
-
+- [ ] Add group parameter (for MIDI 2.0)
 - [ ] Implement parameter reference
 
-## Operators
 
 ### Logical Superposition Operators
 - [ ] `<+>` - Positive superposition (AND logic)
@@ -33,16 +30,13 @@
 - [ ] `<^>` - Exclusive superposition (XOR logic)
 - [ ] `<=>` - Equivalence superposition (XNOR logic)
 
-## Neovim Integration
+### Neovim Integration
 
 - [ ] Bug when opening multiple vim instances with MIDX files
 - [ ] Disable `<>` in match parent (`()[]{}` only)
-- [ ] `leader+space` → play/stop toggle
 - [ ] MIDI note live selector/listener
 - [ ] Generate different colors when multiple highlights on same step
 
-
-## Bugs to Fix
 
 ### Critical
 - [ ] Fix: `Pushing range start=0 count=0`
@@ -54,19 +48,17 @@
   ```
 
 
-### Tempo
-
 ### Modulo
 - [ ] Highlight modulo operator on first step
 - [ ] Modulo `%0.3` seen as 1 virtual step
   - Detect if edge is true when step != 1
 
 
-## Improvements
+### Improvements
 
 - [ ] Implement smarter fraction reduction system
 
-## Data Structure Ideas
+
 
 ### Trigger Array
 Explore alternative data structures for triggers:
@@ -83,6 +75,6 @@ struct {
 };
 ```
 
-# Optimization
+### Optimization
 
 - [ ] fill one midi packet all evaluations (new clock implementation)
