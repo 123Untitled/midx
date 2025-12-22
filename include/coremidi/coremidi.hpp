@@ -14,6 +14,11 @@
 
 namespace cm {
 
+	//const cm::os_status status = MIDIRestart();
+	//if (status != noErr) {
+	//	throw cm::exception{status, "MIDIRestart"};
+	//}
+
 
 	/* sources */
 	auto sources(void) -> std::vector<cm::source>;
