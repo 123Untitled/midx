@@ -24,7 +24,6 @@ auto as::eval::init(const as::tree& tree, mx::highlight_tracker& hls) noexcept -
 	_hls  = &hls;
 
 	_cross.clear();
-	//_hashes.clear();
 }
 
 
