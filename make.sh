@@ -99,8 +99,6 @@ if [[ $os =~ 'Linux' ]]; then
 # macos dependencies
 elif [[ $os =~ 'Darwin' ]]; then
 	declare -rg os_dependencies=('-framework' 'CoreMIDI' \
-								 '-framework' 'AudioUnit' \
-								 '-framework' 'CoreAudio' \
 								 '-framework' 'CoreFoundation')
 	declare -rg max_jobs=$(sysctl -n hw.ncpu)
 fi
@@ -131,15 +129,16 @@ declare -rg cxxflags=($std
 					  '-Wall' '-Wextra' '-Werror' '-Wpedantic' '-Weffc++'
 					  '-ferror-limit=1'
 					  '-fno-rtti'
+					  #'-Wnoexcept'
+					  #'-fno-strict-aliasing'
 					  '-Winline'
 					  '-Wno-unused' '-Wno-unused-variable' '-Wno-unused-parameter'
 					  '-Wno-unused-function' '-Wno-unused-private-field' '-Wno-unused-local-typedef'
-					  #'-Wconversion' '-Wsign-conversion' '-Wfloat-conversion' '-Wnarrowing'
+					  '-Wconversion' '-Wsign-conversion' '-Wfloat-conversion' '-Wnarrowing' '-Wshadow'
 					  '-fdiagnostics-color=always'
 					  '-fno-diagnostics-show-note-include-stack'
 					  '-fdiagnostics-show-location=once'
 					  '-fdiagnostics-show-template-tree'
-					  '-Wshadow'
 					  '-I'$inc_dir
 				)
 
@@ -487,6 +486,9 @@ function _record() {
 		exit 0
 	fi
 
+	# useful commands for later...
+	# asciinema convert -f asciicast-v2 midx.cast midxv2.cast
+	# \cat midxv2.cast | svg-term --out midx.svg
 }
 
 
