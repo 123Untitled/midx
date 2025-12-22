@@ -3,6 +3,7 @@
 
 #include "escapes/bracketed_paste.hpp"
 #include "escapes/mouse.hpp"
+#include "escapes/alternate_screen.hpp"
 #include "core/types.hpp"
 #include "terminal/tty.hpp"
 #include "monitoring/watcher.hpp"
@@ -82,6 +83,9 @@ namespace mx {
 
 			/* mouse */
 			mx::mouse _mouse;
+
+			/* alternate screen */
+			//mx::alternate_screen _as;
 
 			/* buffer */
 			std::vector<mx::u8> _buffer;
