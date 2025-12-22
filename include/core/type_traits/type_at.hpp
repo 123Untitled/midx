@@ -1,9 +1,10 @@
-#pragma once
+#ifndef type_at_hpp
+#define type_at_hpp
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 
 	// -- T Y P E  A T --------------------------------------------------------
@@ -18,7 +19,7 @@ namespace ms {
 			// -- assertions --------------------------------------------------
 
 			/* requires non-empty parameter pack */
-			static_assert(sizeof...(Tp) > 0, "type_at requires at least one type");
+			static_assert(sizeof...(Tp) > 0U, "type_at requires at least one type");
 
 			/* requires valid index */
 			static_assert(N < sizeof...(Tp), "type_at index out of bounds");
@@ -52,7 +53,6 @@ namespace ms {
 				/* type indexed by IDX */
 				using type = typename list<0U, Tp...>::type;
 
-
 		}; // class type_at
 
 	} // namespace impl
@@ -60,6 +60,8 @@ namespace ms {
 
 	/* type at */
 	template <unsigned I, typename... Tp>
-	using type_at = typename ms::impl::type_at<I, Tp...>::type;
+	using type_at = typename mx::impl::type_at<I, Tp...>::type;
 
-} // namespace ms
+} // namespace mx
+
+#endif // type_at_hpp
