@@ -1,6 +1,7 @@
-![demo](./record.gif)
 
 # 🥁 midx
+> [!CAUTION]
+> Work in progress, not yet usable
 
 A domain-specific language for live MIDI sequencing and music composition.
 
