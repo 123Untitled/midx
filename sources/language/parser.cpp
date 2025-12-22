@@ -747,9 +747,6 @@ auto pr::parser::parse_modulo(mx::usz left) -> mx::usz {
 		right = parse_expr<L>(pr::precedence<L>::modulo);
 	}
 
-	// recurse right expression
-	//const auto right = parse_expr<L>(pr::precedence<L>::modulo - 1U);
-
 	// check duration validity
 	if (!right || dur.num == 0U || dur.den == 0U) {
 		// remove pushed fracs
