@@ -145,13 +145,7 @@ namespace pr {
 
 		// note
 		rule_number<L>(),
-		// binary
-		rule_number<L>(),
-		// octal
-		rule_number<L>(),
 		// decimal
-		rule_number<L>(),
-		// hexadecimal
 		rule_number<L>(),
 		// floating
 		rule_number<L>(),

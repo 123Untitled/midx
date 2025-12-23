@@ -339,59 +339,11 @@ auto lx::lexer::lex_note(void) -> void {
 /* lex number */
 auto lx::lexer::lex_number(void) -> void {
 
-	const mx::u8 first = *_it;
-
 	const auto mark = _it;
-	++_it;
 
-	if (first == '0' && (_it < _end)) {
-
-		switch (*_it) {
-
-			case 'b': {
-				do {
-					++_it;
-				} while (_it < _end && cc::is_binary(*_it));
-
-				_tokens->push_filtered_token(
-					tk::binary,
-					self::new_chunk(mark)
-				);
-				return;
-			}
-
-			case 'o': {
-				do {
-					++_it;
-				} while (_it < _end && cc::is_octal(*_it));
-
-				_tokens->push_filtered_token(
-					tk::octal,
-					self::new_chunk(mark)
-				);
-				return;
-			}
-
-			case 'x': {
-				do {
-					++_it;
-				} while (_it < _end && cc::is_hex(*_it));
-
-				_tokens->push_filtered_token(
-					tk::hexadecimal,
-					self::new_chunk(mark)
-				);
-				return;
-			}
-
-
-			default:
-				// it's just a zero
-		}
-	}
-
-	while (_it < _end && cc::is_digit(*_it))
+	do {
 		++_it;
+	} while (_it < _end && cc::is_digit(*_it));
 
 	tk::id id = tk::decimal;
 

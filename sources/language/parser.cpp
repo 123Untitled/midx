@@ -236,6 +236,7 @@ auto pr::parser::parse_atomics(mx::usz left) -> mx::usz {
 		// get token view
 		const auto tv = *_it;
 
+
 		switch (_it.token().id) {
 
 			case tk::note:
@@ -243,30 +244,9 @@ auto pr::parser::parse_atomics(mx::usz left) -> mx::usz {
 				//++count;
 				continue;
 
-			case tk::binary:
-				_tree->push_value(
-					mx::convert_bin<false>[_last_param](tv, *_diag)
-				);
-				++count;
-				continue;
-
-			case tk::octal:
-				_tree->push_value(
-					mx::convert_oct<false>[_last_param](tv, *_diag)
-				);
-				++count;
-				continue;
-
 			case tk::decimal:
 				_tree->push_value(
 					mx::convert_dec<false>[_last_param](tv, *_diag)
-				);
-				++count;
-				continue;
-
-			case tk::hexadecimal:
-				_tree->push_value(
-					mx::convert_hex<false>[_last_param](tv, *_diag)
 				);
 				++count;
 				continue;
@@ -981,9 +961,6 @@ auto pr::parser::lookahead(tk::iterator it) const noexcept -> bool {
 
 			case tk::floating:
 			case tk::decimal:
-			case tk::hexadecimal:
-			case tk::octal:
-			case tk::binary:
 			case tk::note:
 				value_found = true;
 
@@ -1009,9 +986,6 @@ auto pr::parser::lookahead_op(tk::iterator it) const /*noexcept*/ -> bool {
 
 			case tk::floating:
 			case tk::decimal:
-			case tk::hexadecimal:
-			case tk::octal:
-			case tk::binary:
 			case tk::note:
 				return false;
 

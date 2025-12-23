@@ -92,10 +92,7 @@ namespace tk {
 
 		// numbers
 		note,
-		binary,
-		octal,
 		decimal,
-		hexadecimal,
 		floating,
 
 		// () [] {}
@@ -183,10 +180,7 @@ namespace tk {
 
 		// numbers
 		"note",
-		"binary",
-		"octal",
 		"decimal",
-		"hexadecimal",
 		"floating",
 
 		// () [] {}
@@ -268,9 +262,6 @@ namespace tk {
 		"\x1b[31m",
 		"\x1b[31m",
 		"\x1b[31m",
-		"\x1b[31m",
-		"\x1b[31m",
-		"\x1b[31m",
 
 		// () [] {}
 		"\x1b[90m",
@@ -325,9 +316,6 @@ namespace tk {
 		"Function",
 
 		// numbers
-		"Number",
-		"Number",
-		"Number",
 		"Number",
 		"Number",
 		"Number",
