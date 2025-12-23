@@ -149,6 +149,7 @@ namespace as {
 				//	throw std::runtime_error{"Arena ref index out of bounds"};
 				//}
 				//return _refs[index];
+
 				return _arena.at<mx::usz>(index);
 			}
 
@@ -910,8 +911,11 @@ namespace as {
 
 					case as::type::references: {
 						const auto& n = _tree.node<as::references>(index);
-						for (mx::usz i = 0; i < n.count; ++i)
-							out.push_back(_tree.ref_at(n.ref_start + i));
+						mx::usz it = n.ref_start;
+						mx::usz end = it + (n.count * sizeof(mx::usz));
+
+						for (; it < end; it += sizeof(mx::usz))
+							out.push_back(_tree.ref_at(it));
 						break;
 					}
 

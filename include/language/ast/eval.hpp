@@ -19,6 +19,7 @@ namespace tk {
 namespace mx {
 	class highlight_tracker;
 }
+
 namespace mx {
 
 	class random final {
