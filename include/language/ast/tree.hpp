@@ -3,7 +3,6 @@
 
 #include "language/ast/node.hpp"
 #include "language/ast/nodes.hpp"
-#include "core/memory/align_up.hpp"
 
 #include "core/containers/arena.hpp"
 
@@ -130,26 +129,17 @@ namespace as {
 			   get the start index for reference storage */
 			auto ref_start(void) const noexcept -> mx::usz {
 				return _arena.offset_for<mx::usz>();
-				//return _refs.size();
 			}
 
 			/* push ref
 			   push a reference onto the reference storage */
 			auto push_ref(const mx::usz ref) -> void {
 				_arena.push<mx::usz>(ref);
-				//_refs.push_back(ref);
 			}
 
 			/* ref at
 			   access ref by direct index */
 			auto ref_at(const mx::usz index) const /*noexcept*/ -> mx::usz {
-				//if (index >= _refs.size()) {
-				//	std::cout << "Ref index out of bounds: " << index
-				//			  << " >= " << _refs.size() << '\n';
-				//	throw std::runtime_error{"Arena ref index out of bounds"};
-				//}
-				//return _refs[index];
-
 				return _arena.at<mx::usz>(index);
 			}
 
@@ -157,16 +147,10 @@ namespace as {
 			/* header
 			   access header by direct index */
 			auto header(const mx::usz index) const /*noexcept*/ -> const as::header& {
-				//if (index + sizeof(as::header) > _nodes.size())
-				//	throw std::runtime_error{"Arena header index out of bounds"};
-				//return *reinterpret_cast<const as::header*>(&_nodes[index]);
 				return _arena.at<as::header>(index);
 			}
 
 			auto header(const mx::usz index) /*noexcept*/ -> as::header& {
-				//if (index + sizeof(as::header) > _nodes.size())
-				//	throw std::runtime_error{"Arena header index out of bounds"};
-				//return *reinterpret_cast<as::header*>(&_nodes[index]);
 				return _arena.at<as::header>(index);
 			}
 
@@ -179,18 +163,7 @@ namespace as {
 			/* range of */
 			auto range_of(const mx::usz index) /*noexcept*/ -> as::remap_range& {
 
-				//if (index + sizeof(as::header) > _nodes.size())
-				//	throw std::runtime_error{"Arena header index out of bounds"};
-				//
-				//as::header* h = reinterpret_cast<as::header*>(&_nodes[index]);
-				//
-				//if ((h->type != as::type::group)
-				// && (h->type != as::type::parallel))
-				//	throw std::runtime_error{"Arena range_of: node is not range type"};
-				//
-				//return *reinterpret_cast<as::remap_range*>(h + 1U);
-
-				as::header& h = header(index);
+				as::header& h = _arena.at<as::header>(index);
 				if ((h.type != as::type::group)
 				 && (h.type != as::type::parallel))
 					throw std::runtime_error{"Arena range_of: node is not range type"};
