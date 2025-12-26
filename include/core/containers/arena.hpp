@@ -5,6 +5,8 @@
 #include "core/memory/align_up.hpp"
 #include <vector>
 
+#include <iostream>
+
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
@@ -89,8 +91,10 @@ namespace mx {
 			template <typename T>
 			auto at(const mx::usz index) /* noexcept */ -> T& {
 
-				if (index + sizeof(T) > _data.size())
+				if (index + sizeof(T) > _data.size()) {
+					std::cout << __PRETTY_FUNCTION__ << "\r\n";
 					throw std::runtime_error{"arena index out of bounds"};
+				}
 
 				return *reinterpret_cast<T*>(&_data[index]);
 			}
@@ -98,8 +102,10 @@ namespace mx {
 			template <typename T>
 			auto at(const mx::usz index) const /* noexcept */ -> const T& {
 
-				if (index + sizeof(T) > _data.size())
+				if (index + sizeof(T) > _data.size()) {
+					std::cout << __PRETTY_FUNCTION__ << "\r\n";
 					throw std::runtime_error{"arena index out of bounds"};
+				}
 
 				return *reinterpret_cast<const T*>(&_data[index]);
 			}
