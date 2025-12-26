@@ -396,7 +396,7 @@ auto as::eval::atomics(const as::frame& f, T& r) -> void {
 			}
 		}
 
-		std::cout << (edge ? "\x1b[32mE\x1b[0m" : ".") << std::flush;
+		//std::cout << (edge ? "\x1b[32mE\x1b[0m" : ".") << std::flush;
 
 		using type = typename T::type;
 
