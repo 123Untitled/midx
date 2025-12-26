@@ -12,13 +12,13 @@
 /* debug */
 auto tk::tokens::debug(void) const -> void {
 
-	std::cout << "\x1b[31m----[TOKEN LIST DEBUG]----\x1b[0m\n";
+	std::cout << "\x1b[31m----[TOKEN LIST DEBUG]----\x1b[0m\r\n";
 	for_each_filtered(
 		[&](const tk::const_token_view& tv) -> void {
-			std::cout << tv << '\n';
+			std::cout << tv << "\r\n";
 		}
 	);
-    std::cout << "\x1b[31m--------------------------\x1b[0m\n";
+    std::cout << "\x1b[31m--------------------------\x1b[0m\r\n";
 }
 
 

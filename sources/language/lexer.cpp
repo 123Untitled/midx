@@ -199,6 +199,17 @@ auto lx::lexer::_lex(void) -> void {
 				lex_floating();
 				continue;
 
+			// plus
+			case '+':
+				push_byte_token(tk::plus);
+				continue;
+
+			// minus
+			case '-':
+				push_byte_token(tk::minus);
+				continue;
+
+
 			// () [] {}
 			case '(':
 				push_byte_token(tk::priority_open);

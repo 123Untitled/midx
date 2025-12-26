@@ -230,8 +230,17 @@ auto pr::parser::parse_atomics(mx::usz left) -> mx::usz {
 	const auto tok_start = _it.index();
 	const auto val_start = _tree->value_start();
 	   mx::usz count     = 0U;
+	bool negative        = false;
 
 	do {
+
+		if (_it.token().id == tk::plus)
+			continue;
+
+		if (_it.token().id == tk::minus) {
+			negative = !negative;
+			continue;
+		}
 
 		// get token view
 		const auto tv = *_it;

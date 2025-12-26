@@ -95,6 +95,9 @@ namespace tk {
 		decimal,
 		floating,
 
+		plus,
+		minus,
+
 		// () [] {}
 		priority_open,
 		priority_close,
@@ -183,6 +186,9 @@ namespace tk {
 		"decimal",
 		"floating",
 
+		"plus",
+		"minus",
+
 		// () [] {}
 		"priority_open",
 		"priority_close",
@@ -263,6 +269,9 @@ namespace tk {
 		"\x1b[31m",
 		"\x1b[31m",
 
+		"\x1b[31m",
+		"\x1b[31m",
+
 		// () [] {}
 		"\x1b[90m",
 		"\x1b[90m",
@@ -319,6 +328,9 @@ namespace tk {
 		"Number",
 		"Number",
 		"Number",
+
+		"Operator",
+		"Operator",
 
 		// () [] {}
 		"Delimiter",
