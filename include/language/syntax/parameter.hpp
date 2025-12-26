@@ -69,7 +69,7 @@ namespace pa {
 		non_instantiable_class(trig);
 		using type = mx::u8;
 		static constexpr type min = 0U;
-		static constexpr type max = 0U;
+		static constexpr type max = 1U;
 		static constexpr bool neg = false;
 		static constexpr pa::id id = pa::trig;
 	}; // struct trig
@@ -83,9 +83,10 @@ namespace pa {
 		static constexpr pa::id id = pa::note;
 	}; // struct note
 
+
 	struct gate final {
 		non_instantiable_class(gate);
-		using type = mx::u16;
+		using type = float;
 		static constexpr type min = 0U;
 		static constexpr type max = 65535U;
 		static constexpr bool neg = false;
@@ -104,8 +105,8 @@ namespace pa {
 	struct octa final {
 		non_instantiable_class(octa);
 		using type = mx::i8;
-		static constexpr type min = -10;
-		static constexpr type max = +10;
+		static constexpr type min = -128 / 12;
+		static constexpr type max = +127 / 12;
 		static constexpr bool neg = true;
 		static constexpr pa::id id = pa::octa;
 	}; // struct octa
@@ -122,11 +123,20 @@ namespace pa {
 	struct chan final {
 		non_instantiable_class(chan);
 		using type = mx::u8;
-		static constexpr type min = 0U;
-		static constexpr type max = 15U;
+		static constexpr type min = 1U;
+		static constexpr type max = 16U;
 		static constexpr bool neg = false;
 		static constexpr pa::id id = pa::chan;
 	}; // struct chan
+
+	struct grou final {
+		non_instantiable_class(grou);
+		using type = mx::u8;
+		static constexpr type min = 1U;
+		static constexpr type max = 16U;
+		static constexpr bool neg = false;
+		static constexpr pa::id id = pa::chan;
+	}; // struct grou
 
 	struct prob final {
 		non_instantiable_class(prob);
