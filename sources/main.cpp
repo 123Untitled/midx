@@ -173,7 +173,17 @@ namespace mx {
    write pipe only if all data processed in main thread
 
 ***************************************** */
+namespace mx {
+	
+	template <pa::id P, tk::id T>
+	class converter final {
 
+		 public:
+		private:
+
+	}; // class converter
+
+} // namespace mx
 
 auto main(int ac, char** av) -> int {
 
