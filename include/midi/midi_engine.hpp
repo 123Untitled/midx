@@ -147,21 +147,21 @@ namespace mx {
 					_active[_count++] = i;
 				}
 				else {
-					//std::cout << "\x1b[33mWarning:\x1b[0m "
-					//		  << "Retriggering note before note off. "
-					//		  << "Ch " << static_cast<mx::usz>(ch)
-					//		  << " No " << static_cast<mx::usz>(no)
-					//		  << " Ticks " << ticks << std::endl;
+					std::cout << "\x1b[33mWarning:\x1b[0m "
+							  << "Retriggering note before note off. "
+							  << "Ch " << static_cast<mx::usz>(ev.channel)
+							  << " No " << static_cast<mx::usz>(ev.note)
+							  << " Ticks " << ev.gate << "\r\n";
 					// note off before note on
 					evs.note_off(ev.channel, ev.note, ts);
 				}
 
 				// note on event can be triggered here
 				evs.note_on(ev.channel, ev.note, ev.velocity, ts);
-				//std::cout << "\x1b[32mNote On:\x1b[0m Ch " << static_cast<mx::usz>(ch)
-				//		  << " No " << static_cast<mx::usz>(no)
-				//		  << " Ve " << static_cast<mx::usz>(ve)
-				//		  << " Ticks " << ticks << std::endl;
+				std::cout << "\x1b[32mNote On:\x1b[0m Ch " << static_cast<mx::usz>(ev.channel)
+						  << " No " << static_cast<mx::usz>(ev.note)
+						  << " Ve " << static_cast<mx::usz>(ev.velocity)
+						  << " Ticks " << ev.gate << "\r\n";
 
 				st.epoch = _epoch;
 				st.ticks = (mx::u16)ev.gate; // CAST WILL BE FIXED !
@@ -188,8 +188,8 @@ namespace mx {
 
 					// note off event can be triggered here
 					evs.note_off(ch, no, ts);
-					//std::cout << "\x1b[31mNote Off:\x1b[0m Ch " << static_cast<mx::usz>(ch)
-					//		  << " No " << static_cast<mx::usz>(no) << std::endl;
+					std::cout << "\x1b[31mNote Off:\x1b[0m Ch " << static_cast<mx::usz>(ch)
+							  << " No " << static_cast<mx::usz>(no) << "\r\n";
 
 					// swap pop
 					_active[i] = _active[--_count];
