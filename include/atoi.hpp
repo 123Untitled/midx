@@ -22,29 +22,6 @@ namespace mx {
 			return c - '0';
 		}
 	};
-	struct bin final {
-		non_instantiable_class(bin);
-		static constexpr mx::u8 base = 2U;
-		static auto to_digit(const mx::u8 c) noexcept -> mx::u8 {
-			return c - '0';
-		}
-	};
-	struct oct final {
-		non_instantiable_class(oct);
-		static constexpr mx::u8 base = 8U;
-		static auto to_digit(const mx::u8 c) noexcept -> mx::u8 {
-			return c - '0';
-		}
-	};
-	struct hex final {
-		non_instantiable_class(hex);
-		static constexpr mx::u8 base = 16U;
-		static auto to_digit(const mx::u8 c) noexcept -> mx::u8 {
-			return  (c >= '0' && c <= '9') ? (c - '0')
-				 : ((c >= 'A' && c <= 'F') ? (c - 'A' + 10U)
-										   : (c - 'a' + 10U));
-		}
-	};
 
 
 	template <pa::id>
@@ -211,44 +188,6 @@ namespace mx {
 		&mx::convert<pa::prob, mx::dec, NEG>,
 	};
 
-	/* convert binary */
-	template <bool NEG>
-	mx::convert_fn convert_bin[] {
-		&mx::convert<pa::trig, mx::bin, NEG>,
-		&mx::convert<pa::note, mx::bin, NEG>,
-		&mx::convert<pa::gate, mx::bin, NEG>,
-		&mx::convert<pa::velo, mx::bin, NEG>,
-		&mx::convert<pa::octa, mx::bin, NEG>,
-		&mx::convert<pa::semi, mx::bin, NEG>,
-		&mx::convert<pa::chan, mx::bin, NEG>,
-		&mx::convert<pa::prob, mx::bin, NEG>,
-	};
-
-	/* convert octal */
-	template <bool NEG>
-	mx::convert_fn convert_oct[] {
-		&mx::convert<pa::trig, mx::oct, NEG>,
-		&mx::convert<pa::note, mx::oct, NEG>,
-		&mx::convert<pa::gate, mx::oct, NEG>,
-		&mx::convert<pa::velo, mx::oct, NEG>,
-		&mx::convert<pa::octa, mx::oct, NEG>,
-		&mx::convert<pa::semi, mx::oct, NEG>,
-		&mx::convert<pa::chan, mx::oct, NEG>,
-		&mx::convert<pa::prob, mx::oct, NEG>,
-	};
-
-	/* convert hexadecimal */
-	template <bool NEG>
-	mx::convert_fn convert_hex[] {
-		&mx::convert<pa::trig, mx::hex, NEG>,
-		&mx::convert<pa::note, mx::hex, NEG>,
-		&mx::convert<pa::gate, mx::hex, NEG>,
-		&mx::convert<pa::velo, mx::hex, NEG>,
-		&mx::convert<pa::octa, mx::hex, NEG>,
-		&mx::convert<pa::semi, mx::hex, NEG>,
-		&mx::convert<pa::chan, mx::hex, NEG>,
-		&mx::convert<pa::prob, mx::hex, NEG>,
-	};
 
 
 	template <typename T, T MIN, T MAX, typename B, bool NEG>
