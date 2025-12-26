@@ -196,7 +196,7 @@ namespace as {
 			static constexpr bool is_continuous = true;
 
 			/* default velocity */
-			static constexpr type default_value = 100U;
+			static constexpr type default_value = 255U;
 
 			/* min */
 			static constexpr type min = 0U;
