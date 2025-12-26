@@ -91,7 +91,7 @@ auto cm::event_list::note_off(const cm::u8 channel,
 							 const mx::u64 ts) -> void {
 
 	//self::_add(::MIDI1UPNoteOff(0U, channel, note, 0U), ts);
-	self::_add(::MIDI2NoteOff(0U, channel, note, 0U, 0U, 0U), ts);
+	self::_add(::MIDI2NoteOff(0U, channel, note, 0U, 0U, 127U), ts);
 }
 
 //UInt32 msg = MIDICLOCKTICK;
