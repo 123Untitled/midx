@@ -23,6 +23,9 @@
 - [ ] Add group parameter (for MIDI 2.0)
 - [ ] Implement parameter reference
 
+- [ ] Fix issue when send multiple notes to monophonic synth
+- [ ] Add note off velocity parameter `:vo`
+
 
 ### Logical Superposition Operators
 - [ ] `<+>` - Positive superposition (AND logic)
