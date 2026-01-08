@@ -19,7 +19,7 @@ mx::client::client(const mx::monitor& monitor) noexcept
 auto mx::client::initialize(mx::socket&& sck) -> void {
 
 	// store socket
-	_socket = static_cast<mx::socket&&>(sck);
+	_socket = mx::move(sck);
 
 	// subscribe to monitor
 	_monitor->add_read(*this);
@@ -33,7 +33,7 @@ auto mx::client::send(mx::string&& msg) -> void {
 		_monitor->add_write(*this);
 
 	// queue message
-	_queue.emplace_back(std::move(msg));
+	_queue.emplace_back(mx::move(msg));
 }
 
 /* is connected */
