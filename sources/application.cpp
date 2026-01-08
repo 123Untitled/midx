@@ -13,7 +13,6 @@ mx::application::application(void)
   _input{_monitor},
   _signal{_monitor},
   _server{_monitor},
-  _protocol1{},
   _protocol_parser{},
   _analyzers{},
   _active{0U},

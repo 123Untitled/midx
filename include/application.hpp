@@ -3,7 +3,6 @@
 
 #include "monitoring/monitor.hpp"
 #include "monitoring/server.hpp"
-#include "protocol1.hpp"
 #include "player.hpp"
 #include "language/analyzer.hpp"
 #include "monitoring/signal.hpp"
@@ -15,7 +14,6 @@
 // -- M L  N A M E S P A C E --------------------------------------------------
 
 namespace mx {
-
 
 
 	// -- A P P L I C A T I O N -----------------------------------------------
@@ -45,7 +43,6 @@ namespace mx {
 			mx::server _server;
 
 
-			mx::protocol1 _protocol1;
 			pc::parser _protocol_parser;
 
 			mx::analyzer _analyzers[2U];
@@ -122,18 +119,8 @@ namespace mx {
 			}
 
 			/* protocol */
-			auto protocol1(void) noexcept -> mx::protocol1& {
-				return _protocol1;
-			}
-
-			/* protocol */
 			auto protocol_parser(void) noexcept -> pc::parser& {
 				return _protocol_parser;
-			}
-
-			/* const protocol */
-			auto protocol(void) const noexcept -> const mx::protocol1& {
-				return _protocol1;
 			}
 
 
