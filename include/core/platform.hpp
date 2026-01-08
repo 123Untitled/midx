@@ -16,4 +16,16 @@
 #endif
 
 
+
+// -- H A S  B U I L T I N ----------------------------------------------------
+
+#ifndef midx_has_builtin
+#	if defined(__has_builtin)
+#		define midx_has_builtin(_) __has_builtin(_)
+#	else
+#		define midx_has_builtin(_) 0
+#	endif
+#endif
+
+
 #endif // core_platform_hpp
