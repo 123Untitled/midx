@@ -25,12 +25,9 @@ auto mx::signal::_handler(const int sig) noexcept -> void {
 
 /* monitor constructor */
 mx::signal::signal(const mx::monitor& monitor)
-: mx::watcher{}, _fds{-1, -1} {
+: mx::watcher{}, _pipe{mx::pipe()} {
 
-	if (::pipe(_fds) == -1)
-		throw mx::system_error{"pipe"};
-
-	self::_wr = _fds[1U];
+	self::_wr = _pipe.wr();
 
 	// subscribe to monitor
 	monitor.add_read(*this);
@@ -45,14 +42,6 @@ mx::signal::signal(const mx::monitor& monitor)
 		if (::sigaction(i, &sa, nullptr) == -1 && errno != EINVAL)
 			throw mx::system_error{"sigaction"};
 	}
-}
-
-/* destructor */
-mx::signal::~signal(void) noexcept {
-	if (_fds[0U] != -1)
-		static_cast<void>(::close(_fds[0U]));
-	if (_fds[1U] != -1)
-		static_cast<void>(::close(_fds[1U]));
 }
 
 
@@ -147,7 +136,7 @@ static auto signal_str(const int sig) -> const mx::string_view& {
 
 /* ident */
 auto mx::signal::ident(void) const noexcept -> int {
-	return _fds[0U];
+	return _pipe.rd();
 }
 
 
@@ -161,7 +150,7 @@ auto mx::signal::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 
 	int sig = 0;
 
-	const ::ssize_t res = ::read(_fds[0U], &sig, sizeof(int));
+	const ::ssize_t res = ::read(_pipe.rd(), &sig, sizeof(int));
 
 	if (res == -1)
 		throw mx::system_error{"read"};
@@ -169,7 +158,7 @@ auto mx::signal::on_event(mx::application& app, const struct ::kevent& ev) -> vo
 	::write(STDOUT_FILENO, "signal: ", 8U);
 	const auto& desc = signal_str(sig);
 	::write(STDOUT_FILENO, desc.data(), desc.size());
-	::write(STDOUT_FILENO, "\n", 1U);
+	::write(STDOUT_FILENO, "\r\n", 2U);
 
 	switch (sig) {
 

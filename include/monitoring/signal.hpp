@@ -2,6 +2,7 @@
 #define monitoring_signal_hpp
 
 #include "monitoring/watcher.hpp"
+#include "system/unix_pipe.hpp"
 
 
 // -- M L  N A M E S P A C E --------------------------------------------------
@@ -31,7 +32,7 @@ namespace mx {
 			// -- private members ---------------------------------------------
 
 			/* pipe */
-			int _fds[2U];
+			mx::unix_pipe _pipe;
 
 
 			// -- private static members --------------------------------------
@@ -57,7 +58,7 @@ namespace mx {
 			signal(const mx::monitor&);
 
 			/* destructor */
-			~signal(void) noexcept;
+			~signal(void) noexcept = default;
 
 
 
@@ -70,7 +71,6 @@ namespace mx {
 			auto ident(void) const noexcept -> int override final;
 
 	}; // class signal
-
 
 } // namespace mx
 
