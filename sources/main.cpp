@@ -1,192 +1,94 @@
 #include <iostream>
 #include "application.hpp"
 
-#include <sys/syscall.h>
-#include <mach/mach.h>
-#include "system/concurrency/atomic.hpp"
+#include <stdio.h>
+#include <sys/sysctl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
 
 namespace mx {
 
-	// mach semaphores
-	class semaphore final {
-
-		private:
-
-			::semaphore_t _sem;
-
-		public:
-
-			semaphore(void) noexcept
-			: _sem{SEMAPHORE_NULL} {
-			}
-
-			explicit semaphore(const int value) {
-				_sem = SEMAPHORE_NULL;
-				const auto ret = ::semaphore_create(::mach_task_self(),
-												   &_sem,
-												   SYNC_POLICY_FIFO,
-												   value);
-
-				if (ret != KERN_SUCCESS)
-					throw mx::system_error{"semaphore_create"};
-			}
-
-			~semaphore(void) noexcept {
-				if (_sem != SEMAPHORE_NULL)
-					static_cast<void>(::semaphore_destroy(::mach_task_self(), _sem));
-			}
-
-
-			// -- public lifecycle --------------------------------------------
-
-			/* wait */
-			auto wait(void) -> void {
-				const auto ret = ::semaphore_wait(_sem);
-				if (ret != KERN_SUCCESS)
-					throw mx::system_error{"semaphore_wait"};
-			}
-
-			/* signal */
-			auto signal(void) -> void {
-				const auto ret = ::semaphore_signal(_sem);
-				if (ret != KERN_SUCCESS)
-					throw mx::system_error{"semaphore_signal"};
-			}
-
-	}; // class semaphore
-
-	struct ctx {
-	};
-	auto parse(ctx& c) -> bool {
-		return true;
+	auto tcgetpgrp(int fd) -> ::pid_t {
+		pid_t pgid = 0;
+		if (::ioctl(fd, TIOCGPGRP, &pgid) != 0)
+			throw mx::system_error("ioctl");
+		return pgid;
 	}
 
-	class dsl final {
+	auto tcgetsid(const int fd) -> ::pid_t {
+		const auto pgrp = mx::tcgetpgrp(fd);
+		::pid_t sid = ::getsid(pgrp);
 
-		private:
-
-			mx::analyzer _analyzers[2U];
-			mx::semaphore _can_parse;
-			mx::atomic<mx::usz> _active;
-			mx::atomic<bool>    _pending;
-
-
-			// -- private methods ---------------------------------------------
-
-			/* active */
-			auto active(void) const noexcept -> mx::usz {
-				return _active.load<mx::mo::acquire>();
-			}
-
-			/* inactive */
-			auto inactive(void) const noexcept -> mx::usz {
-				return 1U - active();
-			}
-
-			/* pending */
-			auto pending(void) const noexcept -> bool {
-				return _pending.load<mx::mo::acquire>();
-			}
-
-			/* request switch */
-			auto request_switch(void) -> void {
-				_pending.store<mx::mo::release>(true);
-			}
-
-
-		public:
-
-
-			auto parse(mx::string&& data) -> void {
-
-				// wait authorization to parse
-				_can_parse.wait();
-				//_pending.wait(false, std::memory_order_acquire);
-
-				const auto inactive = this->inactive();
-
-				auto& analyzer = _analyzers[inactive];
-				analyzer.analyze(mx::move(data));
-
-				// check for errors
-				if (analyzer.has_errors() == true) {
-					_can_parse.signal();
-					return;
-				}
-
-				// signal pending switch
-				this->request_switch();
-			}
-
-	}; // class dsl
-	
-	inline auto exemple(void) -> void {
-		mx::semaphore can_parse{1};
-		std::atomic<mx::usz> active = 0U;
-		std::atomic<bool> pending = false;
-		mx::ctx ctxs[2U];
-
-
-		// in main thread...
-		// wait authorization to parse
-		can_parse.wait();
-		//pending.wait(false, std::memory_order_acquire);
-
-		const auto inactive = 1U - active.load(std::memory_order_acquire);
-
-		// parse data here
-		const auto err = parse(ctxs[inactive]);
-
-		if (err == false) {
-			can_parse.signal();
-			return;
+		dprintf(fd, "sid: %d, pgrp: %d\n", sid, pgrp);
+		if (sid == -1 && errno == ESRCH) {
+			errno = ENOTTY;
+			throw mx::system_error("getsid");
 		}
+		
+		return sid;
+	}
+}
 
-		// signal pending switch
-		pending.store(true, std::memory_order_release);
+int check_control_term(void) {
+
+	const int fd = ::open("/dev/tty", O_RDWR);
+	if (fd == -1)
+		throw mx::system_error("open");
 
 
+	constexpr int fds[3U] { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
 
-		// in clock thread...
-		while (true) {
-			const auto index = active.load(std::memory_order_acquire);
-			// evaluate parsed data
-			// evaluate(ctx[index]);
+	constexpr const char* descriptor[3U] { "stdin", "stdout", "stderr" };
 
-			if (pending.exchange(false, std::memory_order_acquire) == true) {
-				// switch active index
-				active.store(1U - index, std::memory_order_release);
-				// allow parsing
-				can_parse.signal();
-			}
+	// get the calling process ID
+	const pid_t pid = ::getpid();
+	// get the current process session ID
+	const pid_t sid = ::getsid(pid);
+	// get the process group ID of the session
+	// for which the terminal specified by fildes is the controlling terminal.
+	//const pid_t cid = tcgetsid(STDOUT_FILENO);
+
+	int status = 0;
+
+	for (::size_t x : { 0U, 1U, 2U }) {
+		if (not ::isatty(fds[x])) {
+			status = -1;
+			dprintf(fd, "[%s] is not a tty.\n", descriptor[x]);
+			continue;
 		}
-
+		if (sid != mx::tcgetsid(fds[x])) {
+			status = -1;
+			dprintf(fd, "[%s] is not the controlling terminal.\n", descriptor[x]);
+		}
+		//dprintf(fd, "sid: %d, tcsid: %d\n", sid, tcgetsid(fds[x]));
 	}
 
+	::close(fd);
+	return status;
 
-} // namespace mx
+	//std::cout << "terminal control session id: " << npid << std::endl;
+	//std::cout << "current pid: " << pid << std::endl;
+	//std::cout << "current process session id: " << sid << std::endl;
 
+}
 
-/* *****************************************
-
-   in clock thread:
-   write pipe only if all data processed in main thread
-
-***************************************** */
-namespace mx {
-	
-	template <pa::id P, tk::id T>
-	class converter final {
-
-		 public:
-		private:
-
-	}; // class converter
-
-} // namespace mx
 
 auto main(int ac, char** av) -> int {
 
+	try {
+	if (check_control_term() != 0) {
+		std::cerr << "\x1b[31merror\x1b[0m -> no controlling terminal.\r\n";
+		return 1;
+	}
+	else {
+		std::cout << "\x1b[32minfo\x1b[0m -> controlling terminal confirmed.\r\n";
+	}
+	}
+	catch (const std::exception& e) {
+		std::cerr << "\x1b[31mexception\x1b[0m -> " << e.what() << "\r\n";
+		return 1;
+	}
+	return 0;
 
 	//mx::storage<mx::u16, mx::usz> s{{2U, 1U}};
 	//
