@@ -63,10 +63,10 @@ declare -rg gif=$cwd_dir'/'$project'.gif'
 # -- D I R E C T O R I E S ----------------------------------------------------
 
 # source directory
-declare -rg src_dir=$cwd_dir'/sources'
+declare -rg src_dir=$cwd_dir'/code/sources'
 
 # include directory
-declare -rg inc_dir=$cwd_dir'/include'
+declare -rg inc_dir=$cwd_dir'/code/include'
 
 # git directory
 declare -rg git_dir=$cwd_dir'/.git'
@@ -94,7 +94,7 @@ if [[ $os =~ 'Linux' ]]; then
 	declare -rg os_dependencies=(
 					#'-lasound'
 				)
-	declare -rg max_jobs=$(nproc)
+	declare -rg max_jobs=$(nproc --all)
 
 # macos dependencies
 elif [[ $os =~ 'Darwin' ]]; then
