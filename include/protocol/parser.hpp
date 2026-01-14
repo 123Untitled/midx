@@ -142,6 +142,7 @@ namespace pc {
 						case state::on_payload:
 							_handle_payload();
 							break;
+
 						case state::resync:
 							_handle_resync();
 							break;
