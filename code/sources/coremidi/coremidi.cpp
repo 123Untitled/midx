@@ -3,6 +3,7 @@
 
 #if defined(midx_macos)
 
+#include <iostream>
 
 namespace cm {
 

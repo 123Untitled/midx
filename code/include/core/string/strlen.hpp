@@ -4,7 +4,6 @@
 #include "core/types.hpp"
 #include "core/string/is_string.hpp"
 #include <string.h>
-#include "core/type_traits/traits.hpp"
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------

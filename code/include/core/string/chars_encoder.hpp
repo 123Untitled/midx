@@ -3,10 +3,8 @@
 
 #include "core/utility/type_operations.hpp"
 #include "core/string/chars_segment.hpp"
-#include "core/type_traits/index_sequence.hpp"
+#include "core/traits/sequences.hpp"
 
-//#include "core/config/class.hpp"
-#include "core/type_traits/type_at.hpp"
 #include <concepts>
 
 

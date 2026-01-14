@@ -1,7 +1,7 @@
 #ifndef core_types_hpp
 #define core_types_hpp
 
-#include "core/type_traits/integers.hpp"
+#include "core/numeric/integers.hpp"
 #include <cstddef>
 
 

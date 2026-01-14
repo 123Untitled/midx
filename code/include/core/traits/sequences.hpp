@@ -1,5 +1,5 @@
-#ifndef index_sequence_hpp
-#define index_sequence_hpp
+#ifndef core_traits_sequences_hpp
+#define core_traits_sequences_hpp
 
 #include "core/config/class.hpp"
 
@@ -106,4 +106,4 @@ namespace mx {
 
 } // namespace mx
 
-#endif // index_sequence_hpp
+#endif // core_traits_sequences_hpp

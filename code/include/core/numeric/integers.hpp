@@ -1,9 +1,7 @@
 #ifndef core_type_traits_integers_hpp
 #define core_type_traits_integers_hpp
 
-#include "core/type_traits/type_categories/is_void.hpp"
-#include "core/type_traits/type_categories/is_integral.hpp"
-#include "core/type_traits/type_transformations/conditional.hpp"
+#include "core/traits/categories.hpp"
 
 
 #include <type_traits>
