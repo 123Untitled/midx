@@ -18,13 +18,13 @@ readonly project='midx'
 readonly executable="$cwd_dir"'/'"$project"
 
 # sources directory
-readonly src_dir="$cwd_dir"'/sources'
+readonly src_dir="$cwd_dir"'/code/sources'
 
 # include directory
-readonly inc_dir="$cwd_dir"'/include'
+readonly inc_dir="$cwd_dir"'/code/include'
 
 # fallback compiler
-readonly compiler='clang++'
+readonly compiler='c++'
 
 # compiler
 readonly cxx="${CXX:-$compiler}"

@@ -510,36 +510,37 @@ shift
 case $action in
 
 	# run
-	run | launch)
+	'run')
 		_build
 		$executable
 		;;
 
 	# test
-	test)
+	'test')
 		_build
 		_test
 		;;
 
 	# clean
-	rm | clean | fclean)
+	'rm')
 		_clean
 		;;
 
 	# re
-	re | rebuild)
+	're')
 		_clean
 		_build
 		;;
 
 	# record
-	record)
+	'record')
 		_record $@
 		;;
 
 	# unknown (usage)
 	*)
-		echo 'usage:' ${script:t} '[run|launch|test|rm|clean|fclean|re|rebuild]'
+		echo 'usage:' ${script:t} '[run|test|rm|re|record]'
+		exit 1
 		;;
 esac
 
