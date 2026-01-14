@@ -98,8 +98,14 @@ if [[ $os =~ 'Linux' ]]; then
 
 # macos dependencies
 elif [[ $os =~ 'Darwin' ]]; then
-	declare -rg os_dependencies=('-framework' 'CoreMIDI' \
-								 '-framework' 'CoreFoundation')
+	declare -rg os_dependencies=(
+		#'-weak_framework'
+		'-framework'
+		'CoreMIDI'
+		#'-weak_framework'
+		'-framework'
+		'CoreFoundation'
+	)
 	declare -rg max_jobs=$(sysctl -n hw.ncpu)
 fi
 
@@ -140,10 +146,13 @@ declare -rg cxxflags=($std
 					  '-fdiagnostics-show-location=once'
 					  '-fdiagnostics-show-template-tree'
 					  '-I'$inc_dir
+					  '-mmacosx-version-min=11'
 				)
 
 # linker flags
-declare -rg ldflags=($os_dependencies
+declare -rg ldflags=(
+
+	$os_dependencies
 					 #'-fsanitize=thread'
 					 '-fsanitize=address'
 )
