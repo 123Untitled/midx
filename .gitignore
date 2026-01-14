@@ -8,13 +8,13 @@
 /.nvimlog
 
 # ignore object files
-/sources/**/*.o
+/code/sources/**/*.o
 
 # ignore dependency files
-/sources/**/*.d
+/code/sources/**/*.d
 
 # ignore log files
-/sources/**/*.log
+/code/sources/**/*.log
 
 # ignore compile database
 /compile_commands.json
