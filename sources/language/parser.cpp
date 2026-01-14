@@ -84,11 +84,6 @@ auto pr::parser::error(const char* msg,
 	_diag->push(msg, tv.first_chunk().range);
 }
 
-struct depth_guard {
-	mx::uint& d;
-	depth_guard(mx::uint& depth) : d{depth} { ++d; }
-	~depth_guard() { --d; }
-};
 
 
 
@@ -105,7 +100,6 @@ auto pr::parser::_parse(void) -> void {
 		do {
 			if (_it.token().id != tk::separator)
 				break;
-			std::cout << "Skipping separator token\r\n";
 		} while (++_it != _end);
 
 		if (_parse_identifiers() == true) {
@@ -183,7 +177,6 @@ auto pr::parser::_parse_identifiers(void) -> bool {
 /* parse expr */
 template <pr::level L>
 auto pr::parser::parse_expr(const mx::uint min_pre) -> mx::usz {
-	depth_guard dg{_depth};
 
 	debug_level<L>("PARSE EXPR", "min pre", min_pre);
 

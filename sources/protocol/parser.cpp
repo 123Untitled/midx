@@ -26,8 +26,6 @@ auto pc::parser::_handle_header(void) -> void {
 	const auto& h = _as_header();
 
 	if (!h.is_valid()) {
-		static int counter = 0;
-		std::cerr << "Invalid header received: " << ++counter << "\n";
 		_state = state::resync;
 		return;
 	}
@@ -74,7 +72,7 @@ auto pc::parser::_handle_resync(void) -> void {
 	static constexpr mx::u8 magic[4U] {
 		'M', 'I', 'D', 'X'
 	};
-	std::cout << "Resyncing...\n";
+	std::cout << "Resyncing...\r\n";
 
 	for (; _it < _end; ++_it) {
 
@@ -124,7 +122,7 @@ auto pc::parser::_process_method(void) -> void {
 
 		default:
 			std::cerr << "Method [" << pc::method_name(m)
-					  << "] requires payload\n";
+					  << "] requires payload\r\n";
 			return;
 	}
 }
@@ -143,7 +141,7 @@ auto pc::parser::_process_payload(void) -> void {
 
 		default:
 			std::cerr << "Method [" << pc::method_name(m)
-					  << "] does not accept payload\n";
+					  << "] does not accept payload\r\n";
 			_payload.clear();
 			return;
 	}
