@@ -188,39 +188,37 @@ function _generate_compile_db() {
 
 	local content='[\n'
 
-	for file in $srcs; do
+	for src in $srcs; do
+
+		local obj=${src:r}'.o'
 
 		# current directory
-		content+='\t{\n\t\t"directory": "'$cwd_dir'",'
+		content+='\t{\n\t\t"directory": "'$cwd_dir'",\n'
 
 		# source file
-		content+='\n\t\t"file": "'$file'",'
+		content+='\t\t"file": "'$src'",\n'
 
 		# output file
-		content+='\n\t\t"output": "'${file%.cpp}'.o",'
+		content+='\t\t"output": "'$obj'",\n'
 
 		# arguments
-		content+='\n\t\t"arguments": [\n\t\t\t"'$cxx'",\n'
+		content+='\t\t"arguments": [\n'
 
 		# cxx flags
-		for flag in $cxxflags; do
+		for flag in $cxx $cxxflags '-c' $src '-o' $obj; do
 			content+='\t\t\t"'$flag'",\n'
 		done
+		# erase last comma
+		content[-3]=''
 
-		# source file
-		content+='\t\t\t"-c",\n\t\t\t"'$file'",\n'
-
-		# output file
-		content+='\t\t\t"-o",\n\t\t\t"'${file%.cpp}'.o"\n\t\t]\n\t},\n'
+		content+='\t\t]\n\t},\n'
 	done
 
 	# erase last comma with newline
-	content[-3]='\'
-	content[-2]='n'
-	content[-1]=']'
+	content[-3]='\n]'
 
 	# write to compile db
-	if ! echo $content > $compile_db; then
+	if ! echo -n $content > $compile_db; then
 		echo 'error while generating' $error'compile_commands.json'$reset
 		exit 1
 	fi
@@ -390,7 +388,7 @@ function _handle_link {
 	done
 
 	# no link required
-	echo $success'[>]'$reset ${executable:t} 'is up to date'
+	echo $info'[>]'$reset ${executable:t} 'is up to date'
 }
 
 
