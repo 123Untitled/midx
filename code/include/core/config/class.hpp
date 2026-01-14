@@ -2,6 +2,23 @@
 #define core_config_class_hpp
 
 
+#define noexcept_default_class(T) \
+	T(void) noexcept = default; \
+	T(const T&) noexcept = default; \
+	T(T&&) noexcept = default; \
+	~T(void) noexcept = default; \
+	auto operator=(const T&) noexcept -> T& = default; \
+	auto operator=(T&&) noexcept -> T& = default
+
+#define non_instantiable_class(T) \
+	T(void) = delete; \
+	T(const T&) = delete; \
+	T(T&&) = delete; \
+	~T(void) = delete; \
+	auto operator=(const T&) -> T& = delete; \
+	auto operator=(T&&) -> T& = delete
+
+
 #define default_noexcept_moveable_class(type) \
 	type(type&&) noexcept = default; \
 	auto operator=(type&&) noexcept -> type& = default
@@ -36,30 +53,5 @@
 		non_movable(T); \
 		non_copyable(T)
 
-
-#define noexcept_default_class(T) \
-	T(void) noexcept = default; \
-	T(const T&) noexcept = default; \
-	T(T&&) noexcept = default; \
-	~T(void) noexcept = default; \
-	auto operator=(const T&) noexcept -> T& = default; \
-	auto operator=(T&&) noexcept -> T& = default
-
-
-#define non_instantiable(T) \
-	T(void) = delete; \
-	T(const T&) = delete; \
-	T(T&&) = delete; \
-	~T(void) = delete; \
-	auto operator=(const T&) -> T& = delete; \
-	auto operator=(T&&) -> T& = delete
-
-#define non_instantiable_class(class_name) \
-	class_name(void) = delete; \
-	~class_name(void) = delete; \
-	class_name(const class_name&) = delete; \
-	class_name(class_name&&) = delete; \
-	auto operator=(const class_name&) -> class_name& = delete; \
-	auto operator=(class_name&&) -> class_name& = delete
 
 #endif // core_config_class_hpp

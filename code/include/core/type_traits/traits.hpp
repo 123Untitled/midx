@@ -21,21 +21,21 @@ namespace mx {
 		template <typename T>
 		struct remove_reference final {
 			using type = T;
-			non_instantiable(remove_reference);
+			non_instantiable_class(remove_reference);
 		};
 
 		/* lvalue specialization */
 		template <typename T>
 		struct remove_reference<T&> final {
 			using type = T;
-			non_instantiable(remove_reference);
+			non_instantiable_class(remove_reference);
 		};
 
 		/* rvalue specialization */
 		template <typename T>
 		struct remove_reference<T&&> final {
 			using type = T;
-			non_instantiable(remove_reference);
+			non_instantiable_class(remove_reference);
 		};
 
 	} // namespace impl
@@ -59,35 +59,35 @@ namespace mx {
 		template <typename T>
 		struct remove_pointer final {
 			using type = T;
-			non_instantiable(remove_pointer);
+			non_instantiable_class(remove_pointer);
 		};
 
 		/* pointer specialization */
 		template <typename T>
 		struct remove_pointer<T*> final {
 			using type = T;
-			non_instantiable(remove_pointer);
+			non_instantiable_class(remove_pointer);
 		};
 
 		/* const pointer specialization */
 		template <typename T>
 		struct remove_pointer<T* const> final {
 			using type = T;
-			non_instantiable(remove_pointer);
+			non_instantiable_class(remove_pointer);
 		};
 
 		/* volatile pointer specialization */
 		template <typename T>
 		struct remove_pointer<T* volatile> final {
 			using type = T;
-			non_instantiable(remove_pointer);
+			non_instantiable_class(remove_pointer);
 		};
 
 		/* const volatile pointer specialization */
 		template <typename T>
 		struct remove_pointer<T* const volatile> final {
 			using type = T;
-			non_instantiable(remove_pointer);
+			non_instantiable_class(remove_pointer);
 		};
 
 	} // namespace impl
@@ -107,21 +107,21 @@ namespace mx {
 		template <typename T>
 		struct remove_extent final {
 			using type = T;
-			non_instantiable(remove_extent);
+			non_instantiable_class(remove_extent);
 		};
 
 		/* array with unknown bound specialization */
 		template <typename T>
 		struct remove_extent<T[]> final {
 			using type = T;
-			non_instantiable(remove_extent);
+			non_instantiable_class(remove_extent);
 		};
 
 		/* array with known bound specialization */
 		template <typename T, decltype(sizeof(0)) N>
 		struct remove_extent<T[N]> final {
 			using type = T;
-			non_instantiable(remove_extent);
+			non_instantiable_class(remove_extent);
 		};
 
 	} // namespace impl
@@ -175,21 +175,21 @@ namespace mx {
 		template <typename T>
 		struct is_array final {
 			static constexpr bool value = false;
-			non_instantiable(is_array);
+			non_instantiable_class(is_array);
 		};
 
 		/* is array unbounded specialization */
 		template <typename T>
 		struct is_array<T[]> final {
-			non_instantiable(is_array);
 			static constexpr bool value = true;
+			non_instantiable_class(is_array);
 		};
 
 		/* is array bounded specialization */
 		template <typename T, decltype(sizeof(0)) N>
 		struct is_array<T[N]> final {
 			static constexpr bool value = true;
-			non_instantiable(is_array);
+			non_instantiable_class(is_array);
 		};
 
 	} // namespace impl
@@ -212,20 +212,20 @@ namespace mx {
 		template <typename T>
 		struct is_pointer {
 			static constexpr bool value = false;
-			non_instantiable(is_pointer);
+			non_instantiable_class(is_pointer);
 		};
 
 		/* pointer specialisation */
 		template <typename T>
 		struct is_pointer<T*> {
 			static constexpr bool value = true;
-			non_instantiable(is_pointer);
+			non_instantiable_class(is_pointer);
 		};
 
 		/* helper */
 		template <typename T>
 		struct is_pointer_helper final : public mx::impl::is_pointer<mx::remove_cv<T>> {
-			non_instantiable(is_pointer_helper);
+			non_instantiable_class(is_pointer_helper);
 		};
 
 	} // namespace impl
@@ -282,14 +282,14 @@ namespace mx {
 		template <typename T>
 		struct is_lvalue_reference final {
 			static constexpr bool value = false;
-			non_instantiable(is_lvalue_reference);
+			non_instantiable_class(is_lvalue_reference);
 		};
 
 		/* lvalue reference specialisation */
 		template <typename T>
 		struct is_lvalue_reference<T&> final {
 			static constexpr bool value = true;
-			non_instantiable(is_lvalue_reference);
+			non_instantiable_class(is_lvalue_reference);
 		};
 
 	} // namespace impl
@@ -309,35 +309,35 @@ namespace mx {
 		template <typename type, unsigned = 0U>
 		struct extent final {
 			static constexpr unsigned value = 0U;
-			non_instantiable(extent);
+			non_instantiable_class(extent);
 		};
 
 		/* extent for unbounded array types (first dimension) */
 		template <typename type>
 		struct extent<type[], 0U> final {
 			static constexpr unsigned value = 0U;
-			non_instantiable(extent);
+			non_instantiable_class(extent);
 		};
 
 		/* extent for unbounded array types (subsequent dimensions) */
 		template <typename T, unsigned D>
 		struct extent<T[], D> final {
 			static constexpr unsigned value = mx::impl::extent<T, D - 1U>::value;
-			non_instantiable(extent);
+			non_instantiable_class(extent);
 		};
 
 		/* extent for bounded array types (first dimension) */
 		template <typename T, unsigned N>
 		struct extent<T[N], 0U> final {
 			static constexpr unsigned value = N;
-			non_instantiable(extent);
+			non_instantiable_class(extent);
 		};
 
 		/* extent for bounded array types (subsequent dimensions) */
 		template <typename T, unsigned N, unsigned D>
 		struct extent<T[N], D> final {
 			static constexpr unsigned value = mx::impl::extent<T, D - 1U>::value;
-			non_instantiable(extent);
+			non_instantiable_class(extent);
 		};
 
 	} // namespace impl

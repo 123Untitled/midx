@@ -46,14 +46,14 @@ namespace mx {
 		template <typename>
 		struct is_inplace_string final {
 			static constexpr bool value = false;
-			non_instantiable(is_inplace_string);
+			non_instantiable_class(is_inplace_string);
 		};
 
 		/* is inplace string true */
 		template <unsigned N>
 		struct is_inplace_string<mx::inplace_string<N>> final {
 			static constexpr bool value = true;
-			non_instantiable(is_inplace_string);
+			non_instantiable_class(is_inplace_string);
 		};
 
 	} // namespace impl

@@ -21,14 +21,14 @@ namespace mx {
 		template <typename T, typename F>
 		struct conditional<true, T, F> final {
 			using type = T;
-			non_instantiable(conditional);
+			non_instantiable_class(conditional);
 		};
 
 		/* conditional false specialization */
 		template<typename T, typename F>
 		struct conditional<false, T, F> final {
 			using type = F;
-			non_instantiable(conditional);
+			non_instantiable_class(conditional);
 		};
 
 	} // namespace impl

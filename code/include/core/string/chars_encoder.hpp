@@ -96,7 +96,7 @@ namespace mx {
 			using self = mx::chars_encoder<Tp...>;
 
 			/* sequence type */
-			using make_sequence = ms::make_index_sequence<sizeof...(Tp)>;
+			using make_sequence = mx::make_index_sequence<sizeof...(Tp)>;
 
 			/* type at */
 			template <unsigned I>
@@ -133,7 +133,7 @@ namespace mx {
 			struct storage;
 
 			template <unsigned... Is>
-			struct storage<ms::index_sequence<Is...>> final : element<Is, Tp>... {
+			struct storage<mx::index_sequence<Is...>> final : element<Is, Tp>... {
 				storage(void) = delete;
 				template <typename... Ts>
 				constexpr explicit storage(Ts&&... args) noexcept
@@ -159,7 +159,7 @@ namespace mx {
 
 			/* size */
 			template <unsigned... Is>
-			constexpr auto _size(ms::index_sequence<Is...>) const noexcept -> mx::usz {
+			constexpr auto _size(mx::index_sequence<Is...>) const noexcept -> mx::usz {
 
 				// total size
 				mx::usz total = 0U;
@@ -172,7 +172,7 @@ namespace mx {
 
 			/* encode */
 			template <unsigned... Is>
-			constexpr auto _encode(ms::index_sequence<Is...>, char* dst) const noexcept -> mx::usz {
+			constexpr auto _encode(mx::index_sequence<Is...>, char* dst) const noexcept -> mx::usz {
 
 				// current offset
 				mx::usz offset = 0U;
@@ -318,13 +318,13 @@ namespace mx {
 		template <typename T>
 		struct is_chars_encoder final {
 			static constexpr bool value = false;
-			non_instantiable(is_chars_encoder);
+			non_instantiable_class(is_chars_encoder);
 		};
 
 		template <typename... Tp>
 		struct is_chars_encoder<mx::chars_encoder<Tp...>> final {
 			static constexpr bool value = true;
-			non_instantiable(is_chars_encoder);
+			non_instantiable_class(is_chars_encoder);
 		};
 	}
 

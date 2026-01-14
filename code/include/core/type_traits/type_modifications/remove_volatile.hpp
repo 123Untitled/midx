@@ -18,14 +18,14 @@ namespace mx {
 		template <typename T>
 		struct remove_volatile final {
 			using type = T;
-			non_instantiable(remove_volatile);
+			non_instantiable_class(remove_volatile);
 		};
 
 		/* volatile specialization */
 		template <typename T>
 		struct remove_volatile<volatile T> final {
 			using type = T;
-			non_instantiable(remove_volatile);
+			non_instantiable_class(remove_volatile);
 		};
 
 	} // namespace impl
@@ -37,4 +37,4 @@ namespace mx {
 
 } // namespace mx
 
-#endif // t
+#endif // type_modifications_remove_volatile_hpp

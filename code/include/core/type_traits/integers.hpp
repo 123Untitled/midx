@@ -71,14 +71,14 @@ namespace mx {
 				template <typename T, typename... Ts>
 				struct list<T, Ts...> final {
 					using type = mx::conditional<is_equal<T>, T, typename list<Ts...>::type>;
-					non_instantiable(list);
+					non_instantiable_class(list);
 				};
 
 				/* end of recursion specialization */
 				template <typename T>
 				struct list<T> final {
 					using type = mx::conditional<is_equal<T>, T, void>;
-					non_instantiable(list);
+					non_instantiable_class(list);
 				};
 
 
@@ -104,7 +104,7 @@ namespace mx {
 				// -- public lifecycle ----------------------------------------
 
 				/* non-instantiable class */
-				non_instantiable(integer_selector);
+				non_instantiable_class(integer_selector);
 
 
 		}; // class integer_selector
@@ -131,7 +131,7 @@ namespace mx {
 			// -- public lifecycle --------------------------------------------
 
 			/* non-instantiable class */
-			non_instantiable(integer_selector);
+			non_instantiable_class(integer_selector);
 
 
 			// -- assertions --------------------------------------------------

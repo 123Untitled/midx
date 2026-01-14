@@ -18,14 +18,14 @@ namespace mx {
 		template <typename T>
 		struct remove_const final {
 			using type = T;
-			non_instantiable(remove_const);
+			non_instantiable_class(remove_const);
 		};
 
 		/* const specialization */
 		template <typename T>
 		struct remove_const<const T> final {
 			using type = T;
-			non_instantiable(remove_const);
+			non_instantiable_class(remove_const);
 		};
 
 	}; // namespace impl

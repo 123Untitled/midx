@@ -18,20 +18,20 @@ namespace mx {
 		template <typename, typename>
 		struct is_same final {
 			static constexpr bool value = false;
-			non_instantiable(is_same);
+			non_instantiable_class(is_same);
 		};
 
 		/* true specialization */
 		template <typename T>
 		struct is_same<T, T> final {
 			static constexpr bool value = true;
-			non_instantiable(is_same);
+			non_instantiable_class(is_same);
 		};
 
 		template <typename T, typename... Ts>
 		struct are_same final {
 			static constexpr bool value = (is_same<T, Ts>::value && ...);
-			non_instantiable(are_same);
+			non_instantiable_class(are_same);
 		};
 
 	} // namespace impl

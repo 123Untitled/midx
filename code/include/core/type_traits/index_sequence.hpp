@@ -1,11 +1,12 @@
-#pragma once
+#ifndef index_sequence_hpp
+#define index_sequence_hpp
 
 #include "core/config/class.hpp"
 
 
 // -- M X  N A M E S P A C E --------------------------------------------------
 
-namespace ms {
+namespace mx {
 
 
 	// -- I N D E X  S E Q U E N C E ------------------------------------------
@@ -19,7 +20,7 @@ namespace ms {
 			// -- private types -----------------------------------------------
 
 			/* self type */
-			using self = ms::index_sequence<Is...>;
+			using self = mx::index_sequence<Is...>;
 
 
 		public:
@@ -69,15 +70,15 @@ namespace ms {
 				/* end of recursion */
 				template <unsigned I, unsigned... S> requires (I == 0U)
 				struct list<I, S...> {
-					using type = ms::index_sequence<S...>;
-					non_instantiable(list);
+					using type = mx::index_sequence<S...>;
+					non_instantiable_class(list);
 				};
 
 				/* recursive call */
 				template <unsigned I, unsigned... S> requires (I > 0U)
 				struct list<I, S...> {
 					using type = typename list<I - 1U, I - 1U, S...>::type;
-					non_instantiable(list);
+					non_instantiable_class(list);
 				};
 
 
@@ -86,7 +87,7 @@ namespace ms {
 				// -- public lifecycle ----------------------------------------
 
 				/* non instantiable class */
-				non_instantiable(make_index_sequence);
+				non_instantiable_class(make_index_sequence);
 
 
 				// -- public types --------------------------------------------
@@ -101,6 +102,8 @@ namespace ms {
 
 	/* make index sequence */
 	template <unsigned N>
-	using make_index_sequence = typename ms::impl::make_index_sequence<N>::type;
+	using make_index_sequence = typename mx::impl::make_index_sequence<N>::type;
 
-} // namespace ms
+} // namespace mx
+
+#endif // index_sequence_hpp
